@@ -1,27 +1,86 @@
 #include <ruby.h>
 #include <libusb.h>
 
+/******************************************************
+ * global variables                                   *
+ ******************************************************/
+
 static VALUE rb_mRibUSB;
 static VALUE rb_cBus;
 static VALUE rb_cDevice;
-static VALUE Errors;
+static VALUE rb_cDeviceDescriptor;
+static VALUE rb_cConfigDescriptor;
+static VALUE rb_cInterface;
+static VALUE rb_cInterfaceDescriptor;
+static VALUE rb_cEndpointDescriptor;
+
+
+
+/******************************************************
+ * structures for classes                             *
+ ******************************************************/
 
 /*
  * Opaque structure for the RibUSB::Bus class
  */
 struct usb_t {
-  libusb_context *context;
+  struct libusb_context *context;
 };
 
 /*
  * Opaque structure for the RibUSB::Device class
  */
 struct device_t {
-  libusb_device *device;
-  libusb_device_handle *handle;
+  struct libusb_device *device;
+  struct libusb_device_handle *handle;
 };
 
-static VALUE cDevice_new (libusb_device *device);
+/*
+ * Opaque structure for the RibUSB::DeviceDescriptor class
+ */
+struct device_descriptor_t {
+  struct libusb_device_descriptor *descriptor;
+};
+
+/*
+ * Opaque structure for the RibUSB::ConfigDescriptor class
+ */
+struct config_descriptor_t {
+  struct libusb_config_descriptor *descriptor;
+};
+
+/*
+ * Opaque structure for the RibUSB::Interface class
+ */
+struct interface_t {
+  struct libusb_interface *interface;
+};
+
+/*
+ * Opaque structure for the RibUSB::InterfaceDescriptor class
+ */
+struct interface_descriptor_t {
+  struct libusb_interface_descriptor *descriptor;
+};
+
+/*
+ * Opaque structure for the RibUSB::EndpointDescriptor class
+ */
+struct endpoint_descriptor_t {
+  struct libusb_endpoint_descriptor *descriptor;
+};
+
+
+
+/******************************************************
+ * internal prototypes                                *
+ ******************************************************/
+static VALUE cDevice_new (struct libusb_device *device);
+static VALUE cDeviceDescriptor_new (struct libusb_device_descriptor *descriptor);
+static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor);
+static VALUE cInterface_new (struct libusb_interface *interface);
+static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor);
+static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descriptor);
 
 
 
@@ -133,7 +192,7 @@ void cBus_free (struct usb_t *u)
  */
 static VALUE cBus_new (VALUE self)
 {
-  libusb_context *context;
+  struct libusb_context *context;
   struct usb_t *u;
   int res;
   VALUE object;
@@ -177,6 +236,7 @@ static VALUE cBus_setDebug (VALUE self, VALUE level)
 
 /*
  * call-seq:
+ *   bus.getDeviceList -> list
  *   bus.deviceList -> list
  *
  * Obtain the list of devices currently attached to the USB system.
@@ -185,10 +245,10 @@ static VALUE cBus_setDebug (VALUE self, VALUE level)
  *
  * Note: this list provides no information whatsoever on whether or not any given device can be accessed. Permissions and use by other software can prevent access to any device.
  */
-static VALUE cBus_deviceList (VALUE self)
+static VALUE cBus_getDeviceList (VALUE self)
 {
   struct usb_t *u;
-  libusb_device **list;
+  struct libusb_device **list;
   ssize_t res;
   VALUE device, array;
   int i;
@@ -230,7 +290,7 @@ void cDevice_free (struct device_t *d)
   free (d);
 }
 
-static VALUE cDevice_new (libusb_device *device)
+static VALUE cDevice_new (struct libusb_device *device)
 {
   struct device_t *d;
   VALUE object;
@@ -251,6 +311,7 @@ static VALUE cDevice_new (libusb_device *device)
 /*
  * call-seq:
  *   device.getBusNumber -> bus_number
+ *   device.busNumber -> bus_number
  *
  * Get bus number.
  *
@@ -273,6 +334,7 @@ static VALUE cDevice_getBusNumber (VALUE self)
 /*
  * call-seq:
  *   device.getDeviceAddress -> address
+ *   device.deviceAddress -> address
  *
  * Get device address.
  *
@@ -295,6 +357,7 @@ static VALUE cDevice_getDeviceAddress (VALUE self)
 /*
  * call-seq:
  *   device.getMaxPacketSize(endpoint) -> max_packet_size
+ *   device.maxPacketSize(endpoint) -> max_packet_size
  *
  * Get maximum packet size.
  *
@@ -319,6 +382,7 @@ static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
 /*
  * call-seq:
  *   device.getConfiguration -> configuration
+ *   device.configuration -> configuration
  *
  * Get currently active configuration.
  *
@@ -625,6 +689,967 @@ static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
   return Qnil;
 }
 
+/*
+ * call-seq:
+ *   device.getDeviceDescriptor -> descriptor
+ *   device.deviceDescriptor -> descriptor
+ *
+ * Obtain the USB device descriptor for the device.
+ *
+ * On success, returns the USB descriptor of the device (+RibUSB::DeviceDescriptor+), otherwise raises an error and returns +nil+.
+ */
+static VALUE cDevice_get_device_descriptor (VALUE self, VALUE interface)
+{
+  struct device_t *d;
+  struct libusb_device_descriptor *desc;
+  int res;
+
+  desc = (struct libusb_device_descriptor *) malloc (sizeof (struct libusb_device_descriptor));
+  if (!desc) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for struct libusb_device_descriptor.");
+    return Qnil;
+  }
+
+  Data_Get_Struct (self, struct device_t, d);
+  res = libusb_get_device_descriptor (d->device, desc);
+  if (res < 0) {
+    rb_raise (rb_eRuntimeError, "Failed to retrieve device descriptor: %s.", find_error_text (res));
+    return Qnil;
+  }
+  return cDeviceDescriptor_new (desc);
+}
+
+/*
+ * call-seq:
+ *   device.getStringDescriptorASCII(index) -> desc
+ *   device.stringDescriptorASCII(index) -> desc
+ *
+ * - +index+ is a +FixNum+ specifying the index of the descriptor string.
+ *
+ * Retrieve an ASCII descriptor string from the device.
+ *
+ * On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an error and returns +nil+.
+ */
+static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
+{
+  struct device_t *d;
+  int res;
+  char c[256];
+
+  Data_Get_Struct (self, struct device_t, d);
+  if (d->handle == NULL) {
+    res = libusb_open (d->device, &(d->handle));
+    if (res < 0) {
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      return Qnil;
+    }
+  }
+  res = libusb_get_string_descriptor_ascii (d->handle, NUM2INT(index), c, sizeof (c));
+  if (res < 0) {
+    rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", find_error_text (res));
+    return Qnil;
+  }
+  return rb_str_new(c, res);
+}
+
+/*
+ * call-seq:
+ *   device.getStringDescriptor(index, langid) -> desc
+ *   device.stringDescriptor(index, langid) -> desc
+ *
+ * - +index+ is a +FixNum+ specifying the index of the descriptor string.
+ * - +langid+ is a +FixNum+ specifying the ID of the language to be retrieved
+ *
+ * Retrieve a descriptor string from the device.
+ *
+ * On success, returns the descriptor string of given index in given language (+String+), otherwise raises an error and returns +nil+.
+ */
+static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langid)
+{
+  struct device_t *d;
+  int res;
+  char c[256];
+
+  Data_Get_Struct (self, struct device_t, d);
+  if (d->handle == NULL) {
+    res = libusb_open (d->device, &(d->handle));
+    if (res < 0) {
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      return Qnil;
+    }
+  }
+  res = libusb_get_string_descriptor (d->handle, NUM2INT(index), NUM2INT(langid), c, sizeof (c));
+  if (res < 0) {
+    rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", find_error_text (res));
+    return Qnil;
+  }
+  return rb_str_new(c, res);
+}
+
+
+
+/******************************************************
+ * RibUSB::DeviceDescriptor method definitions        *
+ ******************************************************/
+
+static VALUE cDeviceDescriptor_new (struct libusb_device_descriptor *descriptor)
+{
+  struct device_descriptor_t *d;
+  VALUE object;
+
+  d = (struct device_descriptor_t *) malloc (sizeof (struct device_descriptor_t));
+  if (!d) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::DeviceDescriptor object.");
+    return Qnil;
+  }
+  d->descriptor = descriptor;
+  object = Data_Wrap_Struct (rb_cDeviceDescriptor, NULL, free, d);
+  rb_obj_call_init (object, 0, 0);
+  return object;
+}
+
+/*
+ * call-seq:
+ *   descriptor.bLength -> bLength
+ *
+ * Get the size in bytes of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bLength (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bLength);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDescriptorType -> bDescriptorType
+ *
+ * Get the type of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bDescriptorType (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDescriptorType);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bcdUSB -> bcdUSB
+ *
+ * Get the USB specification release number in binary-coded decimal.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bcdUSB (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bcdUSB);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDeviceClass -> bDeviceClass
+ *
+ * Get the USB class code.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bDeviceClass (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDeviceClass);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDeviceSubClass -> bDeviceSubClass
+ *
+ * Get the USB subclass code.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bDeviceSubClass (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDeviceSubClass);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDeviceProtocol -> bDeviceProtocol
+ *
+ * Get the USB protocol code.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bDeviceProtocol (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDeviceProtocol);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bMaxPacketSize0 -> bMaxPacketSize0
+ *
+ * Get the maximum packet size for endpoint 0.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bMaxPacketSize0 (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bMaxPacketSize0);
+}
+
+/*
+ * call-seq:
+ *   descriptor.idVendor -> idVendor
+ *
+ * Get the vendor ID.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_idVendor (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->idVendor);
+}
+
+/*
+ * call-seq:
+ *   descriptor.idProduct -> idProduct
+ *
+ * Get the product ID.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_idProduct (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->idProduct);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bcdDevice -> bcdDevice
+ *
+ * Get the device release number in binary-coded decimal.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bcdDevice (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bcdDevice);
+}
+
+/*
+ * call-seq:
+ *   descriptor.iManufacturer -> iManufacturer
+ *
+ * Get the index of the manufacturer string.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_iManufacturer (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->iManufacturer);
+}
+
+/*
+ * call-seq:
+ *   descriptor.iProduct -> iProduct
+ *
+ * Get the index of the product string.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_iProduct (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->iProduct);
+}
+
+/*
+ * call-seq:
+ *   descriptor.iSerialNumber -> iSerialNumber
+ *
+ * Get the index of the serial number string.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_iSerialNumber (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->iSerialNumber);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bNumConfigurations -> bNumConfigurations
+ *
+ * Get the number of configurations of the device.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cDeviceDescriptor_bNumConfigurations (VALUE self)
+{
+  struct device_descriptor_t *d;
+
+  Data_Get_Struct (self, struct device_descriptor_t, d);
+  return INT2NUM(d->descriptor->bNumConfigurations);
+}
+
+
+
+/******************************************************
+ * RibUSB::ConfigDescriptor method definitions        *
+ ******************************************************/
+
+void cConfigDescriptor_free (struct config_descriptor_t *c)
+{
+  libusb_free_config_descriptor (c->descriptor);
+
+  free (c);
+}
+
+static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
+{
+  struct config_descriptor_t *d;
+  VALUE object;
+
+  d = (struct config_descriptor_t *) malloc (sizeof (struct config_descriptor_t));
+  if (!d) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::ConfigDescriptor object.");
+    return Qnil;
+  }
+  d->descriptor = descriptor;
+  object = Data_Wrap_Struct (rb_cConfigDescriptor, NULL, cConfigDescriptor_free, d);
+  rb_obj_call_init (object, 0, 0);
+  return object;
+}
+
+/*
+ * call-seq:
+ *   descriptor.bLength -> bLength
+ *
+ * Get the size in bytes of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_bLength (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->bLength);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDescriptorType -> bDescriptorType
+ *
+ * Get the type of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_bDescriptorType (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDescriptorType);
+}
+
+/*
+ * call-seq:
+ *   descriptor.wTotalLength -> wTotalLength
+ *
+ * Get the total length of the data of this configuration.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_wTotalLength (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->wTotalLength);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bNumInterfaces -> bNumInterfaces
+ *
+ * Get the number of interfaces available in this configuration.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_bNumInterfaces (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->bNumInterfaces);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bConfigurationValue -> bConfigurationValue
+ *
+ * Get the configuration number.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_bConfigurationValue (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->bConfigurationValue);
+}
+
+/*
+ * call-seq:
+ *   descriptor.iConfiguration -> iConfiguration
+ *
+ * Get the index of the configuration string.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_iConfiguration (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->iConfiguration);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bmAttributes -> bmAttributes
+ *
+ * Get the configuration characteristics.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_bmAttributes (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->bmAttributes);
+}
+
+/*
+ * call-seq:
+ *   descriptor.maxPower -> maxPower
+ *
+ * Get the maximum current drawn by the device in this configuration, in units of 2mA.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_maxPower (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return INT2NUM(d->descriptor->MaxPower);
+}
+
+/*
+ * call-seq:
+ *   descriptor.interfaceList -> interfaceList
+ *
+ * Retrieve the list of interfaces in this configuration.
+ *
+ * Returns an array of +RibUSB::Interface+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_interfaceList (VALUE self)
+{
+  struct config_descriptor_t *d;
+  VALUE array;
+  int n_array, i;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+
+  n_array = d->descriptor->bNumInterfaces;
+  array = rb_ary_new2 (n_array);
+
+  for (i = 0; i < n_array; i ++)
+    rb_ary_store (array, i, cInterface_new (&(((struct libusb_interface *)d->descriptor->interface)[i])));
+
+  return array;
+}
+
+/*
+ * call-seq:
+ *   descriptor.extra -> extra
+ *
+ * Get the extra descriptors defined by this configuration, as a string.
+ *
+ * Returns a +String+ and never raises an exception.
+ */
+static VALUE cConfigDescriptor_extra (VALUE self)
+{
+  struct config_descriptor_t *d;
+
+  Data_Get_Struct (self, struct config_descriptor_t, d);
+  return rb_str_new(d->descriptor->extra, d->descriptor->extra_length);
+}
+
+
+
+/******************************************************
+ * RibUSB::Interface method definitions               *
+ ******************************************************/
+
+static VALUE cInterface_new (struct libusb_interface *interface)
+{
+  struct interface_t *i;
+  VALUE object;
+
+  i = (struct interface_t *) malloc (sizeof (struct interface_t));
+  if (!i) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Interface object.");
+    return Qnil;
+  }
+  i->interface = interface;
+  object = Data_Wrap_Struct (rb_cInterface, NULL, free, i);
+  rb_obj_call_init (object, 0, 0);
+  return object;
+}
+
+/*
+ * call-seq:
+ *   interface.altSettingList -> altSettingList
+ *
+ * Retrieve the list of interface descriptors.
+ *
+ * Returns an array of +RibUSB::Interface+ and never raises an exception.
+ */
+static VALUE cInterface_altSettingList (VALUE self)
+{
+  struct interface_t *d;
+  VALUE array;
+  int n_array, i;
+
+  Data_Get_Struct (self, struct interface_t, d);
+
+  n_array = d->interface->num_altsetting;
+  array = rb_ary_new2 (n_array);
+
+  for (i = 0; i < n_array; i ++)
+    rb_ary_store (array, i, cInterfaceDescriptor_new (&(((struct libusb_interface_descriptor *)d->interface->altsetting)[i])));
+
+  return array;
+}
+
+
+
+/******************************************************
+ * RibUSB::InterfaceDescriptor method definitions     *
+ ******************************************************/
+
+static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor)
+{
+  struct interface_descriptor_t *d;
+  VALUE object;
+
+  d = (struct interface_descriptor_t *) malloc (sizeof (struct interface_descriptor_t));
+  if (!d) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::InterfaceDescriptor object.");
+    return Qnil;
+  }
+  d->descriptor = descriptor;
+  object = Data_Wrap_Struct (rb_cInterfaceDescriptor, NULL, free, d);
+  rb_obj_call_init (object, 0, 0);
+  return object;
+}
+
+/*
+ * call-seq:
+ *   descriptor.bLength -> bLength
+ *
+ * Get the size in bytes of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bLength (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bLength);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDescriptorType -> bDescriptorType
+ *
+ * Get the type of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bDescriptorType (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDescriptorType);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bInterfaceNumber -> bInterfaceNumber
+ *
+ * Get the interface number.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bInterfaceNumber (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bInterfaceNumber);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bAlternateSetting -> bAlternateSetting
+ *
+ * Get the number of the active alternate setting.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bAlternateSetting (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bAlternateSetting);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bNumEndpoints -> bNumEndpoints
+ *
+ * Get the number of endpoints available in this interface.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bNumEndpoints (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bNumEndpoints);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bInterfaceClass -> bInterfaceClass
+ *
+ * Get the interface class code.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bInterfaceClass (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bInterfaceClass);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bInterfaceSubClass -> bInterfaceSubClass
+ *
+ * Get the interface subclass code.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bInterfaceSubClass (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bInterfaceSubClass);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bInterfaceProtocol -> bInterfaceProtocol
+ *
+ * Get the interface protocol code.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_bInterfaceProtocol (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->bInterfaceProtocol);
+}
+
+/*
+ * call-seq:
+ *   descriptor.iInterface -> iInterface
+ *
+ * Get the index of interface string.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_iInterface (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return INT2NUM(d->descriptor->iInterface);
+}
+
+/*
+ * call-seq:
+ *   descriptor.endpointList -> endpointList
+ *
+ * Retrieve the list of endpoints in this interface.
+ *
+ * Returns an array of +RibUSB::Endpoint+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_endpointList (VALUE self)
+{
+  struct interface_descriptor_t *d;
+  VALUE array;
+  int n_array, i;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+
+  n_array = d->descriptor->bNumEndpoints;
+  array = rb_ary_new2 (n_array);
+
+  for (i = 0; i < n_array; i ++)
+    rb_ary_store (array, i, cEndpointDescriptor_new (&(((struct libusb_endpoint_descriptor *)d->descriptor->endpoint)[i])));
+
+  return array;
+}
+
+/*
+ * call-seq:
+ *   descriptor.extra -> extra
+ *
+ * Get the extra descriptors defined by this interface, as a string.
+ *
+ * Returns a +String+ and never raises an exception.
+ */
+static VALUE cInterfaceDescriptor_extra (VALUE self)
+{
+  struct interface_descriptor_t *d;
+
+  Data_Get_Struct (self, struct interface_descriptor_t, d);
+  return rb_str_new(d->descriptor->extra, d->descriptor->extra_length);
+}
+
+
+
+/******************************************************
+ * RibUSB::EndpointDescriptor method definitions      *
+ ******************************************************/
+
+static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descriptor)
+{
+  struct endpoint_descriptor_t *d;
+  VALUE object;
+
+  d = (struct endpoint_descriptor_t *) malloc (sizeof (struct endpoint_descriptor_t));
+  if (!d) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::EndpointDescriptor object.");
+    return Qnil;
+  }
+  d->descriptor = descriptor;
+  object = Data_Wrap_Struct (rb_cEndpointDescriptor, NULL, free, d);
+  rb_obj_call_init (object, 0, 0);
+  return object;
+}
+
+/*
+ * call-seq:
+ *   descriptor.bLength -> bLength
+ *
+ * Get the size in bytes of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bLength (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bLength);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bDescriptorType -> bDescriptorType
+ *
+ * Get the type of the descriptor.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bDescriptorType (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bDescriptorType);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bEndpointAddress -> bEndpointAddress
+ *
+ * Get the endpoint address.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bEndpointAddress (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bEndpointAddress);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bmAttributes -> bmAttributes
+ *
+ * Get the endpoint attributes.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bmAttributes (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bmAttributes);
+}
+
+/*
+ * call-seq:
+ *   descriptor.wMaxPacketSize -> wMaxPacketSize
+ *
+ * Get the maximum packet size of the endpoint.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_wMaxPacketSize (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->wMaxPacketSize);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bInterval -> bInterval
+ *
+ * Get the polling interval for data transfers on this endpoint.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bInterval (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bInterval);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bRefresh -> bRefresh
+ *
+ * Get the rate of synchronization feedback for audio devices.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bRefresh (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bRefresh);
+}
+
+/*
+ * call-seq:
+ *   descriptor.bSynchAddress -> bSynchAddress
+ *
+ * Get the address of the synchronization endpoint for audio devices.
+ *
+ * Returns a +FixNum+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_bSynchAddress (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return INT2NUM(d->descriptor->bSynchAddress);
+}
+
+/*
+ * call-seq:
+ *   descriptor.extra -> extra
+ *
+ * Get the extra descriptors defined by this endpoint, as a string.
+ *
+ * Returns a +String+ and never raises an exception.
+ */
+static VALUE cEndpointDescriptor_extra (VALUE self)
+{
+  struct endpoint_descriptor_t *d;
+
+  Data_Get_Struct (self, struct endpoint_descriptor_t, d);
+  return rb_str_new(d->descriptor->extra, d->descriptor->extra_length);
+}
+
 
 
 /******************************************************
@@ -636,23 +1661,24 @@ void Init_ribusb()
 
   rb_define_singleton_method (rb_mRibUSB, "findError", mRibUSB_findError, 1);
 
-  /* RibUSB::Bus -- a class for _libusb_ bus handling sessions */
+  /* RibUSB::Bus -- a class for _libusb_ bus-handling sessions */
   rb_cBus = rb_define_class_under (rb_mRibUSB, "Bus", rb_cObject);
   rb_define_singleton_method (rb_cBus, "new", cBus_new, 0);
   rb_define_method (rb_cBus, "setDebug", cBus_setDebug, 1);
   rb_define_alias (rb_cBus, "debug=", "setDebug");
-  rb_define_method (rb_cBus, "deviceList", cBus_deviceList, 0);
+  rb_define_method (rb_cBus, "getDeviceList", cBus_getDeviceList, 0);
+  rb_define_alias (rb_cBus, "deviceList", "getDeviceList");
 
   /* RibUSB::Device -- a class for individual USB devices accessed through _libusb_ */
   rb_cDevice = rb_define_class_under (rb_mRibUSB, "Device", rb_cObject);
   rb_define_method (rb_cDevice, "getBusNumber", cDevice_getBusNumber, 0);
-  rb_define_method (rb_cDevice, "busNumber", cDevice_getBusNumber, 0);
+  rb_define_alias (rb_cDevice, "busNumber", "getBusNumber");
   rb_define_method (rb_cDevice, "getDeviceAddress", cDevice_getDeviceAddress, 0);
-  rb_define_method (rb_cDevice, "deviceAddress", cDevice_getDeviceAddress, 0);
+  rb_define_alias (rb_cDevice, "deviceAddress", "getDeviceAddress");
   rb_define_method (rb_cDevice, "getMaxPacketSize", cDevice_getMaxPacketSize, 1);
-  rb_define_method (rb_cDevice, "maxPacketSize", cDevice_getMaxPacketSize, 1);
+  rb_define_alias (rb_cDevice, "maxPacketSize", "getMaxPacketSize");
   rb_define_method (rb_cDevice, "getConfiguration", cDevice_getConfiguration, 0);
-  rb_define_method (rb_cDevice, "configuration", cDevice_getConfiguration, 0);
+  rb_define_alias (rb_cDevice, "configuration", "getConfiguration");
   rb_define_method (rb_cDevice, "setConfiguration", cDevice_setConfiguration, 1);
   rb_define_alias (rb_cDevice, "configuration=", "setConfiguration");
   rb_define_method (rb_cDevice, "claimInterface", cDevice_claimInterface, 1);
@@ -663,4 +1689,70 @@ void Init_ribusb()
   rb_define_method (rb_cDevice, "kernelDriverActive?", cDevice_kernelDriverActiveQ, 1);
   rb_define_method (rb_cDevice, "detachKernelDriver", cDevice_detach_kernel_driver, 1);
   rb_define_method (rb_cDevice, "attachKernelDriver", cDevice_attach_kernel_driver, 1);
+  rb_define_method (rb_cDevice, "getDeviceDescriptor", cDevice_get_device_descriptor, 0);
+  rb_define_alias (rb_cDevice, "deviceDescriptor", "getDeviceDescriptor");
+  rb_define_method (rb_cDevice, "getStringDescriptorASCII", cDevice_get_string_descriptor_ascii, 1);
+  rb_define_alias (rb_cDevice, "stringDescriptorASCII", "getStringDescriptorASCII");
+  rb_define_method (rb_cDevice, "getStringDescriptor", cDevice_get_string_descriptor, 2);
+  rb_define_alias (rb_cDevice, "stringDescriptor", "getStringDescriptor");
+
+  /* RibUSB::DeviceDescriptor -- a class for USB device descriptors */
+  rb_cDeviceDescriptor = rb_define_class_under (rb_mRibUSB, "DeviceDescriptor", rb_cObject);
+  rb_define_method (rb_cDeviceDescriptor, "bLength", cDeviceDescriptor_bLength, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bDescriptorType", cDeviceDescriptor_bDescriptorType, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bcdUSB", cDeviceDescriptor_bcdUSB, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bDeviceClass", cDeviceDescriptor_bDeviceClass, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bDeviceSubClass", cDeviceDescriptor_bDeviceSubClass, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bDeviceProtocol", cDeviceDescriptor_bDeviceProtocol, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bMaxPacketSize0", cDeviceDescriptor_bMaxPacketSize0, 0);
+  rb_define_method (rb_cDeviceDescriptor, "idVendor", cDeviceDescriptor_idVendor, 0);
+  rb_define_method (rb_cDeviceDescriptor, "idProduct", cDeviceDescriptor_idProduct, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bcdDevice", cDeviceDescriptor_bcdDevice, 0);
+  rb_define_method (rb_cDeviceDescriptor, "iManufacturer", cDeviceDescriptor_iManufacturer, 0);
+  rb_define_method (rb_cDeviceDescriptor, "iProduct", cDeviceDescriptor_iProduct, 0);
+  rb_define_method (rb_cDeviceDescriptor, "iSerialNumber", cDeviceDescriptor_iSerialNumber, 0);
+  rb_define_method (rb_cDeviceDescriptor, "bNumConfigurations", cDeviceDescriptor_bNumConfigurations, 0);
+
+  /* RibUSB::ConfigDescriptor -- a class for USB config descriptors */
+  rb_cConfigDescriptor = rb_define_class_under (rb_mRibUSB, "ConfigDescriptor", rb_cObject);
+  rb_define_method (rb_cConfigDescriptor, "bLength", cConfigDescriptor_bLength, 0);
+  rb_define_method (rb_cConfigDescriptor, "bDescriptorType", cConfigDescriptor_bDescriptorType, 0);
+  rb_define_method (rb_cConfigDescriptor, "wTotalLength", cConfigDescriptor_wTotalLength, 0);
+  rb_define_method (rb_cConfigDescriptor, "bNumInterfaces", cConfigDescriptor_bNumInterfaces, 0);
+  rb_define_method (rb_cConfigDescriptor, "bConfigurationValue", cConfigDescriptor_bConfigurationValue, 0);
+  rb_define_method (rb_cConfigDescriptor, "iConfiguration", cConfigDescriptor_iConfiguration, 0);
+  rb_define_method (rb_cConfigDescriptor, "bmAttributes", cConfigDescriptor_bmAttributes, 0);
+  rb_define_method (rb_cConfigDescriptor, "maxPower", cConfigDescriptor_maxPower, 0);
+  rb_define_method (rb_cConfigDescriptor, "interfaceList", cConfigDescriptor_interfaceList, 0);
+  rb_define_method (rb_cConfigDescriptor, "extra", cConfigDescriptor_extra, 0);
+
+  /* RibUSB::Interface -- a class for USB interfaces */
+  rb_cInterface = rb_define_class_under (rb_mRibUSB, "Interface", rb_cObject);
+  rb_define_method (rb_cInterface, "altSettingList", cInterface_altSettingList, 0);
+
+  /* RibUSB::InterfaceDescriptor -- a class for USB interface descriptors */
+  rb_cInterfaceDescriptor = rb_define_class_under (rb_mRibUSB, "InterfaceDescriptor", rb_cObject);
+  rb_define_method (rb_cInterfaceDescriptor, "bLength", cInterfaceDescriptor_bLength, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bDescriptorType", cInterfaceDescriptor_bDescriptorType, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceNumber", cInterfaceDescriptor_bInterfaceNumber, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bAlternateSetting", cInterfaceDescriptor_bAlternateSetting, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bNumEndpoints", cInterfaceDescriptor_bNumEndpoints, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceClass", cInterfaceDescriptor_bInterfaceClass, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceSubClass", cInterfaceDescriptor_bInterfaceSubClass, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceProtocol", cInterfaceDescriptor_bInterfaceProtocol, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "iInterface", cInterfaceDescriptor_iInterface, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "endpointList", cInterfaceDescriptor_endpointList, 0);
+  rb_define_method (rb_cInterfaceDescriptor, "extra", cInterfaceDescriptor_extra, 0);
+
+  /* RibUSB::EndpointDescriptor -- a class for USB endpoint descriptors */
+  rb_cEndpointDescriptor = rb_define_class_under (rb_mRibUSB, "EndpointDescriptor", rb_cObject);
+  rb_define_method (rb_cEndpointDescriptor, "bLength", cEndpointDescriptor_bLength, 0);
+  rb_define_method (rb_cEndpointDescriptor, "bDescriptorType", cEndpointDescriptor_bDescriptorType, 0);
+  rb_define_method (rb_cEndpointDescriptor, "bEndpointAddress", cEndpointDescriptor_bEndpointAddress, 0);
+  rb_define_method (rb_cEndpointDescriptor, "bmAttributes", cEndpointDescriptor_bmAttributes, 0);
+  rb_define_method (rb_cEndpointDescriptor, "wMaxPacketSize", cEndpointDescriptor_wMaxPacketSize, 0);
+  rb_define_method (rb_cEndpointDescriptor, "bInterval", cEndpointDescriptor_bInterval, 0);
+  rb_define_method (rb_cEndpointDescriptor, "bRefresh", cEndpointDescriptor_bRefresh, 0);
+  rb_define_method (rb_cEndpointDescriptor, "bSynchAddress", cEndpointDescriptor_bSynchAddress, 0);
+  rb_define_method (rb_cEndpointDescriptor, "extra", cEndpointDescriptor_extra, 0);
 }
