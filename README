@@ -1,0 +1,27 @@
+This is RibUSB, a Ruby extension giving full access to the libusb library, API version 1.0.
+
+
+
+INSTALLATION
+
+In order to install RibUSB from source code, you need a working Ruby installation, including its
+header files and build utilities (on Debian and Ubuntu systems, part the ruby-dev package). Also,
+you need a C compiler (usually gcc), and make. The libusb-1.0 library along with its header files
+must naturally be present (on Debian and Ubuntu system, install the libusb-1.0-0-dev package).
+
+To install, execute these commands to configure RibUSB and to build it:
+
+  sh extconf.rb
+  make
+
+Unless you have built and installed your own private copy of Ruby (as non-root user), become
+super user and install the extension:
+
+  make install
+
+From now on, you can use the RibUSB extension from any instance of Ruby on that computer by
+"requiring" it from within your Ruby program:
+
+  require "ribusb"
+
+Please browse the documentation on the website for example uses of RibUSB. Have fun.
