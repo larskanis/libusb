@@ -823,7 +823,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE bmRequestType, VALUE bRe
  *
  * Perform a synchronous (blocking) bulk transfer.
  *
- * Returns an array of two +FixNum+s.
+ * Returns an array of two <tt>FixNum</tt>s.
  * Regardless of any error, +count+ contains the actual number of bytes transferred. This is relevant as the transfer might have partially succeeded.
  * On success, +status+ contains <tt>0</tt>, otherwise an error is raised and +status+ contains the _libusb_ error code.
  */
@@ -861,7 +861,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE endpoint, VALUE data, VALUE
  *
  * Perform a synchronous (blocking) interrupt transfer.
  *
- * Returns an array of two +FixNum+s.
+ * Returns an array of two <tt>FixNum</tt>s.
  * Regardless of any error, +count+ contains the actual number of bytes transferred. This is relevant as the transfer might have partially succeeded.
  * On success, +status+ contains <tt>0</tt>, otherwise an error is raised and +status+ contains the _libusb_ error code.
  */
