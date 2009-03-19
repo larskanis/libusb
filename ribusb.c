@@ -37,6 +37,7 @@ static VALUE rb_cConfigDescriptor;
 static VALUE rb_cInterface;
 static VALUE rb_cInterfaceDescriptor;
 static VALUE rb_cEndpointDescriptor;
+static VALUE rb_cTransfer;
 
 
 
@@ -92,6 +93,30 @@ struct interface_descriptor_t {
  */
 struct endpoint_descriptor_t {
   struct libusb_endpoint_descriptor *descriptor;
+};
+
+/*
+ * Opaque structure for the RibUSB::Transfer class
+ */
+struct transfer_t {
+  struct libusb_transfer *transfer;
+  void *buffer;
+};
+
+/* XXXXX remove? */
+/*
+ * Opaque structure for the RibUSB::ControlSetup class
+ */
+struct control_setup_t {
+  struct libusb_control_setup *setup;
+};
+
+/* XXXXX remove? */
+/*
+ * Opaque structure for the RibUSB::IsoPacketDescriptor class
+ */
+struct iso_packet_descriptor_t {
+  struct libusb_iso_packet_descriptor *descriptor;
 };
 
 
@@ -171,7 +196,7 @@ char *find_error_text (int number)
  * - +name+ is a +String+ containing the name of the error as used in the C header file <tt>libusb.h</tt>.
  * - +text+ is a verbose description of the error, in English, using lower-case letters and no punctuation.
  *
- * On success (if the error number is valid), returns an array of two strings, otherwise raises an error and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
+ * On success (if the error number is valid), returns an array of two strings, otherwise raises an exception and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
  */
 static VALUE mRibUSB_findError (VALUE self, VALUE number)
 {
@@ -212,7 +237,7 @@ void cBus_free (struct usb_t *u)
  *
  * Effectively creates a _libusb_ context (the context itself being stored in an opaque structure). The memory associated with the bus is automatically freed on garbage collection when possible.
  *
- * If successful, returns the bus object, otherwise raises an error and returns either +nil+ or the _libusb_ error code (+FixNum+).
+ * If successful, returns the bus object, otherwise raises an exception and returns either +nil+ or the _libusb_ error code (+FixNum+).
  */
 static VALUE cBus_new (VALUE self)
 {
@@ -244,7 +269,7 @@ static VALUE cBus_new (VALUE self)
  *
  * Set the debug level of the current _libusb_ context.
  *
- * - +level+ is a +FixNum+ with a sensible range from 0 to 4.
+ * - +level+ is a +FixNum+ with a sensible range from 0 to 3.
  *
  * Returns +nil+ and never raises an exception.
  */
@@ -264,7 +289,7 @@ static VALUE cBus_setDebug (VALUE self, VALUE level)
  *
  * Obtain the list of devices currently attached to the USB system.
  *
- * On success, returns an array of RibUSB::Device with one entry for each device, otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns an array of RibUSB::Device with one entry for each device, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  *
  * Note: this list provides no information whatsoever on whether or not any given device can be accessed. Insufficient privilege and use by other software can prevent access to any device.
  */
@@ -338,7 +363,7 @@ static VALUE cDevice_new (struct libusb_device *device)
  *
  * Get bus number.
  *
- * On success, returns the USB bus number (+FixNum+) the device is connected to, otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the USB bus number (+FixNum+) the device is connected to, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_getBusNumber (VALUE self)
 {
@@ -359,7 +384,7 @@ static VALUE cDevice_getBusNumber (VALUE self)
  *
  * Get device address.
  *
- * On success, returns the USB address on the bus (+FixNum+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the USB address on the bus (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_getDeviceAddress (VALUE self)
 {
@@ -382,7 +407,7 @@ static VALUE cDevice_getDeviceAddress (VALUE self)
  *
  * - +endpoint+ is a +FixNum+ containing the endpoint number.
  *
- * On success, returns the maximum packet size of the endpoint (+FixNum+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the maximum packet size of the endpoint (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
 {
@@ -403,7 +428,7 @@ static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
  *
  * Get currently active configuration.
  *
- * On success, returns the bConfigurationValue of the active configuration of the device (+FixNum+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the bConfigurationValue of the active configuration of the device (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_getConfiguration (VALUE self)
 {
@@ -434,7 +459,7 @@ static VALUE cDevice_getConfiguration (VALUE self)
  *
  * - +configuration+ is a +FixNum+ containing the configuration number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
 {
@@ -463,7 +488,7 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
  *
  * - +interface+ is a +FixNum+ containing the interface number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
 {
@@ -491,7 +516,7 @@ static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
  *
  * - +interface+ is a +FixNum+ containing the interface number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
 {
@@ -521,7 +546,7 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
  * - +interface+ is a +FixNum+ containing the interface number.
  * - +setting+ is a +FixNum+ containing the alternate setting number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE setting)
 {
@@ -550,7 +575,7 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
  *
  * - +endpoint+ is a +FixNum+ containing the endpoint number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
 {
@@ -576,7 +601,7 @@ static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
  *
  * Reset device.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_resetDevice (VALUE self)
 {
@@ -605,7 +630,7 @@ static VALUE cDevice_resetDevice (VALUE self)
  *
  * - +interface+ is a +FixNum+ containing the interface number.
  *
- * On success, returns whether or not the device interface is claimed by a kernel driver (+true+ or +false+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns whether or not the device interface is claimed by a kernel driver (+true+ or +false+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
 {
@@ -638,7 +663,7 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
  *
  * - +interface+ is a +FixNum+ containing the interface number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_detach_kernel_driver (VALUE self, VALUE interface)
 {
@@ -667,7 +692,7 @@ static VALUE cDevice_detach_kernel_driver (VALUE self, VALUE interface)
  *
  * - +interface+ is a +FixNum+ containing the interface number.
  *
- * Returns +nil+ in any case, and raises an error on failure.
+ * Returns +nil+ in any case, and raises an exception on failure.
  */
 static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
 {
@@ -695,7 +720,7 @@ static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
  *
  * Obtain the USB device descriptor for the device.
  *
- * On success, returns the USB descriptor of the device (+RibUSB::DeviceDescriptor+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the USB descriptor of the device (+RibUSB::DeviceDescriptor+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_get_device_descriptor (VALUE self, VALUE interface)
 {
@@ -725,7 +750,7 @@ static VALUE cDevice_get_device_descriptor (VALUE self, VALUE interface)
  *
  * Retrieve an ASCII descriptor string from the device.
  *
- * On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
 {
@@ -757,7 +782,7 @@ static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
  *
  * Retrieve a descriptor string from the device.
  *
- * On success, returns the descriptor string of given index in given language (+String+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the descriptor string of given index in given language (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langid)
 {
@@ -792,7 +817,7 @@ static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langi
  *
  * Perform a synchronous (blocking) control transfer.
  *
- * On success, returns the number of data bytes transferred (+FixNum+), otherwise raises an error and returns the _libusb_ error code (+FixNum+).
+ * On success, returns the number of data bytes transferred (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
 static VALUE cDevice_controlTransfer (VALUE self, VALUE bmRequestType, VALUE bRequest, VALUE wValue, VALUE wIndex, VALUE data, VALUE timeout)
 {
@@ -843,8 +868,10 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE endpoint, VALUE data, VALUE
     }
   }
   res = libusb_bulk_transfer (d->handle, NUM2INT(endpoint), RSTRING(data)->ptr, RSTRING(data)->len, &nxfer, NUM2INT(timeout));
-  if (res < 0)
+  if (res < 0) {
     rb_raise (rb_eRuntimeError, "Synchronous bulk transfer failed: %s.", find_error_text (res));
+    return INT2NUM(res);
+  }
   array = rb_ary_new2 (2);
   rb_ary_store (array, 0, INT2NUM(nxfer));
   rb_ary_store (array, 1, INT2NUM(res));
@@ -881,8 +908,10 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE endpoint, VALUE data, 
     }
   }
   res = libusb_interrupt_transfer (d->handle, NUM2INT(endpoint), RSTRING(data)->ptr, RSTRING(data)->len, &nxfer, NUM2INT(timeout));
-  if (res < 0)
+  if (res < 0) {
     rb_raise (rb_eRuntimeError, "Synchronous interrupt transfer failed: %s.", find_error_text (res));
+    return INT2NUM(res);
+  }
   array = rb_ary_new2 (2);
   rb_ary_store (array, 0, INT2NUM(nxfer));
   rb_ary_store (array, 1, INT2NUM(res));
@@ -1756,6 +1785,133 @@ static VALUE cEndpointDescriptor_extra (VALUE self)
 
 
 /******************************************************
+ * RibUSB::Transfer method definitions                *
+ ******************************************************/
+
+void cTransfer_free (struct transfer_t *t)
+{
+  libusb_free_transfer (t->transfer);
+
+  free (t);
+}
+
+/*
+ * call-seq:
+ *   RibUSB::Transfer.new(iso_packets) -> transfer
+ *
+ * - +iso_packets+ is a +FixNum+ specifying the number of isochronous packet descriptors
+ *
+ * Create an instance of RibUSB::Transfer.
+ *
+ * Effectively creates a _libusb_ transfer (the transfer itself being stored in an opaque structure). The memory associated with the transfer is automatically freed on garbage collection when possible.
+ *
+ * If successful, returns the transfer object, otherwise raises an exception and returns +nil+.
+ */
+static VALUE cTransfer_new (VALUE self, VALUE iso_packets)
+{
+  struct transfer_t *t;
+  VALUE object;
+
+  t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
+  if (!t) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
+    return Qnil;
+  }
+  t->transfer = libusb_alloc_transfer (iso_packets);
+  t->buffer = NULL;
+  if (!(t->transfer)) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate libusb transfer.");
+    free (t);
+    return Qnil;
+  }
+  object = Data_Wrap_Struct (rb_cTransfer, NULL, cTransfer_free, t);
+  rb_obj_call_init (object, 0, 0);
+  return object;
+}
+
+/*
+ * call-seq:
+ *   transfer.submit -> result
+ *
+ * Asynchronously submit a previously defined transfer.
+ *
+ * If successful, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+ */
+static VALUE cTransfer_submit (VALUE self)
+{
+  struct transfer_t *t;
+  int res;
+
+  Data_Get_Struct (self, struct transfer_t, t);
+  res = libusb_submit_transfer (t->transfer);
+  if (res < 0) {
+    rb_raise (rb_eRuntimeError, "Failed to submit asynchronous transfer: %s.", find_error_text (res));
+    return INT2NUM(res);
+  }
+  return Qnil;
+}
+
+/*
+ * call-seq:
+ *   transfer.cancel -> result
+ *
+ * Asynchronously cancel a previously submitted transfer.
+ *
+ * If successful, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+ */
+static VALUE cTransfer_cancel (VALUE self)
+{
+  struct transfer_t *t;
+  int res;
+
+  Data_Get_Struct (self, struct transfer_t, t);
+  res = libusb_cancel_transfer (t->transfer);
+  if (res < 0) {
+    rb_raise (rb_eRuntimeError, "Failed to cancel asynchronous transfer: %s.", find_error_text (res));
+    return INT2NUM(res);
+  }
+  return Qnil;
+}
+
+/*
+ * call-seq:
+ *   transfer.fillControlTransfer(device, bmRequestType, bRequest, wValue, wIndex, data, timeout) {} -> nil
+ *
+ * - +device+ is the +RibUSB::Device+ the transfer is intended for
+ * - +bmRequestType+ is a +FixNum+ specifying the 8-bit request type field of the setup packet (which also contains the direction bit)
+ * - +bRequest+ is a +FixNum+ specifying the 8-bit request field of the setup packet
+ * - +wValue+ is a +FixNum+ specifying the 16-bit value field of the setup packet
+ * - +wIndex+ is a +FixNum+ specifying the 16-bit index field of the setup packet
+ * - +data+ is a +String+ acting as a source for output transfers and as a buffer for input transfers; its size determines the number of bytes to be transferred (wLength)
+ * - +timeout+ is a +FixNum+ specifying the timeout for this transfer in milliseconds
+ *
+ * Populate the entries required for a control transfer.
+ *
+ * Returns +nil+ in any case, and raises an exception on failure.
+ */
+static VALUE cTransfer_fillControlTransfer (VALUE self, VALUE device, VALUE bmRequestType, VALUE bRequest, VALUE wValue, VALUE wIndex, VALUE data, VALUE timeout)
+{
+  struct transfer_t *t;
+  struct device_t *d;
+  int res;
+
+  Data_Get_Struct (self, struct transfer_t, t);
+  Data_Get_Struct (device, struct device_t, d);
+  t->buffer = (struct transfer_t *) realloc (t->buffer, 8 + RSTRING(data)->len);
+  if (!(t->buffer)) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for control transfer buffer.");
+    return Qnil;
+  }
+  memcpy (t->buffer + 8, RSTRING(data)->ptr, RSTRING(data)->len);
+
+  libusb_fill_control_setup (t->buffer, NUM2INT(bmRequestType), NUM2INT(bRequest), NUM2INT(wValue), NUM2INT(wIndex), RSTRING(data)->len);
+  libusb_fill_control_transfer (t->transfer, d->handle, t->buffer, NULL, NULL, NUM2INT(timeout)); /* XXX callback */
+  return Qnil;
+}
+
+
+
+/******************************************************
  * RibUSB -- an interface to _libusb_, API version 1.0
  ******************************************************/
 void Init_ribusb()
@@ -1861,4 +2017,11 @@ void Init_ribusb()
   rb_define_method (rb_cEndpointDescriptor, "bRefresh", cEndpointDescriptor_bRefresh, 0);
   rb_define_method (rb_cEndpointDescriptor, "bSynchAddress", cEndpointDescriptor_bSynchAddress, 0);
   rb_define_method (rb_cEndpointDescriptor, "extra", cEndpointDescriptor_extra, 0);
+
+  /* RibUSB::Transfer -- a class for USB transfers */
+  rb_cTransfer = rb_define_class_under (rb_mRibUSB, "Transfer", rb_cObject);
+  rb_define_singleton_method (rb_cTransfer, "new", cTransfer_new, 1);
+  rb_define_method (rb_cTransfer, "submit", cTransfer_submit, 0);
+  rb_define_method (rb_cTransfer, "cancel", cTransfer_cancel, 0);
+  rb_define_method (rb_cTransfer, "fillControlTransfer", cTransfer_fillControlTransfer, 7);
 }
