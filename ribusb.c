@@ -29,15 +29,15 @@
  * global variables                                   *
  ******************************************************/
 
-static VALUE rb_mRibUSB;
-static VALUE rb_cBus;
-static VALUE rb_cDevice;
-static VALUE rb_cDeviceDescriptor;
-static VALUE rb_cConfigDescriptor;
-static VALUE rb_cInterface;
-static VALUE rb_cInterfaceDescriptor;
-static VALUE rb_cEndpointDescriptor;
-static VALUE rb_cTransfer;
+static VALUE RibUSB;
+static VALUE Bus;
+static VALUE Device;
+static VALUE DeviceDescriptor;
+static VALUE ConfigDescriptor;
+static VALUE Interface;
+static VALUE InterfaceDescriptor;
+static VALUE EndpointDescriptor;
+static VALUE Transfer;
 
 
 
@@ -101,22 +101,7 @@ struct endpoint_descriptor_t {
 struct transfer_t {
   struct libusb_transfer *transfer;
   void *buffer;
-};
-
-/* XXXXX remove? */
-/*
- * Opaque structure for the RibUSB::ControlSetup class
- */
-struct control_setup_t {
-  struct libusb_control_setup *setup;
-};
-
-/* XXXXX remove? */
-/*
- * Opaque structure for the RibUSB::IsoPacketDescriptor class
- */
-struct iso_packet_descriptor_t {
-  struct libusb_iso_packet_descriptor *descriptor;
+  VALUE cb_data;
 };
 
 
@@ -130,6 +115,32 @@ static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
 static VALUE cInterface_new (struct libusb_interface *interface);
 static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor);
 static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descriptor);
+
+
+
+/******************************************************
+ * internal functions                                 *
+ ******************************************************/
+
+void callback_wrapper (struct libusb_transfer *transfer)
+{
+  VALUE *data;
+
+  data = (VALUE *) transfer->user_data;
+  rb_funcall (*data, rb_intern("call"), 0);
+}
+
+VALUE get_opt (VALUE hash, char *key, int mandatory)
+{
+  VALUE opt;
+
+  opt = rb_hash_lookup (hash, ID2SYM(rb_intern (key)));
+  if (mandatory && (opt == Qnil)) {
+    rb_raise (rb_eRuntimeError, "Option :%s not specified.", key);
+    return Qnil;
+  }
+  return opt;
+}
 
 
 
@@ -257,7 +268,7 @@ static VALUE cBus_new (VALUE self)
     return Qnil;
   }
   u->context = context;
-  object = Data_Wrap_Struct (rb_cBus, NULL, cBus_free, u);
+  object = Data_Wrap_Struct (Bus, NULL, cBus_free, u);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -351,7 +362,7 @@ static VALUE cDevice_new (struct libusb_device *device)
   libusb_ref_device (device);
   d->device = device;
   d->handle = NULL;
-  object = Data_Wrap_Struct (rb_cDevice, NULL, cDevice_free, d);
+  object = Data_Wrap_Struct (Device, NULL, cDevice_free, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -806,22 +817,42 @@ static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langi
 
 /*
  * call-seq:
- *   device.controlTransfer(bmRequestType, bRequest, wValue, wIndex, data, timeout) -> count
+ *   device.controlTransfer(args) -> count
+ *   device.controlTransfer(args) -> data
+ *   device.controlTransfer(args) {block} -> nil
  *
- * - +bmRequestType+ is a +FixNum+ specifying the 8-bit request type field of the setup packet (which also contains the direction bit)
- * - +bRequest+ is a +FixNum+ specifying the 8-bit request field of the setup packet
- * - +wValue+ is a +FixNum+ specifying the 16-bit value field of the setup packet
- * - +wIndex+ is a +FixNum+ specifying the 16-bit index field of the setup packet
- * - +data+ is a +String+ acting as a source for output transfers and as a buffer for input transfers; its size determines the number of bytes to be transferred (wLength)
- * - +timeout+ is a +FixNum+ specifying the timeout for this transfer in milliseconds
+ * Perform a control transfer.
  *
- * Perform a synchronous (blocking) control transfer.
+ * - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
+ *   * <tt>:bmRequestType</tt> is a +FixNum+ specifying the 8-bit request type field of the setup packet (note that the direction bit is ignored).
+ *   * <tt>:bRequest</tt> is a +FixNum+ specifying the 8-bit request field of the setup packet.
+ *   * <tt>:wValue</tt> is a +FixNum+ specifying the 16-bit value field of the setup packet.
+ *   * <tt>:wIndex</tt> is a +FixNum+ specifying the 16-bit index field of the setup packet.
+ *   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
+ *   * <tt>:dataOut</tt> is an optional +String+, see below.
+ *   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
+ * - <tt>:dataIn</tt> and <tt>:dataOut</tt> are mutually exclusive but neither is mandatory.
+ * - The type and direction of the transfer is determined as follows:
+ *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
+ *   * If neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified, the transfer will only contain the setup packet but no data packet.
+ *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value must be between 1 and 64 and specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
+ *   * If <tt>:dataIn</tt> is a +String+, an +in+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; data received is stored in this +String+.
+ *   * If <tt>:dataOut</tt> is a +String+, the an +out+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
+ * - XXX block documentation!
  *
- * On success, returns the number of data bytes transferred (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+ * XXX On success, returns the number of data bytes transferred (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
-static VALUE cDevice_controlTransfer (VALUE self, VALUE bmRequestType, VALUE bRequest, VALUE wValue, VALUE wIndex, VALUE data, VALUE timeout)
+static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
+  VALUE dir;
+  uint8_t bmRequestType, bRequest;
+  uint16_t wValue, wIndex;
+  VALUE dataIn, dataOut;
+  unsigned char *data;
+  uint16_t wLength;
+  unsigned int timeout;
+  VALUE v;
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
@@ -832,10 +863,40 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE bmRequestType, VALUE bRe
       return INT2NUM(res);
     }
   }
-  res = libusb_control_transfer (d->handle, NUM2INT(bmRequestType), NUM2INT(bRequest), NUM2INT(wValue), NUM2INT(wIndex), RSTRING(data)->ptr, RSTRING(data)->len, NUM2INT(timeout));
-  if (res < 0)
-    rb_raise (rb_eRuntimeError, "Synchronous control transfer failed: %s.", find_error_text (res));
-  return INT2NUM(res);
+
+  bmRequestType = NUM2INT(get_opt (hash, "bmRequestType", 1));
+  bRequest = NUM2INT(get_opt (hash, "bRequest", 1));
+  wValue = NUM2INT(get_opt (hash, "wValue", 1));
+  wIndex = NUM2INT(get_opt (hash, "wIndex", 1));
+  dataIn = get_opt (hash, "dataIn", 0);
+  dataOut = get_opt (hash, "dataOut", 0);
+  if ((!NIL_P(dataIn)) && (NIL_P(dataOut))) {
+    bmRequestType |= 0x80; /* in transfer */
+    /* XXX length? data? */
+  } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
+    bmRequestType &= 0x7f; /* out transfer */
+    /* XXX length? */
+  } else if ((NIL_P(dataIn)) && (NIL_P(dataOut))) {
+    bmRequestType &= 0x7f; /* out transfer */
+    data = NULL;
+    wLength = 0;
+  } else
+    rb_raise (rb_eRuntimeError, "Options :dataIn and :dataOut must not both be non-nil in RibUSB::Device#controlTransfer.");
+  v = get_opt (hash, "timeout", 0);
+  if (NIL_P(v))
+    timeout = 1000;
+  else
+    timeout = NUM2INT(v);
+
+  if (rb_block_given_p ()) {
+    rb_raise (rb_eRuntimeError, "Asynchronous control transfers not yet supported. Hold your breath.");
+    /* XXX   proc = rb_block_proc (); */
+  } else {
+    res = libusb_control_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
+    if (res < 0)
+      rb_raise (rb_eRuntimeError, "Synchronous control transfer failed: %s.", find_error_text (res));
+    return INT2NUM(res);
+  }
 }
 
 /*
@@ -935,7 +996,7 @@ static VALUE cDeviceDescriptor_new (struct libusb_device_descriptor *descriptor)
     return Qnil;
   }
   d->descriptor = descriptor;
-  object = Data_Wrap_Struct (rb_cDeviceDescriptor, NULL, free, d);
+  object = Data_Wrap_Struct (DeviceDescriptor, NULL, free, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1188,7 +1249,7 @@ static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
     return Qnil;
   }
   d->descriptor = descriptor;
-  object = Data_Wrap_Struct (rb_cConfigDescriptor, NULL, cConfigDescriptor_free, d);
+  object = Data_Wrap_Struct (ConfigDescriptor, NULL, cConfigDescriptor_free, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1379,7 +1440,7 @@ static VALUE cInterface_new (struct libusb_interface *interface)
     return Qnil;
   }
   i->interface = interface;
-  object = Data_Wrap_Struct (rb_cInterface, NULL, free, i);
+  object = Data_Wrap_Struct (Interface, NULL, free, i);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1426,7 +1487,7 @@ static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descr
     return Qnil;
   }
   d->descriptor = descriptor;
-  object = Data_Wrap_Struct (rb_cInterfaceDescriptor, NULL, free, d);
+  object = Data_Wrap_Struct (InterfaceDescriptor, NULL, free, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1633,7 +1694,7 @@ static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descrip
     return Qnil;
   }
   d->descriptor = descriptor;
-  object = Data_Wrap_Struct (rb_cEndpointDescriptor, NULL, free, d);
+  object = Data_Wrap_Struct (EndpointDescriptor, NULL, free, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1785,243 +1846,109 @@ static VALUE cEndpointDescriptor_extra (VALUE self)
 
 
 /******************************************************
- * RibUSB::Transfer method definitions                *
- ******************************************************/
-
-void cTransfer_free (struct transfer_t *t)
-{
-  libusb_free_transfer (t->transfer);
-
-  free (t);
-}
-
-/*
- * call-seq:
- *   RibUSB::Transfer.new(iso_packets) -> transfer
- *
- * - +iso_packets+ is a +FixNum+ specifying the number of isochronous packet descriptors
- *
- * Create an instance of RibUSB::Transfer.
- *
- * Effectively creates a _libusb_ transfer (the transfer itself being stored in an opaque structure). The memory associated with the transfer is automatically freed on garbage collection when possible.
- *
- * If successful, returns the transfer object, otherwise raises an exception and returns +nil+.
- */
-static VALUE cTransfer_new (VALUE self, VALUE iso_packets)
-{
-  struct transfer_t *t;
-  VALUE object;
-
-  t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
-  if (!t) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-    return Qnil;
-  }
-  t->transfer = libusb_alloc_transfer (iso_packets);
-  t->buffer = NULL;
-  if (!(t->transfer)) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate libusb transfer.");
-    free (t);
-    return Qnil;
-  }
-  object = Data_Wrap_Struct (rb_cTransfer, NULL, cTransfer_free, t);
-  rb_obj_call_init (object, 0, 0);
-  return object;
-}
-
-/*
- * call-seq:
- *   transfer.submit -> result
- *
- * Asynchronously submit a previously defined transfer.
- *
- * If successful, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
-static VALUE cTransfer_submit (VALUE self)
-{
-  struct transfer_t *t;
-  int res;
-
-  Data_Get_Struct (self, struct transfer_t, t);
-  res = libusb_submit_transfer (t->transfer);
-  if (res < 0) {
-    rb_raise (rb_eRuntimeError, "Failed to submit asynchronous transfer: %s.", find_error_text (res));
-    return INT2NUM(res);
-  }
-  return Qnil;
-}
-
-/*
- * call-seq:
- *   transfer.cancel -> result
- *
- * Asynchronously cancel a previously submitted transfer.
- *
- * If successful, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
-static VALUE cTransfer_cancel (VALUE self)
-{
-  struct transfer_t *t;
-  int res;
-
-  Data_Get_Struct (self, struct transfer_t, t);
-  res = libusb_cancel_transfer (t->transfer);
-  if (res < 0) {
-    rb_raise (rb_eRuntimeError, "Failed to cancel asynchronous transfer: %s.", find_error_text (res));
-    return INT2NUM(res);
-  }
-  return Qnil;
-}
-
-/*
- * call-seq:
- *   transfer.fillControlTransfer(device, bmRequestType, bRequest, wValue, wIndex, data, timeout) {} -> nil
- *
- * - +device+ is the +RibUSB::Device+ the transfer is intended for
- * - +bmRequestType+ is a +FixNum+ specifying the 8-bit request type field of the setup packet (which also contains the direction bit)
- * - +bRequest+ is a +FixNum+ specifying the 8-bit request field of the setup packet
- * - +wValue+ is a +FixNum+ specifying the 16-bit value field of the setup packet
- * - +wIndex+ is a +FixNum+ specifying the 16-bit index field of the setup packet
- * - +data+ is a +String+ acting as a source for output transfers and as a buffer for input transfers; its size determines the number of bytes to be transferred (wLength)
- * - +timeout+ is a +FixNum+ specifying the timeout for this transfer in milliseconds
- *
- * Populate the entries required for a control transfer.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
-static VALUE cTransfer_fillControlTransfer (VALUE self, VALUE device, VALUE bmRequestType, VALUE bRequest, VALUE wValue, VALUE wIndex, VALUE data, VALUE timeout)
-{
-  struct transfer_t *t;
-  struct device_t *d;
-  int res;
-
-  Data_Get_Struct (self, struct transfer_t, t);
-  Data_Get_Struct (device, struct device_t, d);
-  t->buffer = (struct transfer_t *) realloc (t->buffer, 8 + RSTRING(data)->len);
-  if (!(t->buffer)) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for control transfer buffer.");
-    return Qnil;
-  }
-  memcpy (t->buffer + 8, RSTRING(data)->ptr, RSTRING(data)->len);
-
-  libusb_fill_control_setup (t->buffer, NUM2INT(bmRequestType), NUM2INT(bRequest), NUM2INT(wValue), NUM2INT(wIndex), RSTRING(data)->len);
-  libusb_fill_control_transfer (t->transfer, d->handle, t->buffer, NULL, NULL, NUM2INT(timeout)); /* XXX callback */
-  return Qnil;
-}
-
-
-
-/******************************************************
  * RibUSB -- an interface to _libusb_, API version 1.0
  ******************************************************/
 void Init_ribusb()
 {
-  rb_mRibUSB = rb_define_module ("RibUSB");
+  RibUSB = rb_define_module ("RibUSB");
 
-  rb_define_singleton_method (rb_mRibUSB, "findError", mRibUSB_findError, 1);
+  rb_define_singleton_method (RibUSB, "findError", mRibUSB_findError, 1);
 
   /* RibUSB::Bus -- a class for _libusb_ bus-handling sessions */
-  rb_cBus = rb_define_class_under (rb_mRibUSB, "Bus", rb_cObject);
-  rb_define_singleton_method (rb_cBus, "new", cBus_new, 0);
-  rb_define_method (rb_cBus, "setDebug", cBus_setDebug, 1);
-  rb_define_alias (rb_cBus, "debug=", "setDebug");
-  rb_define_method (rb_cBus, "getDeviceList", cBus_getDeviceList, 0);
-  rb_define_alias (rb_cBus, "deviceList", "getDeviceList");
+  Bus = rb_define_class_under (RibUSB, "Bus", rb_cObject);
+  rb_define_singleton_method (Bus, "new", cBus_new, 0);
+  rb_define_method (Bus, "setDebug", cBus_setDebug, 1);
+  rb_define_alias (Bus, "debug=", "setDebug");
+  rb_define_method (Bus, "getDeviceList", cBus_getDeviceList, 0);
+  rb_define_alias (Bus, "deviceList", "getDeviceList");
 
   /* RibUSB::Device -- a class for individual USB devices accessed through _libusb_ */
-  rb_cDevice = rb_define_class_under (rb_mRibUSB, "Device", rb_cObject);
-  rb_define_method (rb_cDevice, "getBusNumber", cDevice_getBusNumber, 0);
-  rb_define_alias (rb_cDevice, "busNumber", "getBusNumber");
-  rb_define_method (rb_cDevice, "getDeviceAddress", cDevice_getDeviceAddress, 0);
-  rb_define_alias (rb_cDevice, "deviceAddress", "getDeviceAddress");
-  rb_define_method (rb_cDevice, "getMaxPacketSize", cDevice_getMaxPacketSize, 1);
-  rb_define_alias (rb_cDevice, "maxPacketSize", "getMaxPacketSize");
-  rb_define_method (rb_cDevice, "getConfiguration", cDevice_getConfiguration, 0);
-  rb_define_alias (rb_cDevice, "configuration", "getConfiguration");
-  rb_define_method (rb_cDevice, "setConfiguration", cDevice_setConfiguration, 1);
-  rb_define_alias (rb_cDevice, "configuration=", "setConfiguration");
-  rb_define_method (rb_cDevice, "claimInterface", cDevice_claimInterface, 1);
-  rb_define_method (rb_cDevice, "releaseInterface", cDevice_releaseInterface, 1);
-  rb_define_method (rb_cDevice, "setInterfaceAltSetting", cDevice_setInterfaceAltSetting, 2);
-  rb_define_method (rb_cDevice, "clearHalt", cDevice_clearHalt, 1);
-  rb_define_method (rb_cDevice, "resetDevice", cDevice_resetDevice, 0);
-  rb_define_method (rb_cDevice, "kernelDriverActive?", cDevice_kernelDriverActiveQ, 1);
-  rb_define_method (rb_cDevice, "detachKernelDriver", cDevice_detach_kernel_driver, 1);
-  rb_define_method (rb_cDevice, "attachKernelDriver", cDevice_attach_kernel_driver, 1);
-  rb_define_method (rb_cDevice, "getDeviceDescriptor", cDevice_get_device_descriptor, 0);
-  rb_define_alias (rb_cDevice, "deviceDescriptor", "getDeviceDescriptor");
-  rb_define_method (rb_cDevice, "getStringDescriptorASCII", cDevice_get_string_descriptor_ascii, 1);
-  rb_define_alias (rb_cDevice, "stringDescriptorASCII", "getStringDescriptorASCII");
-  rb_define_method (rb_cDevice, "getStringDescriptor", cDevice_get_string_descriptor, 2);
-  rb_define_alias (rb_cDevice, "stringDescriptor", "getStringDescriptor");
-  rb_define_method (rb_cDevice, "controlTransfer", cDevice_controlTransfer, 6);
-  rb_define_method (rb_cDevice, "bulkTransfer", cDevice_bulkTransfer, 3);
-  rb_define_method (rb_cDevice, "interruptTransfer", cDevice_interruptTransfer, 3);
+  Device = rb_define_class_under (RibUSB, "Device", rb_cObject);
+  rb_define_method (Device, "getBusNumber", cDevice_getBusNumber, 0);
+  rb_define_alias (Device, "busNumber", "getBusNumber");
+  rb_define_method (Device, "getDeviceAddress", cDevice_getDeviceAddress, 0);
+  rb_define_alias (Device, "deviceAddress", "getDeviceAddress");
+  rb_define_method (Device, "getMaxPacketSize", cDevice_getMaxPacketSize, 1);
+  rb_define_alias (Device, "maxPacketSize", "getMaxPacketSize");
+  rb_define_method (Device, "getConfiguration", cDevice_getConfiguration, 0);
+  rb_define_alias (Device, "configuration", "getConfiguration");
+  rb_define_method (Device, "setConfiguration", cDevice_setConfiguration, 1);
+  rb_define_alias (Device, "configuration=", "setConfiguration");
+  rb_define_method (Device, "claimInterface", cDevice_claimInterface, 1);
+  rb_define_method (Device, "releaseInterface", cDevice_releaseInterface, 1);
+  rb_define_method (Device, "setInterfaceAltSetting", cDevice_setInterfaceAltSetting, 2);
+  rb_define_method (Device, "clearHalt", cDevice_clearHalt, 1);
+  rb_define_method (Device, "resetDevice", cDevice_resetDevice, 0);
+  rb_define_method (Device, "kernelDriverActive?", cDevice_kernelDriverActiveQ, 1);
+  rb_define_method (Device, "detachKernelDriver", cDevice_detach_kernel_driver, 1);
+  rb_define_method (Device, "attachKernelDriver", cDevice_attach_kernel_driver, 1);
+  rb_define_method (Device, "getDeviceDescriptor", cDevice_get_device_descriptor, 0);
+  rb_define_alias (Device, "deviceDescriptor", "getDeviceDescriptor");
+  rb_define_method (Device, "getStringDescriptorASCII", cDevice_get_string_descriptor_ascii, 1);
+  rb_define_alias (Device, "stringDescriptorASCII", "getStringDescriptorASCII");
+  rb_define_method (Device, "getStringDescriptor", cDevice_get_string_descriptor, 2);
+  rb_define_alias (Device, "stringDescriptor", "getStringDescriptor");
+  rb_define_method (Device, "controlTransfer", cDevice_controlTransfer, 1);
+  rb_define_method (Device, "bulkTransfer", cDevice_bulkTransfer, 3);
+  rb_define_method (Device, "interruptTransfer", cDevice_interruptTransfer, 3);
 
   /* RibUSB::DeviceDescriptor -- a class for USB device descriptors */
-  rb_cDeviceDescriptor = rb_define_class_under (rb_mRibUSB, "DeviceDescriptor", rb_cObject);
-  rb_define_method (rb_cDeviceDescriptor, "bLength", cDeviceDescriptor_bLength, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bDescriptorType", cDeviceDescriptor_bDescriptorType, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bcdUSB", cDeviceDescriptor_bcdUSB, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bDeviceClass", cDeviceDescriptor_bDeviceClass, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bDeviceSubClass", cDeviceDescriptor_bDeviceSubClass, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bDeviceProtocol", cDeviceDescriptor_bDeviceProtocol, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bMaxPacketSize0", cDeviceDescriptor_bMaxPacketSize0, 0);
-  rb_define_method (rb_cDeviceDescriptor, "idVendor", cDeviceDescriptor_idVendor, 0);
-  rb_define_method (rb_cDeviceDescriptor, "idProduct", cDeviceDescriptor_idProduct, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bcdDevice", cDeviceDescriptor_bcdDevice, 0);
-  rb_define_method (rb_cDeviceDescriptor, "iManufacturer", cDeviceDescriptor_iManufacturer, 0);
-  rb_define_method (rb_cDeviceDescriptor, "iProduct", cDeviceDescriptor_iProduct, 0);
-  rb_define_method (rb_cDeviceDescriptor, "iSerialNumber", cDeviceDescriptor_iSerialNumber, 0);
-  rb_define_method (rb_cDeviceDescriptor, "bNumConfigurations", cDeviceDescriptor_bNumConfigurations, 0);
+  DeviceDescriptor = rb_define_class_under (RibUSB, "DeviceDescriptor", rb_cObject);
+  rb_define_method (DeviceDescriptor, "bLength", cDeviceDescriptor_bLength, 0);
+  rb_define_method (DeviceDescriptor, "bDescriptorType", cDeviceDescriptor_bDescriptorType, 0);
+  rb_define_method (DeviceDescriptor, "bcdUSB", cDeviceDescriptor_bcdUSB, 0);
+  rb_define_method (DeviceDescriptor, "bDeviceClass", cDeviceDescriptor_bDeviceClass, 0);
+  rb_define_method (DeviceDescriptor, "bDeviceSubClass", cDeviceDescriptor_bDeviceSubClass, 0);
+  rb_define_method (DeviceDescriptor, "bDeviceProtocol", cDeviceDescriptor_bDeviceProtocol, 0);
+  rb_define_method (DeviceDescriptor, "bMaxPacketSize0", cDeviceDescriptor_bMaxPacketSize0, 0);
+  rb_define_method (DeviceDescriptor, "idVendor", cDeviceDescriptor_idVendor, 0);
+  rb_define_method (DeviceDescriptor, "idProduct", cDeviceDescriptor_idProduct, 0);
+  rb_define_method (DeviceDescriptor, "bcdDevice", cDeviceDescriptor_bcdDevice, 0);
+  rb_define_method (DeviceDescriptor, "iManufacturer", cDeviceDescriptor_iManufacturer, 0);
+  rb_define_method (DeviceDescriptor, "iProduct", cDeviceDescriptor_iProduct, 0);
+  rb_define_method (DeviceDescriptor, "iSerialNumber", cDeviceDescriptor_iSerialNumber, 0);
+  rb_define_method (DeviceDescriptor, "bNumConfigurations", cDeviceDescriptor_bNumConfigurations, 0);
 
   /* RibUSB::ConfigDescriptor -- a class for USB config descriptors */
-  rb_cConfigDescriptor = rb_define_class_under (rb_mRibUSB, "ConfigDescriptor", rb_cObject);
-  rb_define_method (rb_cConfigDescriptor, "bLength", cConfigDescriptor_bLength, 0);
-  rb_define_method (rb_cConfigDescriptor, "bDescriptorType", cConfigDescriptor_bDescriptorType, 0);
-  rb_define_method (rb_cConfigDescriptor, "wTotalLength", cConfigDescriptor_wTotalLength, 0);
-  rb_define_method (rb_cConfigDescriptor, "bNumInterfaces", cConfigDescriptor_bNumInterfaces, 0);
-  rb_define_method (rb_cConfigDescriptor, "bConfigurationValue", cConfigDescriptor_bConfigurationValue, 0);
-  rb_define_method (rb_cConfigDescriptor, "iConfiguration", cConfigDescriptor_iConfiguration, 0);
-  rb_define_method (rb_cConfigDescriptor, "bmAttributes", cConfigDescriptor_bmAttributes, 0);
-  rb_define_method (rb_cConfigDescriptor, "maxPower", cConfigDescriptor_maxPower, 0);
-  rb_define_method (rb_cConfigDescriptor, "interfaceList", cConfigDescriptor_interfaceList, 0);
-  rb_define_method (rb_cConfigDescriptor, "extra", cConfigDescriptor_extra, 0);
+  ConfigDescriptor = rb_define_class_under (RibUSB, "ConfigDescriptor", rb_cObject);
+  rb_define_method (ConfigDescriptor, "bLength", cConfigDescriptor_bLength, 0);
+  rb_define_method (ConfigDescriptor, "bDescriptorType", cConfigDescriptor_bDescriptorType, 0);
+  rb_define_method (ConfigDescriptor, "wTotalLength", cConfigDescriptor_wTotalLength, 0);
+  rb_define_method (ConfigDescriptor, "bNumInterfaces", cConfigDescriptor_bNumInterfaces, 0);
+  rb_define_method (ConfigDescriptor, "bConfigurationValue", cConfigDescriptor_bConfigurationValue, 0);
+  rb_define_method (ConfigDescriptor, "iConfiguration", cConfigDescriptor_iConfiguration, 0);
+  rb_define_method (ConfigDescriptor, "bmAttributes", cConfigDescriptor_bmAttributes, 0);
+  rb_define_method (ConfigDescriptor, "maxPower", cConfigDescriptor_maxPower, 0);
+  rb_define_method (ConfigDescriptor, "interfaceList", cConfigDescriptor_interfaceList, 0);
+  rb_define_method (ConfigDescriptor, "extra", cConfigDescriptor_extra, 0);
 
   /* RibUSB::Interface -- a class for USB interfaces */
-  rb_cInterface = rb_define_class_under (rb_mRibUSB, "Interface", rb_cObject);
-  rb_define_method (rb_cInterface, "altSettingList", cInterface_altSettingList, 0);
+  Interface = rb_define_class_under (RibUSB, "Interface", rb_cObject);
+  rb_define_method (Interface, "altSettingList", cInterface_altSettingList, 0);
 
   /* RibUSB::InterfaceDescriptor -- a class for USB interface descriptors */
-  rb_cInterfaceDescriptor = rb_define_class_under (rb_mRibUSB, "InterfaceDescriptor", rb_cObject);
-  rb_define_method (rb_cInterfaceDescriptor, "bLength", cInterfaceDescriptor_bLength, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bDescriptorType", cInterfaceDescriptor_bDescriptorType, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceNumber", cInterfaceDescriptor_bInterfaceNumber, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bAlternateSetting", cInterfaceDescriptor_bAlternateSetting, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bNumEndpoints", cInterfaceDescriptor_bNumEndpoints, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceClass", cInterfaceDescriptor_bInterfaceClass, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceSubClass", cInterfaceDescriptor_bInterfaceSubClass, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "bInterfaceProtocol", cInterfaceDescriptor_bInterfaceProtocol, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "iInterface", cInterfaceDescriptor_iInterface, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "endpointList", cInterfaceDescriptor_endpointList, 0);
-  rb_define_method (rb_cInterfaceDescriptor, "extra", cInterfaceDescriptor_extra, 0);
+  InterfaceDescriptor = rb_define_class_under (RibUSB, "InterfaceDescriptor", rb_cObject);
+  rb_define_method (InterfaceDescriptor, "bLength", cInterfaceDescriptor_bLength, 0);
+  rb_define_method (InterfaceDescriptor, "bDescriptorType", cInterfaceDescriptor_bDescriptorType, 0);
+  rb_define_method (InterfaceDescriptor, "bInterfaceNumber", cInterfaceDescriptor_bInterfaceNumber, 0);
+  rb_define_method (InterfaceDescriptor, "bAlternateSetting", cInterfaceDescriptor_bAlternateSetting, 0);
+  rb_define_method (InterfaceDescriptor, "bNumEndpoints", cInterfaceDescriptor_bNumEndpoints, 0);
+  rb_define_method (InterfaceDescriptor, "bInterfaceClass", cInterfaceDescriptor_bInterfaceClass, 0);
+  rb_define_method (InterfaceDescriptor, "bInterfaceSubClass", cInterfaceDescriptor_bInterfaceSubClass, 0);
+  rb_define_method (InterfaceDescriptor, "bInterfaceProtocol", cInterfaceDescriptor_bInterfaceProtocol, 0);
+  rb_define_method (InterfaceDescriptor, "iInterface", cInterfaceDescriptor_iInterface, 0);
+  rb_define_method (InterfaceDescriptor, "endpointList", cInterfaceDescriptor_endpointList, 0);
+  rb_define_method (InterfaceDescriptor, "extra", cInterfaceDescriptor_extra, 0);
 
   /* RibUSB::EndpointDescriptor -- a class for USB endpoint descriptors */
-  rb_cEndpointDescriptor = rb_define_class_under (rb_mRibUSB, "EndpointDescriptor", rb_cObject);
-  rb_define_method (rb_cEndpointDescriptor, "bLength", cEndpointDescriptor_bLength, 0);
-  rb_define_method (rb_cEndpointDescriptor, "bDescriptorType", cEndpointDescriptor_bDescriptorType, 0);
-  rb_define_method (rb_cEndpointDescriptor, "bEndpointAddress", cEndpointDescriptor_bEndpointAddress, 0);
-  rb_define_method (rb_cEndpointDescriptor, "bmAttributes", cEndpointDescriptor_bmAttributes, 0);
-  rb_define_method (rb_cEndpointDescriptor, "wMaxPacketSize", cEndpointDescriptor_wMaxPacketSize, 0);
-  rb_define_method (rb_cEndpointDescriptor, "bInterval", cEndpointDescriptor_bInterval, 0);
-  rb_define_method (rb_cEndpointDescriptor, "bRefresh", cEndpointDescriptor_bRefresh, 0);
-  rb_define_method (rb_cEndpointDescriptor, "bSynchAddress", cEndpointDescriptor_bSynchAddress, 0);
-  rb_define_method (rb_cEndpointDescriptor, "extra", cEndpointDescriptor_extra, 0);
-
-  /* RibUSB::Transfer -- a class for USB transfers */
-  rb_cTransfer = rb_define_class_under (rb_mRibUSB, "Transfer", rb_cObject);
-  rb_define_singleton_method (rb_cTransfer, "new", cTransfer_new, 1);
-  rb_define_method (rb_cTransfer, "submit", cTransfer_submit, 0);
-  rb_define_method (rb_cTransfer, "cancel", cTransfer_cancel, 0);
-  rb_define_method (rb_cTransfer, "fillControlTransfer", cTransfer_fillControlTransfer, 7);
+  EndpointDescriptor = rb_define_class_under (RibUSB, "EndpointDescriptor", rb_cObject);
+  rb_define_method (EndpointDescriptor, "bLength", cEndpointDescriptor_bLength, 0);
+  rb_define_method (EndpointDescriptor, "bDescriptorType", cEndpointDescriptor_bDescriptorType, 0);
+  rb_define_method (EndpointDescriptor, "bEndpointAddress", cEndpointDescriptor_bEndpointAddress, 0);
+  rb_define_method (EndpointDescriptor, "bmAttributes", cEndpointDescriptor_bmAttributes, 0);
+  rb_define_method (EndpointDescriptor, "wMaxPacketSize", cEndpointDescriptor_wMaxPacketSize, 0);
+  rb_define_method (EndpointDescriptor, "bInterval", cEndpointDescriptor_bInterval, 0);
+  rb_define_method (EndpointDescriptor, "bRefresh", cEndpointDescriptor_bRefresh, 0);
+  rb_define_method (EndpointDescriptor, "bSynchAddress", cEndpointDescriptor_bSynchAddress, 0);
+  rb_define_method (EndpointDescriptor, "extra", cEndpointDescriptor_extra, 0);
 }
