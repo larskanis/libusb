@@ -193,7 +193,7 @@ char *get_error_text (int number)
  * call-seq:
  *   RibUSB.getError(number) -> [name, text]
  *
- * Find the textual error description corresponding to a _libusb_ error code.
+ * Get the textual error description corresponding to a _libusb_ error code.
  *
  * - +number+ is an integer containing the error returned by a _libusb_ function.
  * - +name+ is a +String+ containing the name of the error as used in the C header file <tt>libusb.h</tt>.
@@ -375,7 +375,7 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
     return INT2NUM(res);
   }
 
-  array = rb_ary_new2 (res);
+  array = rb_ary_new ();
 
   for (i = 0; i < res; i ++) {
     device = cDevice_new (list[i]);
@@ -401,7 +401,7 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
       if NIL_P(rb_funcall (proc, rb_intern ("call"), 1, device))
 	continue;
 
-    rb_ary_store (array, i, device);
+    rb_ary_push (array, device);
   }
 
   libusb_free_device_list (list, 1);
