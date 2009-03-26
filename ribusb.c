@@ -32,7 +32,6 @@
 static VALUE RibUSB;
 static VALUE Bus;
 static VALUE Device;
-static VALUE DeviceDescriptor;
 static VALUE ConfigDescriptor;
 static VALUE Interface;
 static VALUE InterfaceDescriptor;
@@ -58,12 +57,6 @@ struct usb_t {
 struct device_t {
   struct libusb_device *device;
   struct libusb_device_handle *handle;
-};
-
-/*
- * Opaque structure for the RibUSB::DeviceDescriptor class
- */
-struct device_descriptor_t {
   struct libusb_device_descriptor *descriptor;
 };
 
@@ -110,7 +103,6 @@ struct transfer_t {
  * internal prototypes                                *
  ******************************************************/
 static VALUE cDevice_new (struct libusb_device *device);
-static VALUE cDeviceDescriptor_new (struct libusb_device_descriptor *descriptor);
 static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor);
 static VALUE cInterface_new (struct libusb_interface *interface);
 static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor);
@@ -148,7 +140,7 @@ VALUE get_opt (VALUE hash, char *key, int mandatory)
  * RibUSB method definitions                          *
  ******************************************************/
 
-int find_error (int number, char **name, char **text)
+int get_error (int number, char **name, char **text)
 {
   struct error_t {
     int number;
@@ -186,12 +178,12 @@ int find_error (int number, char **name, char **text)
   return 0;
 }
 
-char *find_error_text (int number)
+char *get_error_text (int number)
 {
   char *text;
   static char unknown[] = "unknown error number";
 
-  if (find_error (number, NULL, &text))
+  if (get_error (number, NULL, &text))
     return text;
   else
     return unknown;
@@ -199,7 +191,7 @@ char *find_error_text (int number)
 
 /*
  * call-seq:
- *   RibUSB.findError(number) -> [name, text]
+ *   RibUSB.getError(number) -> [name, text]
  *
  * Find the textual error description corresponding to a _libusb_ error code.
  *
@@ -209,14 +201,14 @@ char *find_error_text (int number)
  *
  * On success (if the error number is valid), returns an array of two strings, otherwise raises an exception and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
  */
-static VALUE mRibUSB_findError (VALUE self, VALUE number)
+static VALUE mRibUSB_getError (VALUE self, VALUE number)
 {
   int error;
   char *name, *text;
   VALUE array;
 
   error = NUM2INT(number);
-  if (find_error (error, &name, &text)) {
+  if (get_error (error, &name, &text)) {
     array = rb_ary_new2 (2);
     rb_ary_store (array, 0, rb_str_new2 (name));
     rb_ary_store (array, 1, rb_str_new2 (text));
@@ -259,7 +251,7 @@ static VALUE cBus_new (VALUE self)
 
   res = libusb_init (&context);
   if (res) {
-    rb_raise (rb_eRuntimeError, "Failed to initialize libusb: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to initialize libusb: %s.", get_error_text (res));
     return INT2NUM(res);
   }
   u = (struct usb_t *) malloc (sizeof (struct usb_t));
@@ -295,29 +287,91 @@ static VALUE cBus_setDebug (VALUE self, VALUE level)
 
 /*
  * call-seq:
- *   bus.getDeviceList -> list
- *   bus.deviceList -> list
+ *   bus.find -> list
+ *   bus.find {block} -> list
+ *   bus.find(hash) -> list
+ *   bus.find(hash) {block} -> list
  *
- * Obtain the list of devices currently attached to the USB system.
+ * Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
+ *
+ * Criteria can, optionally, be supplied in the form of a hash, or in a block, or both.
+ * - In the hash, a number of simple criteria can be defined. If a criterion is not specified or its value is +nil+, any device will match that criterion.
+ *   * <tt>:idVendor</tt>, <tt>:idProduct</tt> (+FixNum+) for the vendor/product ID;
+ *   * <tt>:bcdUSB</tt>, <tt>:bcdDevice</tt> (+FixNum+) for the USB and device release numbers;
+ *   * <tt>:bDeviceClass</tt>, <tt>:bDeviceSubClass</tt>, <tt>:bDeviceProtocol</tt>, <tt>:bMaxPacketSize0</tt> (+FixNum+) for the device type.
+ * - The block is passed a single argument: the RibUSB::Device instance of the device. The device is included in the resulting list if and only if the block returns non-+nil+.
  *
  * On success, returns an array of RibUSB::Device with one entry for each device, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  *
  * Note: this list provides no information whatsoever on whether or not any given device can be accessed. Insufficient privilege and use by other software can prevent access to any device.
  */
-static VALUE cBus_getDeviceList (VALUE self)
+static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
 {
   struct usb_t *u;
   struct libusb_device **list;
+  struct device_t *d;
   ssize_t res;
   VALUE device, array;
   int i;
+  VALUE v;
+  uint8_t bDeviceClass, bDeviceSubClass, bDeviceProtocol, bMaxPacketSize0;
+  uint16_t bcdUSB, idVendor, idProduct, bcdDevice;
+  uint16_t mask = 0;
+  VALUE hash, proc;
+
+  rb_scan_args (argc, argv, "01&", &hash, &proc);
+  if (!NIL_P(hash)) {
+    if (rb_type(hash) == T_HASH) {
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bDeviceClass")));
+      if (!NIL_P(v)) {
+	bDeviceClass = NUM2INT(v);
+	mask |= 0x01;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bDeviceSubClass")));
+      if (!NIL_P(v)) {
+	bDeviceSubClass = NUM2INT(v);
+	mask |= 0x02;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bDeviceProtocol")));
+      if (!NIL_P(v)) {
+	bDeviceProtocol = NUM2INT(v);
+	mask |= 0x04;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bMaxPacketSize0")));
+      if (!NIL_P(v)) {
+	bMaxPacketSize0 = NUM2INT(v);
+	mask |= 0x08;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bcdUSB")));
+      if (!NIL_P(v)) {
+	bcdUSB = NUM2INT(v);
+	mask |= 0x10;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("idVendor")));
+      if (!NIL_P(v)) {
+	idVendor = NUM2INT(v);
+	mask |= 0x20;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("idProduct")));
+      if (!NIL_P(v)) {
+	idProduct = NUM2INT(v);
+	mask |= 0x40;
+      }
+      v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bcdDevice")));
+      if (!NIL_P(v)) {
+	bcdDevice = NUM2INT(v);
+	mask |= 0x80;
+      }
+    } else
+      rb_raise (rb_eRuntimeError, "Argument to RibUSB::Bus#find must be a hash or nil, if specified.");
+  }
 
   Data_Get_Struct (self, struct usb_t, u);
 
   res = libusb_get_device_list (u->context, &list);
 
   if (res < 0) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for list of devices: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for list of devices: %s.", get_error_text (res));
     return INT2NUM(res);
   }
 
@@ -325,6 +379,28 @@ static VALUE cBus_getDeviceList (VALUE self)
 
   for (i = 0; i < res; i ++) {
     device = cDevice_new (list[i]);
+    Data_Get_Struct (device, struct device_t, d); /* XXX not very nice */
+    if ((mask & 0x01) && (bDeviceClass != d->descriptor->bDeviceClass))
+      continue;
+    if ((mask & 0x02) && (bDeviceSubClass != d->descriptor->bDeviceSubClass))
+      continue;
+    if ((mask & 0x04) && (bDeviceProtocol != d->descriptor->bDeviceProtocol))
+      continue;
+    if ((mask & 0x08) && (bMaxPacketSize0 != d->descriptor->bMaxPacketSize0))
+      continue;
+    if ((mask & 0x10) && (bcdUSB != d->descriptor->bcdUSB))
+      continue;
+    if ((mask & 0x20) && (idVendor != d->descriptor->idVendor))
+      continue;
+    if ((mask & 0x40) && (idProduct != d->descriptor->idProduct))
+      continue;
+    if ((mask & 0x80) && (bcdDevice != d->descriptor->bcdDevice))
+      continue;
+
+    if (!NIL_P(proc))
+      if NIL_P(rb_funcall (proc, rb_intern ("call"), 1, device))
+	continue;
+
     rb_ary_store (array, i, device);
   }
 
@@ -353,6 +429,7 @@ static VALUE cDevice_new (struct libusb_device *device)
 {
   struct device_t *d;
   VALUE object;
+  int res;
 
   d = (struct device_t *) malloc (sizeof (struct device_t));
   if (!d) {
@@ -362,6 +439,15 @@ static VALUE cDevice_new (struct libusb_device *device)
   libusb_ref_device (device);
   d->device = device;
   d->handle = NULL;
+  d->descriptor = (struct libusb_device_descriptor *) malloc (sizeof (struct libusb_device_descriptor));
+  if (!(d->descriptor)) {
+    rb_raise (rb_eRuntimeError, "Failed to allocate memory for struct libusb_device_descriptor.");
+    return Qnil;
+  }
+  res = libusb_get_device_descriptor (d->device, d->descriptor);
+  if (res < 0)
+    rb_raise (rb_eRuntimeError, "Failed to retrieve device descriptor: %s.", get_error_text (res));
+
   object = Data_Wrap_Struct (Device, NULL, cDevice_free, d);
   rb_obj_call_init (object, 0, 0);
   return object;
@@ -384,7 +470,7 @@ static VALUE cDevice_getBusNumber (VALUE self)
   Data_Get_Struct (self, struct device_t, d);
   res = libusb_get_bus_number (d->device);
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to retrieve device bus number: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to retrieve device bus number: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -405,7 +491,7 @@ static VALUE cDevice_getDeviceAddress (VALUE self)
   Data_Get_Struct (self, struct device_t, d);
   res = libusb_get_device_address (d->device);
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to retrieve device address: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to retrieve device address: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -428,7 +514,7 @@ static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
   Data_Get_Struct (self, struct device_t, d);
   res = libusb_get_max_packet_size (d->device, NUM2INT(endpoint));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to retrieve maximum packet size of endpoint: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to retrieve maximum packet size of endpoint: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -451,13 +537,13 @@ static VALUE cDevice_getConfiguration (VALUE self)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_get_configuration (d->handle, &c);
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to obtain configuration value: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to obtain configuration value: %s.", get_error_text (res));
   return INT2NUM(c);
 }
 
@@ -481,13 +567,13 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_set_configuration (d->handle, NUM2INT(configuration));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to set configuration: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to set configuration: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -510,13 +596,13 @@ static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_claim_interface (d->handle, NUM2INT(interface));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to claim interface: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to claim interface: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -538,13 +624,13 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_release_interface (d->handle, NUM2INT(interface));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to release interface: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to release interface: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -568,13 +654,13 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_set_interface_alt_setting (d->handle, NUM2INT(interface), NUM2INT(setting));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to set interface alternate setting: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to set interface alternate setting: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -597,13 +683,13 @@ static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_clear_halt (d->handle, NUM2INT(endpoint));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to clear halt/stall condition: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to clear halt/stall condition: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -623,13 +709,13 @@ static VALUE cDevice_resetDevice (VALUE self)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_reset_device (d->handle);
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to reset device: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to reset device: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -652,13 +738,13 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_kernel_driver_active (d->handle, NUM2INT(interface));
   if (res < 0) {
-    rb_raise (rb_eRuntimeError, "Failed to determine whether a kernel driver is active on interface: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to determine whether a kernel driver is active on interface: %s.", get_error_text (res));
     return INT2NUM(res);
   } else if (res == 1)
     return Qtrue;
@@ -685,13 +771,13 @@ static VALUE cDevice_detach_kernel_driver (VALUE self, VALUE interface)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_detach_kernel_driver (d->handle, NUM2INT(interface));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to detach kernel driver: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to detach kernel driver: %s.", get_error_text (res));
   return INT2NUM(res);
 }
 
@@ -714,42 +800,14 @@ static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_attach_kernel_driver (d->handle, NUM2INT(interface));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to re-attach kernel driver: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to re-attach kernel driver: %s.", get_error_text (res));
   return INT2NUM(res);
-}
-
-/*
- * call-seq:
- *   device.getDeviceDescriptor -> descriptor
- *   device.deviceDescriptor -> descriptor
- *
- * Obtain the USB device descriptor for the device.
- *
- * On success, returns the USB descriptor of the device (+RibUSB::DeviceDescriptor+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
-static VALUE cDevice_get_device_descriptor (VALUE self, VALUE interface)
-{
-  struct device_t *d;
-  struct libusb_device_descriptor *desc;
-  int res;
-
-  desc = (struct libusb_device_descriptor *) malloc (sizeof (struct libusb_device_descriptor));
-  if (!desc) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for struct libusb_device_descriptor.");
-    return Qnil;
-  }
-
-  Data_Get_Struct (self, struct device_t, d);
-  res = libusb_get_device_descriptor (d->device, desc);
-  if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to retrieve device descriptor: %s.", find_error_text (res));
-  return cDeviceDescriptor_new (desc);
 }
 
 /*
@@ -773,13 +831,13 @@ static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_get_string_descriptor_ascii (d->handle, NUM2INT(index), c, sizeof (c));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", get_error_text (res));
   return rb_str_new(c, res);
 }
 
@@ -805,13 +863,13 @@ static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langi
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_get_string_descriptor (d->handle, NUM2INT(index), NUM2INT(langid), c, sizeof (c));
   if (res < 0)
-    rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", get_error_text (res));
   return rb_str_new(c, res);
 }
 
@@ -859,7 +917,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
@@ -894,7 +952,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
   } else {
     res = libusb_control_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
     if (res < 0)
-      rb_raise (rb_eRuntimeError, "Synchronous control transfer failed: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Synchronous control transfer failed: %s.", get_error_text (res));
     return INT2NUM(res);
   }
 }
@@ -924,13 +982,13 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE endpoint, VALUE data, VALUE
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_bulk_transfer (d->handle, NUM2INT(endpoint), RSTRING(data)->ptr, RSTRING(data)->len, &nxfer, NUM2INT(timeout));
   if (res < 0) {
-    rb_raise (rb_eRuntimeError, "Synchronous bulk transfer failed: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Synchronous bulk transfer failed: %s.", get_error_text (res));
     return INT2NUM(res);
   }
   array = rb_ary_new2 (2);
@@ -964,13 +1022,13 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE endpoint, VALUE data, 
   if (d->handle == NULL) {
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", find_error_text (res));
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
       return INT2NUM(res);
     }
   }
   res = libusb_interrupt_transfer (d->handle, NUM2INT(endpoint), RSTRING(data)->ptr, RSTRING(data)->len, &nxfer, NUM2INT(timeout));
   if (res < 0) {
-    rb_raise (rb_eRuntimeError, "Synchronous interrupt transfer failed: %s.", find_error_text (res));
+    rb_raise (rb_eRuntimeError, "Synchronous interrupt transfer failed: %s.", get_error_text (res));
     return INT2NUM(res);
   }
   array = rb_ary_new2 (2);
@@ -979,249 +1037,195 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE endpoint, VALUE data, 
   return array;
 }
 
-
-
-/******************************************************
- * RibUSB::DeviceDescriptor method definitions        *
- ******************************************************/
-
-static VALUE cDeviceDescriptor_new (struct libusb_device_descriptor *descriptor)
-{
-  struct device_descriptor_t *d;
-  VALUE object;
-
-  d = (struct device_descriptor_t *) malloc (sizeof (struct device_descriptor_t));
-  if (!d) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::DeviceDescriptor object.");
-    return Qnil;
-  }
-  d->descriptor = descriptor;
-  object = Data_Wrap_Struct (DeviceDescriptor, NULL, free, d);
-  rb_obj_call_init (object, 0, 0);
-  return object;
-}
-
 /*
  * call-seq:
- *   descriptor.bLength -> bLength
- *
- * Get the size in bytes of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
-static VALUE cDeviceDescriptor_bLength (VALUE self)
-{
-  struct device_descriptor_t *d;
-
-  Data_Get_Struct (self, struct device_descriptor_t, d);
-  return INT2NUM(d->descriptor->bLength);
-}
-
-/*
- * call-seq:
- *   descriptor.bDescriptorType -> bDescriptorType
- *
- * Get the type of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
-static VALUE cDeviceDescriptor_bDescriptorType (VALUE self)
-{
-  struct device_descriptor_t *d;
-
-  Data_Get_Struct (self, struct device_descriptor_t, d);
-  return INT2NUM(d->descriptor->bDescriptorType);
-}
-
-/*
- * call-seq:
- *   descriptor.bcdUSB -> bcdUSB
+ *   device.bcdUSB -> bcdUSB
  *
  * Get the USB specification release number in binary-coded decimal.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bcdUSB (VALUE self)
+static VALUE cDevice_bcdUSB (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bcdUSB);
 }
 
 /*
  * call-seq:
- *   descriptor.bDeviceClass -> bDeviceClass
+ *   device.bDeviceClass -> bDeviceClass
  *
  * Get the USB class code.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bDeviceClass (VALUE self)
+static VALUE cDevice_bDeviceClass (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bDeviceClass);
 }
 
 /*
  * call-seq:
- *   descriptor.bDeviceSubClass -> bDeviceSubClass
+ *   device.bDeviceSubClass -> bDeviceSubClass
  *
  * Get the USB subclass code.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bDeviceSubClass (VALUE self)
+static VALUE cDevice_bDeviceSubClass (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bDeviceSubClass);
 }
 
 /*
  * call-seq:
- *   descriptor.bDeviceProtocol -> bDeviceProtocol
+ *   device.bDeviceProtocol -> bDeviceProtocol
  *
  * Get the USB protocol code.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bDeviceProtocol (VALUE self)
+static VALUE cDevice_bDeviceProtocol (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bDeviceProtocol);
 }
 
 /*
  * call-seq:
- *   descriptor.bMaxPacketSize0 -> bMaxPacketSize0
+ *   device.bMaxPacketSize0 -> bMaxPacketSize0
  *
  * Get the maximum packet size for endpoint 0.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bMaxPacketSize0 (VALUE self)
+static VALUE cDevice_bMaxPacketSize0 (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bMaxPacketSize0);
 }
 
 /*
  * call-seq:
- *   descriptor.idVendor -> idVendor
+ *   device.idVendor -> idVendor
  *
  * Get the vendor ID.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_idVendor (VALUE self)
+static VALUE cDevice_idVendor (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->idVendor);
 }
 
 /*
  * call-seq:
- *   descriptor.idProduct -> idProduct
+ *   device.idProduct -> idProduct
  *
  * Get the product ID.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_idProduct (VALUE self)
+static VALUE cDevice_idProduct (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->idProduct);
 }
 
 /*
  * call-seq:
- *   descriptor.bcdDevice -> bcdDevice
+ *   device.bcdDevice -> bcdDevice
  *
  * Get the device release number in binary-coded decimal.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bcdDevice (VALUE self)
+static VALUE cDevice_bcdDevice (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bcdDevice);
 }
 
 /*
  * call-seq:
- *   descriptor.iManufacturer -> iManufacturer
+ *   device.iManufacturer -> iManufacturer
  *
  * Get the index of the manufacturer string.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_iManufacturer (VALUE self)
+static VALUE cDevice_iManufacturer (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->iManufacturer);
 }
 
 /*
  * call-seq:
- *   descriptor.iProduct -> iProduct
+ *   device.iProduct -> iProduct
  *
  * Get the index of the product string.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_iProduct (VALUE self)
+static VALUE cDevice_iProduct (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->iProduct);
 }
 
 /*
  * call-seq:
- *   descriptor.iSerialNumber -> iSerialNumber
+ *   device.iSerialNumber -> iSerialNumber
  *
  * Get the index of the serial number string.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_iSerialNumber (VALUE self)
+static VALUE cDevice_iSerialNumber (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->iSerialNumber);
 }
 
 /*
  * call-seq:
- *   descriptor.bNumConfigurations -> bNumConfigurations
+ *   device.bNumConfigurations -> bNumConfigurations
  *
  * Get the number of configurations of the device.
  *
  * Returns a +FixNum+ and never raises an exception.
  */
-static VALUE cDeviceDescriptor_bNumConfigurations (VALUE self)
+static VALUE cDevice_bNumConfigurations (VALUE self)
 {
-  struct device_descriptor_t *d;
+  struct device_t *d;
 
-  Data_Get_Struct (self, struct device_descriptor_t, d);
+  Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bNumConfigurations);
 }
 
@@ -1852,15 +1856,14 @@ void Init_ribusb()
 {
   RibUSB = rb_define_module ("RibUSB");
 
-  rb_define_singleton_method (RibUSB, "findError", mRibUSB_findError, 1);
+  rb_define_singleton_method (RibUSB, "getError", mRibUSB_getError, 1);
 
   /* RibUSB::Bus -- a class for _libusb_ bus-handling sessions */
   Bus = rb_define_class_under (RibUSB, "Bus", rb_cObject);
   rb_define_singleton_method (Bus, "new", cBus_new, 0);
   rb_define_method (Bus, "setDebug", cBus_setDebug, 1);
   rb_define_alias (Bus, "debug=", "setDebug");
-  rb_define_method (Bus, "getDeviceList", cBus_getDeviceList, 0);
-  rb_define_alias (Bus, "deviceList", "getDeviceList");
+  rb_define_method (Bus, "find", cBus_find, -1);
 
   /* RibUSB::Device -- a class for individual USB devices accessed through _libusb_ */
   Device = rb_define_class_under (RibUSB, "Device", rb_cObject);
@@ -1882,8 +1885,6 @@ void Init_ribusb()
   rb_define_method (Device, "kernelDriverActive?", cDevice_kernelDriverActiveQ, 1);
   rb_define_method (Device, "detachKernelDriver", cDevice_detach_kernel_driver, 1);
   rb_define_method (Device, "attachKernelDriver", cDevice_attach_kernel_driver, 1);
-  rb_define_method (Device, "getDeviceDescriptor", cDevice_get_device_descriptor, 0);
-  rb_define_alias (Device, "deviceDescriptor", "getDeviceDescriptor");
   rb_define_method (Device, "getStringDescriptorASCII", cDevice_get_string_descriptor_ascii, 1);
   rb_define_alias (Device, "stringDescriptorASCII", "getStringDescriptorASCII");
   rb_define_method (Device, "getStringDescriptor", cDevice_get_string_descriptor, 2);
@@ -1892,22 +1893,18 @@ void Init_ribusb()
   rb_define_method (Device, "bulkTransfer", cDevice_bulkTransfer, 3);
   rb_define_method (Device, "interruptTransfer", cDevice_interruptTransfer, 3);
 
-  /* RibUSB::DeviceDescriptor -- a class for USB device descriptors */
-  DeviceDescriptor = rb_define_class_under (RibUSB, "DeviceDescriptor", rb_cObject);
-  rb_define_method (DeviceDescriptor, "bLength", cDeviceDescriptor_bLength, 0);
-  rb_define_method (DeviceDescriptor, "bDescriptorType", cDeviceDescriptor_bDescriptorType, 0);
-  rb_define_method (DeviceDescriptor, "bcdUSB", cDeviceDescriptor_bcdUSB, 0);
-  rb_define_method (DeviceDescriptor, "bDeviceClass", cDeviceDescriptor_bDeviceClass, 0);
-  rb_define_method (DeviceDescriptor, "bDeviceSubClass", cDeviceDescriptor_bDeviceSubClass, 0);
-  rb_define_method (DeviceDescriptor, "bDeviceProtocol", cDeviceDescriptor_bDeviceProtocol, 0);
-  rb_define_method (DeviceDescriptor, "bMaxPacketSize0", cDeviceDescriptor_bMaxPacketSize0, 0);
-  rb_define_method (DeviceDescriptor, "idVendor", cDeviceDescriptor_idVendor, 0);
-  rb_define_method (DeviceDescriptor, "idProduct", cDeviceDescriptor_idProduct, 0);
-  rb_define_method (DeviceDescriptor, "bcdDevice", cDeviceDescriptor_bcdDevice, 0);
-  rb_define_method (DeviceDescriptor, "iManufacturer", cDeviceDescriptor_iManufacturer, 0);
-  rb_define_method (DeviceDescriptor, "iProduct", cDeviceDescriptor_iProduct, 0);
-  rb_define_method (DeviceDescriptor, "iSerialNumber", cDeviceDescriptor_iSerialNumber, 0);
-  rb_define_method (DeviceDescriptor, "bNumConfigurations", cDeviceDescriptor_bNumConfigurations, 0);
+  rb_define_method (Device, "bcdUSB", cDevice_bcdUSB, 0);
+  rb_define_method (Device, "bDeviceClass", cDevice_bDeviceClass, 0);
+  rb_define_method (Device, "bDeviceSubClass", cDevice_bDeviceSubClass, 0);
+  rb_define_method (Device, "bDeviceProtocol", cDevice_bDeviceProtocol, 0);
+  rb_define_method (Device, "bMaxPacketSize0", cDevice_bMaxPacketSize0, 0);
+  rb_define_method (Device, "idVendor", cDevice_idVendor, 0);
+  rb_define_method (Device, "idProduct", cDevice_idProduct, 0);
+  rb_define_method (Device, "bcdDevice", cDevice_bcdDevice, 0);
+  rb_define_method (Device, "iManufacturer", cDevice_iManufacturer, 0);
+  rb_define_method (Device, "iProduct", cDevice_iProduct, 0);
+  rb_define_method (Device, "iSerialNumber", cDevice_iSerialNumber, 0);
+  rb_define_method (Device, "bNumConfigurations", cDevice_bNumConfigurations, 0);
 
   /* RibUSB::ConfigDescriptor -- a class for USB config descriptors */
   ConfigDescriptor = rb_define_class_under (RibUSB, "ConfigDescriptor", rb_cObject);
