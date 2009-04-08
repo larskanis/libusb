@@ -2134,7 +2134,7 @@ void Init_ribusb()
   rb_define_method (Device, "bNumConfigurations", cDevice_bNumConfigurations, 0);
 
   /* RibUSB::Transfer -- a class for asynchronous USB transfers */
-  Device = rb_define_class_under (RibUSB, "Transfer", rb_cObject);
+  Transfer = rb_define_class_under (RibUSB, "Transfer", rb_cObject);
   rb_define_method (Transfer, "submit", cTransfer_submit, 0);
   rb_define_method (Transfer, "cancel", cTransfer_cancel, 0);
 
