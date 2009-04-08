@@ -94,7 +94,7 @@ struct endpoint_descriptor_t {
 struct transfer_t {
   struct libusb_transfer *transfer;
   void *buffer;
-  VALUE cb_data;
+  VALUE proc;
 };
 
 
@@ -103,6 +103,7 @@ struct transfer_t {
  * internal prototypes                                *
  ******************************************************/
 static VALUE cDevice_new (struct libusb_device *device);
+void cTransfer_free (struct transfer_t *t);
 static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor);
 static VALUE cInterface_new (struct libusb_interface *interface);
 static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor);
@@ -427,6 +428,7 @@ void cDevice_free (struct device_t *d)
   free (d);
 }
 
+/* XXX needs to be a separate function??? */
 static VALUE cDevice_new (struct libusb_device *device)
 {
   struct device_t *d;
@@ -764,7 +766,7 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
  *
  * Returns +nil+ in any case, and raises an exception on failure.
  */
-static VALUE cDevice_detach_kernel_driver (VALUE self, VALUE interface)
+static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -793,7 +795,7 @@ static VALUE cDevice_detach_kernel_driver (VALUE self, VALUE interface)
  *
  * Returns +nil+ in any case, and raises an exception on failure.
  */
-static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
+static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -823,7 +825,7 @@ static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
  *
  * On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
-static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
+static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
 {
   struct device_t *d;
   int res;
@@ -855,7 +857,7 @@ static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
  *
  * On success, returns the descriptor string of given index in given language (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
  */
-static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langid)
+static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 {
   struct device_t *d;
   int res;
@@ -879,7 +881,7 @@ static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langi
  * call-seq:
  *   device.controlTransfer(args) -> count
  *   device.controlTransfer(args) -> data
- *   device.controlTransfer(args) {block} -> nil
+ *   device.controlTransfer(args) {block} -> transfer
  *
  * Perform a control transfer.
  *
@@ -919,6 +921,8 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
   unsigned int timeout;
   VALUE v;
   int res;
+  struct transfer_t *t;
+  VALUE object;
 
   Data_Get_Struct (self, struct device_t, d);
   if (d->handle == NULL) {
@@ -971,8 +975,20 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     timeout = NUM2INT(v);
 
   if (rb_block_given_p ()) {
-    rb_raise (rb_eRuntimeError, "Asynchronous control transfers not yet supported. Hold your breath.");
-    /* XXX   proc = rb_block_proc (); */
+    t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
+    if (!t) {
+      rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
+      return Qnil;
+    }
+    t->proc = rb_block_proc ();
+    t->transfer = libusb_alloc_transfer (0);
+    if (!(t->transfer)) {
+      rb_raise (rb_eRuntimeError, "Failed to allocate control transfer.");
+      return Qnil;
+    }
+    object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
+    rb_obj_call_init (object, 0, 0);
+    return object;
   } else {
     res = libusb_control_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
     if (res < 0) {
@@ -993,7 +1009,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
  * call-seq:
  *   device.bulkTransfer(args) -> count
  *   device.bulkTransfer(args) -> data
- *   device.bulkTransfer(args) {block} -> nil
+ *   device.bulkTransfer(args) {block} -> transfer
  *
  * Perform a bulk transfer.
  *
@@ -1093,7 +1109,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
  * call-seq:
  *   device.interruptTransfer(args) -> count
  *   device.interruptTransfer(args) -> data
- *   device.interruptTransfer(args) {block} -> nil
+ *   device.interruptTransfer(args) {block} -> transfer
  *
  * Perform a interrupt transfer.
  *
@@ -1379,6 +1395,65 @@ static VALUE cDevice_bNumConfigurations (VALUE self)
 
   Data_Get_Struct (self, struct device_t, d);
   return INT2NUM(d->descriptor->bNumConfigurations);
+}
+
+
+
+/******************************************************
+ * RibUSB::Transfer method definitions                *
+ ******************************************************/
+
+void cTransfer_free (struct transfer_t *t)
+{
+  /* XXX buffer! */
+
+  free (t->transfer);
+
+  free (t);
+}
+
+/*
+ * call-seq:
+ *   transfer.submit -> nil
+ *
+ * Submit the asynchronous transfer.
+ *
+ * On success, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+ */
+static VALUE cTransfer_submit (VALUE self)
+{
+  struct transfer_t *t;
+  int res;
+
+  Data_Get_Struct (self, struct transfer_t, t);
+  res = libusb_transfer_submit (t);
+  if (res) {
+    rb_raise (rb_eRuntimeError, "Failed to submit asynchronous transfer: %s.", get_error_text (res));
+    return INT2NUM(res);
+  } else
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   transfer.cancel -> nil
+ *
+ * Cancel the asynchronous transfer.
+ *
+ * On success, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+ */
+static VALUE cTransfer_cancel (VALUE self)
+{
+  struct transfer_t *t;
+  int res;
+
+  Data_Get_Struct (self, struct transfer_t, t);
+  res = libusb_transfer_cancel (t);
+  if (res) {
+    rb_raise (rb_eRuntimeError, "Failed to cancel asynchronous transfer: %s.", get_error_text (res));
+    return INT2NUM(res);
+  } else
+    return Qnil;
 }
 
 
@@ -2035,11 +2110,11 @@ void Init_ribusb()
   rb_define_method (Device, "clearHalt", cDevice_clearHalt, 1);
   rb_define_method (Device, "resetDevice", cDevice_resetDevice, 0);
   rb_define_method (Device, "kernelDriverActive?", cDevice_kernelDriverActiveQ, 1);
-  rb_define_method (Device, "detachKernelDriver", cDevice_detach_kernel_driver, 1);
-  rb_define_method (Device, "attachKernelDriver", cDevice_attach_kernel_driver, 1);
-  rb_define_method (Device, "getStringDescriptorASCII", cDevice_get_string_descriptor_ascii, 1);
+  rb_define_method (Device, "detachKernelDriver", cDevice_detachKernelDriver, 1);
+  rb_define_method (Device, "attachKernelDriver", cDevice_attachKernelDriver, 1);
+  rb_define_method (Device, "getStringDescriptorASCII", cDevice_getStringDescriptorASCII, 1);
   rb_define_alias (Device, "stringDescriptorASCII", "getStringDescriptorASCII");
-  rb_define_method (Device, "getStringDescriptor", cDevice_get_string_descriptor, 2);
+  rb_define_method (Device, "getStringDescriptor", cDevice_getStringDescriptor, 2);
   rb_define_alias (Device, "stringDescriptor", "getStringDescriptor");
   rb_define_method (Device, "controlTransfer", cDevice_controlTransfer, 1);
   rb_define_method (Device, "bulkTransfer", cDevice_bulkTransfer, 1);
@@ -2057,6 +2132,11 @@ void Init_ribusb()
   rb_define_method (Device, "iProduct", cDevice_iProduct, 0);
   rb_define_method (Device, "iSerialNumber", cDevice_iSerialNumber, 0);
   rb_define_method (Device, "bNumConfigurations", cDevice_bNumConfigurations, 0);
+
+  /* RibUSB::Transfer -- a class for asynchronous USB transfers */
+  Device = rb_define_class_under (RibUSB, "Transfer", rb_cObject);
+  rb_define_method (Transfer, "submit", cTransfer_submit, 0);
+  rb_define_method (Transfer, "cancel", cTransfer_cancel, 0);
 
   /* RibUSB::ConfigDescriptor -- a class for USB config descriptors */
   ConfigDescriptor = rb_define_class_under (RibUSB, "ConfigDescriptor", rb_cObject);
