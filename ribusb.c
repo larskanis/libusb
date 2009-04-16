@@ -321,8 +321,8 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
   VALUE device, array;
   int i;
   VALUE v;
-  uint8_t bDeviceClass, bDeviceSubClass, bDeviceProtocol, bMaxPacketSize0;
-  uint16_t bcdUSB, idVendor, idProduct, bcdDevice;
+  uint8_t bDeviceClass = 0, bDeviceSubClass = 0, bDeviceProtocol = 0, bMaxPacketSize0 = 0;
+  uint16_t bcdUSB = 0, idVendor = 0, idProduct = 0, bcdDevice = 0;
   uint16_t mask = 0;
   VALUE hash, proc;
 
@@ -385,7 +385,7 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
   array = rb_ary_new ();
 
   for (i = 0; i < res; i ++) {
-    device = cDevice_new (list[i]);
+    device = cDevice_new (list[i]);               /* XXX not very nice */
     Data_Get_Struct (device, struct device_t, d); /* XXX not very nice */
     if ((mask & 0x01) && (bDeviceClass != d->descriptor->bDeviceClass))
       continue;
@@ -843,7 +843,7 @@ static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
       return INT2NUM(res);
     }
   }
-  res = libusb_get_string_descriptor_ascii (d->handle, NUM2INT(index), c, sizeof (c));
+  res = libusb_get_string_descriptor_ascii (d->handle, NUM2INT(index), (unsigned char *) c, sizeof (c));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", get_error_text (res));
   return rb_str_new(c, res);
@@ -875,7 +875,7 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
       return INT2NUM(res);
     }
   }
-  res = libusb_get_string_descriptor (d->handle, NUM2INT(index), NUM2INT(langid), c, sizeof (c));
+  res = libusb_get_string_descriptor (d->handle, NUM2INT(index), NUM2INT(langid), (unsigned char *) c, sizeof (c));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", get_error_text (res));
   return rb_str_new(c, res);
@@ -917,7 +917,6 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
-  VALUE dir;
   uint8_t bmRequestType, bRequest;
   uint16_t wValue, wIndex;
   VALUE dataIn, dataOut;
@@ -954,7 +953,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 	rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#controlTransfer: :dataIn must not be a String when a block is passed.");
 	return Qnil;
       }
-      data = RSTRING(dataIn)->ptr;
+      data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
       foreign_data_in = 1;
       break;
@@ -975,7 +974,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     bmRequestType &= 0x7f; /* out transfer */
-    data = RSTRING(dataOut)->ptr;
+    data = (unsigned char *) (RSTRING(dataOut)->ptr);
     wLength = RSTRING(dataOut)->len;
   } else if ((NIL_P(dataIn)) && (NIL_P(dataOut))) {
     bmRequestType &= 0x7f; /* out transfer */
@@ -1028,7 +1027,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     if (foreign_data_in)
       return INT2NUM(res);
     else {
-      v = rb_str_new (data, wLength);
+      v = rb_str_new ((char *) data, wLength);
       free (data);
       return v;
     }
@@ -1064,7 +1063,6 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
-  VALUE dir;
   unsigned char endpoint;
   VALUE dataIn, dataOut;
   unsigned char *data;
@@ -1090,7 +1088,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     endpoint |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
-      data = RSTRING(dataIn)->ptr;
+      data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
       foreign_data_in = 1;
       break;
@@ -1107,7 +1105,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     endpoint &= 0x7f; /* out transfer */
-    data = RSTRING(dataOut)->ptr;
+    data = (unsigned char *) (RSTRING(dataOut)->ptr);
     wLength = RSTRING(dataOut)->len;
   } else
     rb_raise (rb_eRuntimeError, "Exactly one of the options :dataIn and :dataOut must be non-nil in RibUSB::Device#bulkTransfer.");
@@ -1128,7 +1126,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     if (foreign_data_in)
       return INT2NUM(nxfer);
     else {
-      v = rb_str_new (data, nxfer);
+      v = rb_str_new ((char *) data, nxfer);
       free (data);
       return v;
     }
@@ -1164,7 +1162,6 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
-  VALUE dir;
   unsigned char endpoint;
   VALUE dataIn, dataOut;
   unsigned char *data;
@@ -1190,7 +1187,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     endpoint |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
-      data = RSTRING(dataIn)->ptr;
+      data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
       foreign_data_in = 1;
       break;
@@ -1207,7 +1204,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     endpoint &= 0x7f; /* out transfer */
-    data = RSTRING(dataOut)->ptr;
+    data = (unsigned char *) (RSTRING(dataOut)->ptr);
     wLength = RSTRING(dataOut)->len;
   } else
     rb_raise (rb_eRuntimeError, "Exactly one of the options :dataIn and :dataOut must be non-nil in RibUSB::Device#interruptTransfer.");
@@ -1228,7 +1225,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     if (foreign_data_in)
       return INT2NUM(nxfer);
     else {
-      v = rb_str_new (data, nxfer);
+      v = rb_str_new ((char *) data, nxfer);
       free (data);
       return v;
     }
@@ -1502,7 +1499,6 @@ static VALUE cTransfer_cancel (VALUE self)
 static VALUE cTransfer_status (VALUE self)
 {
   struct transfer_t *t;
-  int res;
 
   Data_Get_Struct (self, struct transfer_t, t);
   switch (t->transfer->status) {
@@ -1728,7 +1724,7 @@ static VALUE cConfigDescriptor_extra (VALUE self)
   struct config_descriptor_t *d;
 
   Data_Get_Struct (self, struct config_descriptor_t, d);
-  return rb_str_new(d->descriptor->extra, d->descriptor->extra_length);
+  return rb_str_new((char *) d->descriptor->extra, d->descriptor->extra_length);
 }
 
 
@@ -1982,7 +1978,7 @@ static VALUE cInterfaceDescriptor_extra (VALUE self)
   struct interface_descriptor_t *d;
 
   Data_Get_Struct (self, struct interface_descriptor_t, d);
-  return rb_str_new(d->descriptor->extra, d->descriptor->extra_length);
+  return rb_str_new((char *) d->descriptor->extra, d->descriptor->extra_length);
 }
 
 
@@ -2148,7 +2144,7 @@ static VALUE cEndpointDescriptor_extra (VALUE self)
   struct endpoint_descriptor_t *d;
 
   Data_Get_Struct (self, struct endpoint_descriptor_t, d);
-  return rb_str_new(d->descriptor->extra, d->descriptor->extra_length);
+  return rb_str_new((char *) d->descriptor->extra, d->descriptor->extra_length);
 }
 
 
