@@ -450,7 +450,7 @@ void cDevice_free (struct device_t *d)
   free (d);
 }
 
-/* XXX needs to be a separate function??? */
+/* XXXXXX does this need to be a separate function??? */
 static VALUE cDevice_new (struct libusb_device *device)
 {
   struct device_t *d;
@@ -1029,7 +1029,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
       memcpy(t->buffer + LIBUSB_CONTROL_SETUP_SIZE, data, wLength);
     }
     object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
-    libusb_fill_control_transfer (t->transfer, d->handle, t->buffer, callback_wrapper, object, timeout);
+    libusb_fill_control_transfer (t->transfer, d->handle, t->buffer, callback_wrapper, (void *) object, timeout);
 
     rb_obj_call_init (object, 0, 0);
     return object;
@@ -1058,42 +1058,36 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
  * Perform or prepare a bulk transfer.
  *
  * - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
- *   * <tt>:bmRequestType</tt> is a +FixNum+ specifying the 8-bit request type field of the setup packet (note that the direction bit is ignored).
- *   * <tt>:bRequest</tt> is a +FixNum+ specifying the 8-bit request field of the setup packet.
- *   * <tt>:wValue</tt> is a +FixNum+ specifying the 16-bit value field of the setup packet.
- *   * <tt>:wIndex</tt> is a +FixNum+ specifying the 16-bit index field of the setup packet.
+ *   * <tt>:endpoint</tt> is a +FixNum+ specifying the USB endpoint (note that the direction bit is ignored).
  *   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
  *   * <tt>:dataOut</tt> is an optional +String+, see below.
  *   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
- * - <tt>:dataIn</tt> and <tt>:dataOut</tt> are mutually exclusive but neither is mandatory.
+ * - Exactly one of <tt>:dataIn</tt> and <tt>:dataOut</tt> must be specified.
  * - The type and direction of the transfer is determined as follows:
  *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
- *   * If neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified, the transfer will only contain the setup packet but no data packet.
- *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value must be between 1 and 64 and specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
- *   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; data received is stored in this +String+.
+ *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
+ *   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
  *   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
- *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
+ *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
  * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
  * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
  *
  * On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
  * - a RibUSB::Transfer if the transfer is asynchronous;
- * - <tt>0</tt> if neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified;
  * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
  * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
  */
 static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
-  uint8_t bmRequestType, bRequest;
-  uint16_t wValue, wIndex;
+  unsigned char endpoint;
   VALUE dataIn, dataOut;
   unsigned char *data;
   int foreign_data_in = 1;
   uint16_t wLength;
   unsigned int timeout;
   VALUE v;
-  int res;
+  int res, transferred;
   struct transfer_t *t;
   VALUE object;
 
@@ -1106,15 +1100,12 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     }
   }
 
-  bmRequestType = NUM2INT(get_opt (hash, "bmRequestType", 1));
-  bRequest = NUM2INT(get_opt (hash, "bRequest", 1));
-  wValue = NUM2INT(get_opt (hash, "wValue", 1));
-  wIndex = NUM2INT(get_opt (hash, "wIndex", 1));
+  endpoint = NUM2INT(get_opt (hash, "endpoint", 1));
   dataIn = get_opt (hash, "dataIn", 0);
   dataOut = get_opt (hash, "dataOut", 0);
 
   if ((!NIL_P(dataIn)) && (NIL_P(dataOut))) {
-    bmRequestType |= 0x80; /* in transfer */
+    endpoint |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
       if (rb_block_given_p ()) {
@@ -1141,15 +1132,11 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       break;
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
-    bmRequestType &= 0x7f; /* out transfer */
+    endpoint &= 0x7f; /* out transfer */
     data = (unsigned char *) (RSTRING(dataOut)->ptr);
     wLength = RSTRING(dataOut)->len;
-  } else if ((NIL_P(dataIn)) && (NIL_P(dataOut))) {
-    bmRequestType &= 0x7f; /* out transfer */
-    data = NULL;
-    wLength = 0;
   } else
-    rb_raise (rb_eRuntimeError, "Options :dataIn and :dataOut must not both be non-nil in RibUSB::Device#bulkTransfer.");
+    rb_raise (rb_eRuntimeError, "Exactly one of :dataIn and :dataOut must be non-nil in RibUSB::Device#bulkTransfer.");
 
   v = get_opt (hash, "timeout", 0);
   if (NIL_P(v))
@@ -1169,28 +1156,27 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       rb_raise (rb_eRuntimeError, "Failed to allocate bulk transfer.");
       return Qnil;
     }
-    t->buffer = (unsigned char *) malloc (LIBUSB_BULK_SETUP_SIZE + wLength);
+    t->buffer = (unsigned char *) malloc (wLength);
     if (!(t->buffer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for bulk transfer.");
       return Qnil;
     }
-    libusb_fill_bulk_setup (t->buffer, bmRequestType, bRequest, wValue, wIndex, wLength);
     if (data) {
-      memcpy(t->buffer + LIBUSB_BULK_SETUP_SIZE, data, wLength);
+      memcpy(t->buffer, data, wLength); /* XXXXXX do we really need to copy the data? */
     }
     object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
-    libusb_fill_bulk_transfer (t->transfer, d->handle, t->buffer, callback_wrapper, object, timeout);
+    libusb_fill_bulk_transfer (t->transfer, d->handle, endpoint, t->buffer, wLength, callback_wrapper, (void *) object, timeout);
 
     rb_obj_call_init (object, 0, 0);
     return object;
   } else {
-    res = libusb_bulk_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
+    res = libusb_bulk_transfer (d->handle, endpoint, data, wLength, &transferred, timeout);
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Synchronous bulk transfer failed: %s.", get_error_text (res));
       return INT2NUM(res);
     }
     if (foreign_data_in)
-      return INT2NUM(res);
+      return INT2NUM(transferred);
     else {
       v = rb_str_new ((char *) data, wLength);
       free (data);
