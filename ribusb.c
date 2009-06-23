@@ -1191,23 +1191,25 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
  *   device.interruptTransfer(args) -> data
  *   device.interruptTransfer(args) {block} -> transfer
  *
- * Perform a interrupt transfer.
+ * Perform or prepare a interrupt transfer.
  *
  * - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
- *   * <tt>:endpoint</tt> is a +FixNum+ specifying the endpoint to communicate with (note that the direction bit usually specified here is ignored).
+ *   * <tt>:endpoint</tt> is a +FixNum+ specifying the USB endpoint (note that the direction bit is ignored).
  *   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
  *   * <tt>:dataOut</tt> is an optional +String+, see below.
  *   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
  * - Exactly one of <tt>:dataIn</tt> and <tt>:dataOut</tt> must be specified.
  * - The type and direction of the transfer is determined as follows:
  *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
- *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the interrupt data packet. A new +String+ is created for the data received if the transfer is successful.
- *   * If <tt>:dataIn</tt> is a +String+, an +in+ transfer is started; its size defines the size of the interrupt data packet; data received is stored in this +String+.
- *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size defines the size of the interrupt data packet; the contents of this +String+ are sent as the data packet.
- * - XXX block documentation!
+ *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
+ *   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
+ *   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+ *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
+ * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
+ * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
  *
- * On success, returns one of the following, otherwise raises an exception and returns the _libusb_ error code (+FixNum+):
- * - +nil+ if the transfer is asynchronous;
+ * On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
+ * - a RibUSB::Transfer if the transfer is asynchronous;
  * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
  * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
  */
@@ -1221,7 +1223,9 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
   uint16_t wLength;
   unsigned int timeout;
   VALUE v;
-  int nxfer, res;
+  int res, transferred;
+  struct transfer_t *t;
+  VALUE object;
 
   Data_Get_Struct (self, struct device_t, d);
   if (d->handle == NULL) {
@@ -1235,19 +1239,28 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
   endpoint = NUM2INT(get_opt (hash, "endpoint", 1));
   dataIn = get_opt (hash, "dataIn", 0);
   dataOut = get_opt (hash, "dataOut", 0);
+
   if ((!NIL_P(dataIn)) && (NIL_P(dataOut))) {
     endpoint |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
+      if (rb_block_given_p ()) {
+	rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#interruptTransfer: :dataIn must not be a String when a block is passed.");
+	return Qnil;
+      }
       data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
       foreign_data_in = 1;
       break;
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
-      data = (unsigned char *) malloc (wLength);
-      if (!data)
-	rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
+      if (rb_block_given_p ()) {
+	data = NULL;
+      } else {
+	data = (unsigned char *) malloc (wLength);
+	if (!data)
+	  rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
+      }
       foreign_data_in = 0;
       break;
     default:
@@ -1259,7 +1272,8 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     data = (unsigned char *) (RSTRING(dataOut)->ptr);
     wLength = RSTRING(dataOut)->len;
   } else
-    rb_raise (rb_eRuntimeError, "Exactly one of the options :dataIn and :dataOut must be non-nil in RibUSB::Device#interruptTransfer.");
+    rb_raise (rb_eRuntimeError, "Exactly one of :dataIn and :dataOut must be non-nil in RibUSB::Device#interruptTransfer.");
+
   v = get_opt (hash, "timeout", 0);
   if (NIL_P(v))
     timeout = 1000;
@@ -1267,17 +1281,40 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     timeout = NUM2INT(v);
 
   if (rb_block_given_p ()) {
-    rb_raise (rb_eRuntimeError, "Asynchronous interrupt transfers not yet supported. Hold your breath.");
-    /* XXX   proc = rb_block_proc (); */
+    t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
+    if (!t) {
+      rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
+      return Qnil;
+    }
+    t->proc = rb_block_proc ();
+    t->transfer = libusb_alloc_transfer (0);
+    if (!(t->transfer)) {
+      rb_raise (rb_eRuntimeError, "Failed to allocate interrupt transfer.");
+      return Qnil;
+    }
+    t->buffer = (unsigned char *) malloc (wLength);
+    if (!(t->buffer)) {
+      rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for interrupt transfer.");
+      return Qnil;
+    }
+    if (data) {
+      memcpy(t->buffer, data, wLength); /* XXXXXX do we really need to copy the data? */
+    }
+    object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
+    libusb_fill_interrupt_transfer (t->transfer, d->handle, endpoint, t->buffer, wLength, callback_wrapper, (void *) object, timeout);
+
+    rb_obj_call_init (object, 0, 0);
+    return object;
   } else {
-    res = libusb_interrupt_transfer (d->handle, endpoint, data, wLength, &nxfer, timeout);
+    res = libusb_interrupt_transfer (d->handle, endpoint, data, wLength, &transferred, timeout);
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Synchronous interrupt transfer failed: %s.", get_error_text (res));
+      return INT2NUM(res);
     }
     if (foreign_data_in)
-      return INT2NUM(nxfer);
+      return INT2NUM(transferred);
     else {
-      v = rb_str_new ((char *) data, nxfer);
+      v = rb_str_new ((char *) data, wLength);
       free (data);
       return v;
     }
