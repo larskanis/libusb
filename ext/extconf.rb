@@ -7,4 +7,4 @@ dir_config("ribusb")
 pkg_config("libusb-1.0")
 $CFLAGS += " -Wall"
 
-create_makefile("ribusb")
+create_makefile("ribusb_ext")

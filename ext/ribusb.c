@@ -1,24 +1,24 @@
 /* ========================================================================= */
 /*
-   RibUSB -- Ruby bindings to libusb.
+  RibUSB -- Ruby bindings to libusb.
 
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; version 2 of the License.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License as
+  published by the Free Software Foundation; version 2 of the License.
 
-   This program is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   General Public License for more details.
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
 
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+  MA 02111-1307, USA.
 
-   This program is copyright by András G. Major, 2009.
-   Please visit the project website at http://ribusb.rubyforge.org/
-   for support.
+  This program is copyright by András G. Major, 2009.
+  Please visit the project website at http://ribusb.rubyforge.org/
+  for support.
 */
 /* ========================================================================= */
 
@@ -26,8 +26,8 @@
 #include <libusb.h>
 
 /******************************************************
- * global variables                                   *
- ******************************************************/
+* global variables                                   *
+******************************************************/
 
 static VALUE RibUSB;
 static VALUE Bus;
@@ -38,22 +38,23 @@ static VALUE InterfaceDescriptor;
 static VALUE EndpointDescriptor;
 static VALUE Transfer;
 
+static const char *VERSION = "0.0.1";
 
 
 /******************************************************
- * structures for classes                             *
- ******************************************************/
+* structures for classes                             *
+******************************************************/
 
 /*
- * Opaque structure for the RibUSB::Bus class
- */
+* Opaque structure for the RibUSB::Bus class
+*/
 struct usb_t {
   struct libusb_context *context;
 };
 
 /*
- * Opaque structure for the RibUSB::Device class
- */
+* Opaque structure for the RibUSB::Device class
+*/
 struct device_t {
   struct libusb_device *device;
   struct libusb_device_handle *handle;
@@ -61,36 +62,36 @@ struct device_t {
 };
 
 /*
- * Opaque structure for the RibUSB::ConfigDescriptor class
- */
+* Opaque structure for the RibUSB::ConfigDescriptor class
+*/
 struct config_descriptor_t {
   struct libusb_config_descriptor *descriptor;
 };
 
 /*
- * Opaque structure for the RibUSB::Interface class
- */
+* Opaque structure for the RibUSB::Interface class
+*/
 struct interface_t {
   struct libusb_interface *interface;
 };
 
 /*
- * Opaque structure for the RibUSB::InterfaceDescriptor class
- */
+* Opaque structure for the RibUSB::InterfaceDescriptor class
+*/
 struct interface_descriptor_t {
   struct libusb_interface_descriptor *descriptor;
 };
 
 /*
- * Opaque structure for the RibUSB::EndpointDescriptor class
- */
+* Opaque structure for the RibUSB::EndpointDescriptor class
+*/
 struct endpoint_descriptor_t {
   struct libusb_endpoint_descriptor *descriptor;
 };
 
 /*
- * Opaque structure for the RibUSB::Transfer class
- */
+* Opaque structure for the RibUSB::Transfer class
+*/
 struct transfer_t {
   struct libusb_transfer *transfer;
   unsigned char *buffer;
@@ -100,8 +101,8 @@ struct transfer_t {
 
 
 /******************************************************
- * internal prototypes                                *
- ******************************************************/
+* internal prototypes                                *
+******************************************************/
 static VALUE cDevice_new (struct libusb_device *device);
 void cTransfer_free (struct transfer_t *t);
 static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor);
@@ -112,8 +113,8 @@ static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descrip
 
 
 /******************************************************
- * internal functions                                 *
- ******************************************************/
+* internal functions                                 *
+******************************************************/
 
 static void callback_wrapper (struct libusb_transfer *transfer)
 {
@@ -138,8 +139,8 @@ VALUE get_opt (VALUE hash, char *key, int mandatory)
 
 
 /******************************************************
- * RibUSB method definitions                          *
- ******************************************************/
+* RibUSB method definitions                          *
+******************************************************/
 
 int get_error (int number, char **name, char **text)
 {
@@ -170,9 +171,9 @@ int get_error (int number, char **name, char **text)
   for (i = 0; i < n_error_list; i ++)
     if (number == error_list[i].number) {
       if (name)
-	*name = error_list[i].name;
+        *name = error_list[i].name;
       if (text)
-	*text = error_list[i].text;
+        *text = error_list[i].text;
       return 1;
       break;
     }
@@ -191,17 +192,17 @@ char *get_error_text (int number)
 }
 
 /*
- * call-seq:
- *   RibUSB.getError(number) -> [name, text]
- *
- * Get the textual error description corresponding to a _libusb_ error code.
- *
- * - +number+ is an integer containing the error returned by a _libusb_ function.
- * - +name+ is a +String+ containing the name of the error as used in the C header file <tt>libusb.h</tt>.
- * - +text+ is a verbose description of the error, in English, using lower-case letters and no punctuation.
- *
- * On success (if the error number is valid), returns an array of two strings, otherwise raises an exception and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
- */
+* call-seq:
+*   RibUSB.getError(number) -> [name, text]
+*
+* Get the textual error description corresponding to a _libusb_ error code.
+*
+* - +number+ is an integer containing the error returned by a _libusb_ function.
+* - +name+ is a +String+ containing the name of the error as used in the C header file <tt>libusb.h</tt>.
+* - +text+ is a verbose description of the error, in English, using lower-case letters and no punctuation.
+*
+* On success (if the error number is valid), returns an array of two strings, otherwise raises an exception and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
+*/
 static VALUE mRibUSB_getError (VALUE self, VALUE number)
 {
   int error;
@@ -223,8 +224,8 @@ static VALUE mRibUSB_getError (VALUE self, VALUE number)
 
 
 /******************************************************
- * RibUSB::Bus method definitions                     *
- ******************************************************/
+* RibUSB::Bus method definitions                     *
+******************************************************/
 
 void cBus_free (struct usb_t *u)
 {
@@ -234,15 +235,15 @@ void cBus_free (struct usb_t *u)
 }
 
 /*
- * call-seq:
- *   RibUSB::Bus.new -> bus
- *
- * Create an instance of RibUSB::Bus.
- *
- * Effectively creates a _libusb_ context (the context itself being stored in an opaque structure). The memory associated with the bus is automatically freed on garbage collection when possible.
- *
- * If successful, returns the bus object, otherwise raises an exception and returns either +nil+ or the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   RibUSB::Bus.new -> bus
+*
+* Create an instance of RibUSB::Bus.
+*
+* Effectively creates a _libusb_ context (the context itself being stored in an opaque structure). The memory associated with the bus is automatically freed on garbage collection when possible.
+*
+* If successful, returns the bus object, otherwise raises an exception and returns either +nil+ or the _libusb_ error code (+FixNum+).
+*/
 static VALUE cBus_new (VALUE self)
 {
   struct libusb_context *context;
@@ -267,16 +268,16 @@ static VALUE cBus_new (VALUE self)
 }
 
 /*
- * call-seq:
- *   bus.setDebug(level) -> nil
- *   bus.debug=level -> nil
- *
- * Set the debug level of the current _libusb_ context.
- *
- * - +level+ is a +FixNum+ with a sensible range from 0 to 3.
- *
- * Returns +nil+ and never raises an exception.
- */
+* call-seq:
+*   bus.setDebug(level) -> nil
+*   bus.debug=level -> nil
+*
+* Set the debug level of the current _libusb_ context.
+*
+* - +level+ is a +FixNum+ with a sensible range from 0 to 3.
+*
+* Returns +nil+ and never raises an exception.
+*/
 static VALUE cBus_setDebug (VALUE self, VALUE level)
 {
   struct usb_t *u;
@@ -287,27 +288,27 @@ static VALUE cBus_setDebug (VALUE self, VALUE level)
 }
 
 /*
- * call-seq:
- *   bus.find -> list
- *   bus.find {block} -> list
- *   bus.find(hash) -> list
- *   bus.find(hash) {block} -> list
- *
- * Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
- *
- * Criteria can, optionally, be supplied in the form of a hash, or in a block, or both.
- * - In the hash, a number of simple criteria can be defined. If a criterion is not specified or its value is +nil+, any device will match that criterion.
- *   * <tt>:idVendor</tt>, <tt>:idProduct</tt> (+FixNum+) for the vendor/product ID;
- *   * <tt>:bcdUSB</tt>, <tt>:bcdDevice</tt> (+FixNum+) for the USB and device release numbers;
- *   * <tt>:bDeviceClass</tt>, <tt>:bDeviceSubClass</tt>, <tt>:bDeviceProtocol</tt>, <tt>:bMaxPacketSize0</tt> (+FixNum+) for the device type.
- * - The block is called for all devices that match the criteria specified in the hash.
- * - The block is passed a single argument: the RibUSB::Device instance of the device. The device is included in the resulting list if and only if the block returns non-+false+.
- * - If the block is not specified, all devices matching the hash criteria are returned.
- *
- * On success, returns an array of RibUSB::Device with one entry for each device, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- *
- * Note: this list provides no information whatsoever on whether or not any given device can be accessed. Insufficient privilege and use by other software can prevent access to any device.
- */
+* call-seq:
+*   bus.find -> list
+*   bus.find {block} -> list
+*   bus.find(hash) -> list
+*   bus.find(hash) {block} -> list
+*
+* Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
+*
+* Criteria can, optionally, be supplied in the form of a hash, or in a block, or both.
+* - In the hash, a number of simple criteria can be defined. If a criterion is not specified or its value is +nil+, any device will match that criterion.
+*   * <tt>:idVendor</tt>, <tt>:idProduct</tt> (+FixNum+) for the vendor/product ID;
+*   * <tt>:bcdUSB</tt>, <tt>:bcdDevice</tt> (+FixNum+) for the USB and device release numbers;
+*   * <tt>:bDeviceClass</tt>, <tt>:bDeviceSubClass</tt>, <tt>:bDeviceProtocol</tt>, <tt>:bMaxPacketSize0</tt> (+FixNum+) for the device type.
+* - The block is called for all devices that match the criteria specified in the hash.
+* - The block is passed a single argument: the RibUSB::Device instance of the device. The device is included in the resulting list if and only if the block returns non-+false+.
+* - If the block is not specified, all devices matching the hash criteria are returned.
+*
+* On success, returns an array of RibUSB::Device with one entry for each device, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*
+* Note: this list provides no information whatsoever on whether or not any given device can be accessed. Insufficient privilege and use by other software can prevent access to any device.
+*/
 static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
 {
   struct usb_t *u;
@@ -327,43 +328,43 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
     if (rb_type(hash) == T_HASH) {
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bDeviceClass")));
       if (!NIL_P(v)) {
-	bDeviceClass = NUM2INT(v);
-	mask |= 0x01;
+        bDeviceClass = NUM2INT(v);
+        mask |= 0x01;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bDeviceSubClass")));
       if (!NIL_P(v)) {
-	bDeviceSubClass = NUM2INT(v);
-	mask |= 0x02;
+        bDeviceSubClass = NUM2INT(v);
+        mask |= 0x02;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bDeviceProtocol")));
       if (!NIL_P(v)) {
-	bDeviceProtocol = NUM2INT(v);
-	mask |= 0x04;
+        bDeviceProtocol = NUM2INT(v);
+        mask |= 0x04;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bMaxPacketSize0")));
       if (!NIL_P(v)) {
-	bMaxPacketSize0 = NUM2INT(v);
-	mask |= 0x08;
+        bMaxPacketSize0 = NUM2INT(v);
+        mask |= 0x08;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bcdUSB")));
       if (!NIL_P(v)) {
-	bcdUSB = NUM2INT(v);
-	mask |= 0x10;
+        bcdUSB = NUM2INT(v);
+        mask |= 0x10;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("idVendor")));
       if (!NIL_P(v)) {
-	idVendor = NUM2INT(v);
-	mask |= 0x20;
+        idVendor = NUM2INT(v);
+        mask |= 0x20;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("idProduct")));
       if (!NIL_P(v)) {
-	idProduct = NUM2INT(v);
-	mask |= 0x40;
+        idProduct = NUM2INT(v);
+        mask |= 0x40;
       }
       v = rb_hash_lookup (hash, ID2SYM(rb_intern ("bcdDevice")));
       if (!NIL_P(v)) {
-	bcdDevice = NUM2INT(v);
-	mask |= 0x80;
+        bcdDevice = NUM2INT(v);
+        mask |= 0x80;
       }
     } else
       rb_raise (rb_eRuntimeError, "Argument to RibUSB::Bus#find must be a hash or nil, if specified.");
@@ -402,7 +403,7 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
 
     if (!NIL_P(proc))
       if (rb_funcall (proc, rb_intern ("call"), 1, device) == Qfalse)
-	continue;
+        continue;
 
     rb_ary_push (array, device);
   }
@@ -413,13 +414,13 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq:
- *   RibUSB::Bus.handleEvents -> nil
- *
- * Handles all pending USB events on the bus.
- *
- * If successful, returns +nil+, otherwise raises an exception and returns either the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   RibUSB::Bus.handleEvents -> nil
+*
+* Handles all pending USB events on the bus.
+*
+* If successful, returns +nil+, otherwise raises an exception and returns either the _libusb_ error code (+FixNum+).
+*/
 static VALUE cBus_handleEvents (VALUE self)
 {
   struct usb_t *u;
@@ -437,8 +438,8 @@ static VALUE cBus_handleEvents (VALUE self)
 
 
 /******************************************************
- * RibUSB::Device method definitions                  *
- ******************************************************/
+* RibUSB::Device method definitions                  *
+******************************************************/
 
 void cDevice_free (struct device_t *d)
 {
@@ -480,14 +481,14 @@ static VALUE cDevice_new (struct libusb_device *device)
 }
 
 /*
- * call-seq:
- *   device.getBusNumber -> bus_number
- *   device.busNumber -> bus_number
- *
- * Get bus number.
- *
- * On success, returns the USB bus number (+FixNum+) the device is connected to, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.getBusNumber -> bus_number
+*   device.busNumber -> bus_number
+*
+* Get bus number.
+*
+* On success, returns the USB bus number (+FixNum+) the device is connected to, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_getBusNumber (VALUE self)
 {
   struct device_t *d;
@@ -501,14 +502,14 @@ static VALUE cDevice_getBusNumber (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.getDeviceAddress -> address
- *   device.deviceAddress -> address
- *
- * Get device address.
- *
- * On success, returns the USB address on the bus (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.getDeviceAddress -> address
+*   device.deviceAddress -> address
+*
+* Get device address.
+*
+* On success, returns the USB address on the bus (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_getDeviceAddress (VALUE self)
 {
   struct device_t *d;
@@ -522,16 +523,16 @@ static VALUE cDevice_getDeviceAddress (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.getMaxPacketSize(endpoint) -> max_packet_size
- *   device.maxPacketSize(endpoint) -> max_packet_size
- *
- * Get maximum packet size.
- *
- * - +endpoint+ is a +FixNum+ containing the endpoint number.
- *
- * On success, returns the maximum packet size of the endpoint (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.getMaxPacketSize(endpoint) -> max_packet_size
+*   device.maxPacketSize(endpoint) -> max_packet_size
+*
+* Get maximum packet size.
+*
+* - +endpoint+ is a +FixNum+ containing the endpoint number.
+*
+* On success, returns the maximum packet size of the endpoint (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
 {
   struct device_t *d;
@@ -545,14 +546,14 @@ static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
 }
 
 /*
- * call-seq:
- *   device.getConfiguration -> configuration
- *   device.configuration -> configuration
- *
- * Get currently active configuration.
- *
- * On success, returns the bConfigurationValue of the active configuration of the device (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.getConfiguration -> configuration
+*   device.configuration -> configuration
+*
+* Get currently active configuration.
+*
+* On success, returns the bConfigurationValue of the active configuration of the device (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_getConfiguration (VALUE self)
 {
   struct device_t *d;
@@ -574,16 +575,16 @@ static VALUE cDevice_getConfiguration (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.setConfiguration(configuration) -> nil
- *   device.configuration=(configuration) -> nil
- *
- * Set active configuration.
- *
- * - +configuration+ is a +FixNum+ containing the configuration number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.setConfiguration(configuration) -> nil
+*   device.configuration=(configuration) -> nil
+*
+* Set active configuration.
+*
+* - +configuration+ is a +FixNum+ containing the configuration number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
 {
   struct device_t *d;
@@ -604,15 +605,15 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
 }
 
 /*
- * call-seq:
- *   device.claimInterface(interface) -> nil
- *
- * Claim interface.
- *
- * - +interface+ is a +FixNum+ containing the interface number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.claimInterface(interface) -> nil
+*
+* Claim interface.
+*
+* - +interface+ is a +FixNum+ containing the interface number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
 {
   struct device_t *d;
@@ -633,14 +634,14 @@ static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
 }
 
 /*
- * call-seq:
- *   device.releaseInterface(interface) -> nil
- * Release interface.
- *
- * - +interface+ is a +FixNum+ containing the interface number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.releaseInterface(interface) -> nil
+* Release interface.
+*
+* - +interface+ is a +FixNum+ containing the interface number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
 {
   struct device_t *d;
@@ -661,16 +662,16 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
 }
 
 /*
- * call-seq:
- *   device.setInterfaceAltSetting(interface, setting) -> nil
- *
- * Set alternate setting for an interface.
- *
- * - +interface+ is a +FixNum+ containing the interface number.
- * - +setting+ is a +FixNum+ containing the alternate setting number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.setInterfaceAltSetting(interface, setting) -> nil
+*
+* Set alternate setting for an interface.
+*
+* - +interface+ is a +FixNum+ containing the interface number.
+* - +setting+ is a +FixNum+ containing the alternate setting number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE setting)
 {
   struct device_t *d;
@@ -691,15 +692,15 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
 }
 
 /*
- * call-seq:
- *   device.clearHalt(endpoint) -> nil
- *
- * Clear halt/stall condition for an endpoint.
- *
- * - +endpoint+ is a +FixNum+ containing the endpoint number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.clearHalt(endpoint) -> nil
+*
+* Clear halt/stall condition for an endpoint.
+*
+* - +endpoint+ is a +FixNum+ containing the endpoint number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
 {
   struct device_t *d;
@@ -720,12 +721,12 @@ static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
 }
 
 /*
- * call-seq: device.resetDevice -> nil
- *
- * Reset device.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq: device.resetDevice -> nil
+*
+* Reset device.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_resetDevice (VALUE self)
 {
   struct device_t *d;
@@ -746,15 +747,15 @@ static VALUE cDevice_resetDevice (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.kernelDriverActive?(interface) -> result
- *
- * Determine if a kernel driver is active on a given interface.
- *
- * - +interface+ is a +FixNum+ containing the interface number.
- *
- * On success, returns whether or not the device interface is claimed by a kernel driver (+true+ or +false+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.kernelDriverActive?(interface) -> result
+*
+* Determine if a kernel driver is active on a given interface.
+*
+* - +interface+ is a +FixNum+ containing the interface number.
+*
+* On success, returns whether or not the device interface is claimed by a kernel driver (+true+ or +false+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
 {
   struct device_t *d;
@@ -779,15 +780,15 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
 }
 
 /*
- * call-seq:
- *   device.detachKernelDriver(interface) -> nil
- *
- * Detach a kernel driver from an interface.
- *
- * - +interface+ is a +FixNum+ containing the interface number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.detachKernelDriver(interface) -> nil
+*
+* Detach a kernel driver from an interface.
+*
+* - +interface+ is a +FixNum+ containing the interface number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
 {
   struct device_t *d;
@@ -808,15 +809,15 @@ static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
 }
 
 /*
- * call-seq:
- *   device.attachKernelDriver(interface) -> nil
- *
- * Re-attach a kernel driver from an interface.
- *
- * - +interface+ is a +FixNum+ containing the interface number.
- *
- * Returns +nil+ in any case, and raises an exception on failure.
- */
+* call-seq:
+*   device.attachKernelDriver(interface) -> nil
+*
+* Re-attach a kernel driver from an interface.
+*
+* - +interface+ is a +FixNum+ containing the interface number.
+*
+* Returns +nil+ in any case, and raises an exception on failure.
+*/
 static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
 {
   struct device_t *d;
@@ -837,16 +838,16 @@ static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
 }
 
 /*
- * call-seq:
- *   device.getStringDescriptorASCII(index) -> desc
- *   device.stringDescriptorASCII(index) -> desc
- *
- * - +index+ is a +FixNum+ specifying the index of the descriptor string.
- *
- * Retrieve an ASCII descriptor string from the device.
- *
- * On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.getStringDescriptorASCII(index) -> desc
+*   device.stringDescriptorASCII(index) -> desc
+*
+* - +index+ is a +FixNum+ specifying the index of the descriptor string.
+*
+* Retrieve an ASCII descriptor string from the device.
+*
+* On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
 {
   struct device_t *d;
@@ -868,17 +869,17 @@ static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
 }
 
 /*
- * call-seq:
- *   device.getStringDescriptor(index, langid) -> desc
- *   device.stringDescriptor(index, langid) -> desc
- *
- * - +index+ is a +FixNum+ specifying the index of the descriptor string.
- * - +langid+ is a +FixNum+ specifying the ID of the language to be retrieved
- *
- * Retrieve a descriptor string from the device.
- *
- * On success, returns the descriptor string of given index in given language (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   device.getStringDescriptor(index, langid) -> desc
+*   device.stringDescriptor(index, langid) -> desc
+*
+* - +index+ is a +FixNum+ specifying the index of the descriptor string.
+* - +langid+ is a +FixNum+ specifying the ID of the language to be retrieved
+*
+* Retrieve a descriptor string from the device.
+*
+* On success, returns the descriptor string of given index in given language (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 {
   struct device_t *d;
@@ -900,38 +901,38 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 }
 
 /*
- * call-seq:
- *   device.controlTransfer(args) -> count
- *   device.controlTransfer(args) -> data
- *   device.controlTransfer(args) {block} -> transfer
- *
- * Perform or prepare a control transfer.
- *
- * - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
- *   * <tt>:bmRequestType</tt> is a +FixNum+ specifying the 8-bit request type field of the setup packet (note that the direction bit is ignored).
- *   * <tt>:bRequest</tt> is a +FixNum+ specifying the 8-bit request field of the setup packet.
- *   * <tt>:wValue</tt> is a +FixNum+ specifying the 16-bit value field of the setup packet.
- *   * <tt>:wIndex</tt> is a +FixNum+ specifying the 16-bit index field of the setup packet.
- *   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
- *   * <tt>:dataOut</tt> is an optional +String+, see below.
- *   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
- * - <tt>:dataIn</tt> and <tt>:dataOut</tt> are mutually exclusive but neither is mandatory.
- * - The type and direction of the transfer is determined as follows:
- *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
- *   * If neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified, the transfer will only contain the setup packet but no data packet.
- *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value must be between 1 and 64 and specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
- *   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; data received is stored in this +String+.
- *   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
- *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
- * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
- * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
- *
- * On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
- * - a RibUSB::Transfer if the transfer is asynchronous;
- * - <tt>0</tt> if neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified;
- * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
- * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
- */
+* call-seq:
+*   device.controlTransfer(args) -> count
+*   device.controlTransfer(args) -> data
+*   device.controlTransfer(args) {block} -> transfer
+*
+* Perform or prepare a control transfer.
+*
+* - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
+*   * <tt>:bmRequestType</tt> is a +FixNum+ specifying the 8-bit request type field of the setup packet (note that the direction bit is ignored).
+*   * <tt>:bRequest</tt> is a +FixNum+ specifying the 8-bit request field of the setup packet.
+*   * <tt>:wValue</tt> is a +FixNum+ specifying the 16-bit value field of the setup packet.
+*   * <tt>:wIndex</tt> is a +FixNum+ specifying the 16-bit index field of the setup packet.
+*   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
+*   * <tt>:dataOut</tt> is an optional +String+, see below.
+*   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
+* - <tt>:dataIn</tt> and <tt>:dataOut</tt> are mutually exclusive but neither is mandatory.
+* - The type and direction of the transfer is determined as follows:
+*   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
+*   * If neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified, the transfer will only contain the setup packet but no data packet.
+*   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value must be between 1 and 64 and specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
+*   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; data received is stored in this +String+.
+*   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+*   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
+* - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
+* - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
+*
+* On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
+* - a RibUSB::Transfer if the transfer is asynchronous;
+* - <tt>0</tt> if neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified;
+* - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
+* - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
+*/
 static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
@@ -968,8 +969,8 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     switch (TYPE(dataIn)) {
     case T_STRING:
       if (rb_block_given_p ()) {
-	rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#controlTransfer: :dataIn must not be a String when a block is passed.");
-	return Qnil;
+        rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#controlTransfer: :dataIn must not be a String when a block is passed.");
+        return Qnil;
       }
       data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
@@ -978,11 +979,11 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
       if (rb_block_given_p ()) {
-	data = NULL;
+        data = NULL;
       } else {
-	data = (unsigned char *) malloc (wLength);
-	if (!data)
-	  rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#controlTransfer.");
+        data = (unsigned char *) malloc (wLength);
+        if (!data)
+          rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#controlTransfer.");
       }
       foreign_data_in = 0;
       break;
@@ -1050,33 +1051,33 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 }
 
 /*
- * call-seq:
- *   device.bulkTransfer(args) -> count
- *   device.bulkTransfer(args) -> data
- *   device.bulkTransfer(args) {block} -> transfer
- *
- * Perform or prepare a bulk transfer.
- *
- * - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
- *   * <tt>:endpoint</tt> is a +FixNum+ specifying the USB endpoint (note that the direction bit is ignored).
- *   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
- *   * <tt>:dataOut</tt> is an optional +String+, see below.
- *   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
- * - Exactly one of <tt>:dataIn</tt> and <tt>:dataOut</tt> must be specified.
- * - The type and direction of the transfer is determined as follows:
- *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
- *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
- *   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
- *   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
- *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
- * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
- * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
- *
- * On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
- * - a RibUSB::Transfer if the transfer is asynchronous;
- * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
- * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
- */
+* call-seq:
+*   device.bulkTransfer(args) -> count
+*   device.bulkTransfer(args) -> data
+*   device.bulkTransfer(args) {block} -> transfer
+*
+* Perform or prepare a bulk transfer.
+*
+* - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
+*   * <tt>:endpoint</tt> is a +FixNum+ specifying the USB endpoint (note that the direction bit is ignored).
+*   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
+*   * <tt>:dataOut</tt> is an optional +String+, see below.
+*   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
+* - Exactly one of <tt>:dataIn</tt> and <tt>:dataOut</tt> must be specified.
+* - The type and direction of the transfer is determined as follows:
+*   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
+*   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
+*   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
+*   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+*   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
+* - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
+* - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
+*
+* On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
+* - a RibUSB::Transfer if the transfer is asynchronous;
+* - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
+* - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
+*/
 static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
@@ -1109,8 +1110,8 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     switch (TYPE(dataIn)) {
     case T_STRING:
       if (rb_block_given_p ()) {
-	rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#bulkTransfer: :dataIn must not be a String when a block is passed.");
-	return Qnil;
+        rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#bulkTransfer: :dataIn must not be a String when a block is passed.");
+        return Qnil;
       }
       data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
@@ -1119,11 +1120,11 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
       if (rb_block_given_p ()) {
-	data = NULL;
+        data = NULL;
       } else {
-	data = (unsigned char *) malloc (wLength);
-	if (!data)
-	  rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#bulkTransfer.");
+        data = (unsigned char *) malloc (wLength);
+        if (!data)
+          rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#bulkTransfer.");
       }
       foreign_data_in = 0;
       break;
@@ -1186,33 +1187,33 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 }
 
 /*
- * call-seq:
- *   device.interruptTransfer(args) -> count
- *   device.interruptTransfer(args) -> data
- *   device.interruptTransfer(args) {block} -> transfer
- *
- * Perform or prepare a interrupt transfer.
- *
- * - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
- *   * <tt>:endpoint</tt> is a +FixNum+ specifying the USB endpoint (note that the direction bit is ignored).
- *   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
- *   * <tt>:dataOut</tt> is an optional +String+, see below.
- *   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
- * - Exactly one of <tt>:dataIn</tt> and <tt>:dataOut</tt> must be specified.
- * - The type and direction of the transfer is determined as follows:
- *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
- *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
- *   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
- *   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
- *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
- * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
- * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
- *
- * On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
- * - a RibUSB::Transfer if the transfer is asynchronous;
- * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
- * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
- */
+* call-seq:
+*   device.interruptTransfer(args) -> count
+*   device.interruptTransfer(args) -> data
+*   device.interruptTransfer(args) {block} -> transfer
+*
+* Perform or prepare a interrupt transfer.
+*
+* - +args+ is a +Hash+ containing all options, which are mandatory unless otherwise specified:
+*   * <tt>:endpoint</tt> is a +FixNum+ specifying the USB endpoint (note that the direction bit is ignored).
+*   * <tt>:dataIn</tt> is optional and either a +String+ or a +FixNum+, see below.
+*   * <tt>:dataOut</tt> is an optional +String+, see below.
+*   * <tt>:timeout</tt> is an optional +FixNum+ specifying the timeout for this transfer in milliseconds; default is 1000.
+* - Exactly one of <tt>:dataIn</tt> and <tt>:dataOut</tt> must be specified.
+* - The type and direction of the transfer is determined as follows:
+*   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
+*   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
+*   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
+*   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+*   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
+* - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
+* - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
+*
+* On success, returns one of the following, otherwise raises an exception and returns +nil+ or the _libusb_ error code (+FixNum+):
+* - a RibUSB::Transfer if the transfer is asynchronous;
+* - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
+* - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
+*/
 static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
@@ -1245,8 +1246,8 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     switch (TYPE(dataIn)) {
     case T_STRING:
       if (rb_block_given_p ()) {
-	rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#interruptTransfer: :dataIn must not be a String when a block is passed.");
-	return Qnil;
+        rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#interruptTransfer: :dataIn must not be a String when a block is passed.");
+        return Qnil;
       }
       data = (unsigned char *) (RSTRING(dataIn)->ptr);
       wLength = RSTRING(dataIn)->len;
@@ -1255,11 +1256,11 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
       if (rb_block_given_p ()) {
-	data = NULL;
+        data = NULL;
       } else {
-	data = (unsigned char *) malloc (wLength);
-	if (!data)
-	  rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
+        data = (unsigned char *) malloc (wLength);
+        if (!data)
+          rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
       }
       foreign_data_in = 0;
       break;
@@ -1322,13 +1323,13 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
 }
 
 /*
- * call-seq:
- *   device.bcdUSB -> bcdUSB
- *
- * Get the USB specification release number in binary-coded decimal.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bcdUSB -> bcdUSB
+*
+* Get the USB specification release number in binary-coded decimal.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bcdUSB (VALUE self)
 {
   struct device_t *d;
@@ -1338,13 +1339,13 @@ static VALUE cDevice_bcdUSB (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.bDeviceClass -> bDeviceClass
- *
- * Get the USB class code.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bDeviceClass -> bDeviceClass
+*
+* Get the USB class code.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bDeviceClass (VALUE self)
 {
   struct device_t *d;
@@ -1354,13 +1355,13 @@ static VALUE cDevice_bDeviceClass (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.bDeviceSubClass -> bDeviceSubClass
- *
- * Get the USB subclass code.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bDeviceSubClass -> bDeviceSubClass
+*
+* Get the USB subclass code.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bDeviceSubClass (VALUE self)
 {
   struct device_t *d;
@@ -1370,13 +1371,13 @@ static VALUE cDevice_bDeviceSubClass (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.bDeviceProtocol -> bDeviceProtocol
- *
- * Get the USB protocol code.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bDeviceProtocol -> bDeviceProtocol
+*
+* Get the USB protocol code.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bDeviceProtocol (VALUE self)
 {
   struct device_t *d;
@@ -1386,13 +1387,13 @@ static VALUE cDevice_bDeviceProtocol (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.bMaxPacketSize0 -> bMaxPacketSize0
- *
- * Get the maximum packet size for endpoint 0.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bMaxPacketSize0 -> bMaxPacketSize0
+*
+* Get the maximum packet size for endpoint 0.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bMaxPacketSize0 (VALUE self)
 {
   struct device_t *d;
@@ -1402,13 +1403,13 @@ static VALUE cDevice_bMaxPacketSize0 (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.idVendor -> idVendor
- *
- * Get the vendor ID.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.idVendor -> idVendor
+*
+* Get the vendor ID.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_idVendor (VALUE self)
 {
   struct device_t *d;
@@ -1418,13 +1419,13 @@ static VALUE cDevice_idVendor (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.idProduct -> idProduct
- *
- * Get the product ID.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.idProduct -> idProduct
+*
+* Get the product ID.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_idProduct (VALUE self)
 {
   struct device_t *d;
@@ -1434,13 +1435,13 @@ static VALUE cDevice_idProduct (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.bcdDevice -> bcdDevice
- *
- * Get the device release number in binary-coded decimal.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bcdDevice -> bcdDevice
+*
+* Get the device release number in binary-coded decimal.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bcdDevice (VALUE self)
 {
   struct device_t *d;
@@ -1450,13 +1451,13 @@ static VALUE cDevice_bcdDevice (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.iManufacturer -> iManufacturer
- *
- * Get the index of the manufacturer string.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.iManufacturer -> iManufacturer
+*
+* Get the index of the manufacturer string.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_iManufacturer (VALUE self)
 {
   struct device_t *d;
@@ -1466,13 +1467,13 @@ static VALUE cDevice_iManufacturer (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.iProduct -> iProduct
- *
- * Get the index of the product string.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.iProduct -> iProduct
+*
+* Get the index of the product string.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_iProduct (VALUE self)
 {
   struct device_t *d;
@@ -1482,13 +1483,13 @@ static VALUE cDevice_iProduct (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.iSerialNumber -> iSerialNumber
- *
- * Get the index of the serial number string.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.iSerialNumber -> iSerialNumber
+*
+* Get the index of the serial number string.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_iSerialNumber (VALUE self)
 {
   struct device_t *d;
@@ -1498,13 +1499,13 @@ static VALUE cDevice_iSerialNumber (VALUE self)
 }
 
 /*
- * call-seq:
- *   device.bNumConfigurations -> bNumConfigurations
- *
- * Get the number of configurations of the device.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   device.bNumConfigurations -> bNumConfigurations
+*
+* Get the number of configurations of the device.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cDevice_bNumConfigurations (VALUE self)
 {
   struct device_t *d;
@@ -1516,8 +1517,8 @@ static VALUE cDevice_bNumConfigurations (VALUE self)
 
 
 /******************************************************
- * RibUSB::Transfer method definitions                *
- ******************************************************/
+* RibUSB::Transfer method definitions                *
+******************************************************/
 
 void cTransfer_free (struct transfer_t *t)
 {
@@ -1527,13 +1528,13 @@ void cTransfer_free (struct transfer_t *t)
 }
 
 /*
- * call-seq:
- *   transfer.submit -> nil
- *
- * Submit the asynchronous transfer.
- *
- * On success, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   transfer.submit -> nil
+*
+* Submit the asynchronous transfer.
+*
+* On success, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cTransfer_submit (VALUE self)
 {
   struct transfer_t *t;
@@ -1549,13 +1550,13 @@ static VALUE cTransfer_submit (VALUE self)
 }
 
 /*
- * call-seq:
- *   transfer.cancel -> nil
- *
- * Cancel the asynchronous transfer.
- *
- * On success, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
- */
+* call-seq:
+*   transfer.cancel -> nil
+*
+* Cancel the asynchronous transfer.
+*
+* On success, returns +nil+, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
+*/
 static VALUE cTransfer_cancel (VALUE self)
 {
   struct transfer_t *t;
@@ -1571,17 +1572,17 @@ static VALUE cTransfer_cancel (VALUE self)
 }
 
 /*
- * call-seq:
- *   transfer.status -> status
- *
- * Retrieve the status of the asynchronous transfer.
- *
- * XXX describe status
- *
- * Use outside of an asynchronous transfer callback block leads to undefined behaviour.
- *
- * Returns a +Symbol+ and never raises an exception.
- */
+* call-seq:
+*   transfer.status -> status
+*
+* Retrieve the status of the asynchronous transfer.
+*
+* XXX describe status
+*
+* Use outside of an asynchronous transfer callback block leads to undefined behaviour.
+*
+* Returns a +Symbol+ and never raises an exception.
+*/
 static VALUE cTransfer_status (VALUE self)
 {
   struct transfer_t *t;
@@ -1618,8 +1619,8 @@ static VALUE cTransfer_status (VALUE self)
 
 
 /******************************************************
- * RibUSB::ConfigDescriptor method definitions        *
- ******************************************************/
+* RibUSB::ConfigDescriptor method definitions        *
+******************************************************/
 
 void cConfigDescriptor_free (struct config_descriptor_t *c)
 {
@@ -1645,13 +1646,13 @@ static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
 }
 
 /*
- * call-seq:
- *   descriptor.bLength -> bLength
- *
- * Get the size in bytes of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bLength -> bLength
+*
+* Get the size in bytes of the descriptor.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_bLength (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1661,13 +1662,13 @@ static VALUE cConfigDescriptor_bLength (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bDescriptorType -> bDescriptorType
- *
- * Get the type of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bDescriptorType -> bDescriptorType
+*
+* Get the type of the descriptor.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_bDescriptorType (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1677,13 +1678,13 @@ static VALUE cConfigDescriptor_bDescriptorType (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.wTotalLength -> wTotalLength
- *
- * Get the total length of the data of this configuration.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.wTotalLength -> wTotalLength
+*
+* Get the total length of the data of this configuration.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_wTotalLength (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1693,13 +1694,13 @@ static VALUE cConfigDescriptor_wTotalLength (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bNumInterfaces -> bNumInterfaces
- *
- * Get the number of interfaces available in this configuration.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bNumInterfaces -> bNumInterfaces
+*
+* Get the number of interfaces available in this configuration.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_bNumInterfaces (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1709,13 +1710,13 @@ static VALUE cConfigDescriptor_bNumInterfaces (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bConfigurationValue -> bConfigurationValue
- *
- * Get the configuration number.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bConfigurationValue -> bConfigurationValue
+*
+* Get the configuration number.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_bConfigurationValue (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1725,13 +1726,13 @@ static VALUE cConfigDescriptor_bConfigurationValue (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.iConfiguration -> iConfiguration
- *
- * Get the index of the configuration string.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.iConfiguration -> iConfiguration
+*
+* Get the index of the configuration string.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_iConfiguration (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1741,13 +1742,13 @@ static VALUE cConfigDescriptor_iConfiguration (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bmAttributes -> bmAttributes
- *
- * Get the configuration characteristics.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bmAttributes -> bmAttributes
+*
+* Get the configuration characteristics.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_bmAttributes (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1757,13 +1758,13 @@ static VALUE cConfigDescriptor_bmAttributes (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.maxPower -> maxPower
- *
- * Get the maximum current drawn by the device in this configuration, in units of 2mA.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.maxPower -> maxPower
+*
+* Get the maximum current drawn by the device in this configuration, in units of 2mA.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_maxPower (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1773,13 +1774,13 @@ static VALUE cConfigDescriptor_maxPower (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.interfaceList -> interfaceList
- *
- * Retrieve the list of interfaces in this configuration.
- *
- * Returns an array of +RibUSB::Interface+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.interfaceList -> interfaceList
+*
+* Retrieve the list of interfaces in this configuration.
+*
+* Returns an array of +RibUSB::Interface+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_interfaceList (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1798,13 +1799,13 @@ static VALUE cConfigDescriptor_interfaceList (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.extra -> extra
- *
- * Get the extra descriptors defined by this configuration, as a string.
- *
- * Returns a +String+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.extra -> extra
+*
+* Get the extra descriptors defined by this configuration, as a string.
+*
+* Returns a +String+ and never raises an exception.
+*/
 static VALUE cConfigDescriptor_extra (VALUE self)
 {
   struct config_descriptor_t *d;
@@ -1816,8 +1817,8 @@ static VALUE cConfigDescriptor_extra (VALUE self)
 
 
 /******************************************************
- * RibUSB::Interface method definitions               *
- ******************************************************/
+* RibUSB::Interface method definitions               *
+******************************************************/
 
 static VALUE cInterface_new (struct libusb_interface *interface)
 {
@@ -1836,13 +1837,13 @@ static VALUE cInterface_new (struct libusb_interface *interface)
 }
 
 /*
- * call-seq:
- *   interface.altSettingList -> altSettingList
- *
- * Retrieve the list of interface descriptors.
- *
- * Returns an array of +RibUSB::Interface+ and never raises an exception.
- */
+* call-seq:
+*   interface.altSettingList -> altSettingList
+*
+* Retrieve the list of interface descriptors.
+*
+* Returns an array of +RibUSB::Interface+ and never raises an exception.
+*/
 static VALUE cInterface_altSettingList (VALUE self)
 {
   struct interface_t *d;
@@ -1863,8 +1864,8 @@ static VALUE cInterface_altSettingList (VALUE self)
 
 
 /******************************************************
- * RibUSB::InterfaceDescriptor method definitions     *
- ******************************************************/
+* RibUSB::InterfaceDescriptor method definitions     *
+******************************************************/
 
 static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor)
 {
@@ -1883,13 +1884,13 @@ static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descr
 }
 
 /*
- * call-seq:
- *   descriptor.bLength -> bLength
- *
- * Get the size in bytes of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bLength -> bLength
+*
+* Get the size in bytes of the descriptor.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bLength (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1899,13 +1900,13 @@ static VALUE cInterfaceDescriptor_bLength (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bDescriptorType -> bDescriptorType
- *
- * Get the type of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bDescriptorType -> bDescriptorType
+*
+* Get the type of the descriptor.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bDescriptorType (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1915,13 +1916,13 @@ static VALUE cInterfaceDescriptor_bDescriptorType (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bInterfaceNumber -> bInterfaceNumber
- *
- * Get the interface number.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bInterfaceNumber -> bInterfaceNumber
+*
+* Get the interface number.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bInterfaceNumber (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1931,13 +1932,13 @@ static VALUE cInterfaceDescriptor_bInterfaceNumber (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bAlternateSetting -> bAlternateSetting
- *
- * Get the number of the active alternate setting.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bAlternateSetting -> bAlternateSetting
+*
+* Get the number of the active alternate setting.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bAlternateSetting (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1947,13 +1948,13 @@ static VALUE cInterfaceDescriptor_bAlternateSetting (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bNumEndpoints -> bNumEndpoints
- *
- * Get the number of endpoints available in this interface.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bNumEndpoints -> bNumEndpoints
+*
+* Get the number of endpoints available in this interface.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bNumEndpoints (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1963,13 +1964,13 @@ static VALUE cInterfaceDescriptor_bNumEndpoints (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bInterfaceClass -> bInterfaceClass
- *
- * Get the interface class code.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bInterfaceClass -> bInterfaceClass
+*
+* Get the interface class code.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bInterfaceClass (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1979,13 +1980,13 @@ static VALUE cInterfaceDescriptor_bInterfaceClass (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bInterfaceSubClass -> bInterfaceSubClass
- *
- * Get the interface subclass code.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bInterfaceSubClass -> bInterfaceSubClass
+*
+* Get the interface subclass code.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bInterfaceSubClass (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -1995,13 +1996,13 @@ static VALUE cInterfaceDescriptor_bInterfaceSubClass (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bInterfaceProtocol -> bInterfaceProtocol
- *
- * Get the interface protocol code.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bInterfaceProtocol -> bInterfaceProtocol
+*
+* Get the interface protocol code.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_bInterfaceProtocol (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -2011,13 +2012,13 @@ static VALUE cInterfaceDescriptor_bInterfaceProtocol (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.iInterface -> iInterface
- *
- * Get the index of interface string.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.iInterface -> iInterface
+*
+* Get the index of interface string.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_iInterface (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -2027,13 +2028,13 @@ static VALUE cInterfaceDescriptor_iInterface (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.endpointList -> endpointList
- *
- * Retrieve the list of endpoints in this interface.
- *
- * Returns an array of +RibUSB::Endpoint+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.endpointList -> endpointList
+*
+* Retrieve the list of endpoints in this interface.
+*
+* Returns an array of +RibUSB::Endpoint+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_endpointList (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -2052,13 +2053,13 @@ static VALUE cInterfaceDescriptor_endpointList (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.extra -> extra
- *
- * Get the extra descriptors defined by this interface, as a string.
- *
- * Returns a +String+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.extra -> extra
+*
+* Get the extra descriptors defined by this interface, as a string.
+*
+* Returns a +String+ and never raises an exception.
+*/
 static VALUE cInterfaceDescriptor_extra (VALUE self)
 {
   struct interface_descriptor_t *d;
@@ -2070,8 +2071,8 @@ static VALUE cInterfaceDescriptor_extra (VALUE self)
 
 
 /******************************************************
- * RibUSB::EndpointDescriptor method definitions      *
- ******************************************************/
+* RibUSB::EndpointDescriptor method definitions      *
+******************************************************/
 
 static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descriptor)
 {
@@ -2090,13 +2091,13 @@ static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descrip
 }
 
 /*
- * call-seq:
- *   descriptor.bLength -> bLength
- *
- * Get the size in bytes of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bLength -> bLength
+*
+* Get the size in bytes of the descriptor.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bLength (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2106,13 +2107,13 @@ static VALUE cEndpointDescriptor_bLength (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bDescriptorType -> bDescriptorType
- *
- * Get the type of the descriptor.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bDescriptorType -> bDescriptorType
+*
+* Get the type of the descriptor.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bDescriptorType (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2122,13 +2123,13 @@ static VALUE cEndpointDescriptor_bDescriptorType (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bEndpointAddress -> bEndpointAddress
- *
- * Get the endpoint address.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bEndpointAddress -> bEndpointAddress
+*
+* Get the endpoint address.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bEndpointAddress (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2138,13 +2139,13 @@ static VALUE cEndpointDescriptor_bEndpointAddress (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bmAttributes -> bmAttributes
- *
- * Get the endpoint attributes.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bmAttributes -> bmAttributes
+*
+* Get the endpoint attributes.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bmAttributes (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2154,13 +2155,13 @@ static VALUE cEndpointDescriptor_bmAttributes (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.wMaxPacketSize -> wMaxPacketSize
- *
- * Get the maximum packet size of the endpoint.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.wMaxPacketSize -> wMaxPacketSize
+*
+* Get the maximum packet size of the endpoint.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_wMaxPacketSize (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2170,13 +2171,13 @@ static VALUE cEndpointDescriptor_wMaxPacketSize (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bInterval -> bInterval
- *
- * Get the polling interval for data transfers on this endpoint.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bInterval -> bInterval
+*
+* Get the polling interval for data transfers on this endpoint.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bInterval (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2186,13 +2187,13 @@ static VALUE cEndpointDescriptor_bInterval (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bRefresh -> bRefresh
- *
- * Get the rate of synchronization feedback for audio devices.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bRefresh -> bRefresh
+*
+* Get the rate of synchronization feedback for audio devices.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bRefresh (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2202,13 +2203,13 @@ static VALUE cEndpointDescriptor_bRefresh (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.bSynchAddress -> bSynchAddress
- *
- * Get the address of the synchronization endpoint for audio devices.
- *
- * Returns a +FixNum+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.bSynchAddress -> bSynchAddress
+*
+* Get the address of the synchronization endpoint for audio devices.
+*
+* Returns a +FixNum+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_bSynchAddress (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2218,13 +2219,13 @@ static VALUE cEndpointDescriptor_bSynchAddress (VALUE self)
 }
 
 /*
- * call-seq:
- *   descriptor.extra -> extra
- *
- * Get the extra descriptors defined by this endpoint, as a string.
- *
- * Returns a +String+ and never raises an exception.
- */
+* call-seq:
+*   descriptor.extra -> extra
+*
+* Get the extra descriptors defined by this endpoint, as a string.
+*
+* Returns a +String+ and never raises an exception.
+*/
 static VALUE cEndpointDescriptor_extra (VALUE self)
 {
   struct endpoint_descriptor_t *d;
@@ -2236,11 +2237,14 @@ static VALUE cEndpointDescriptor_extra (VALUE self)
 
 
 /******************************************************
- * RibUSB -- an interface to _libusb_, API version 1.0
- ******************************************************/
-void Init_ribusb()
+* RibUSB -- an interface to _libusb_, API version 1.0
+******************************************************/
+void Init_ribusb_ext()
 {
   RibUSB = rb_define_module ("RibUSB");
+
+  /* Library version */
+  rb_define_const( RibUSB, "VERSION", rb_str_new2(VERSION) );
 
   rb_define_singleton_method (RibUSB, "getError", mRibUSB_getError, 1);
 

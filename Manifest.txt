@@ -1,0 +1,10 @@
+.autotest
+COPYING
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+ext/extconf.rb
+ext/ribusb.c
+lib/ribusb.rb
+test/test_ribusb.rb
