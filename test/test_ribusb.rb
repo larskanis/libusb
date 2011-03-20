@@ -19,4 +19,19 @@ class TestRibusb < Test::Unit::TestCase
       assert_equal devlist.shift.deviceAddress, dev.deviceAddress, "Bus#find with block should give same devices"
     end
   end
+
+  def test_descriptors
+    usb.find do |dev|
+      dev.bNumConfigurations.times do |config_index|
+        config_desc = dev.configDescriptor(config_index)
+        config_desc.interfaceList.each do |interface|
+          interface.altSettingList.each do |if_desc|
+            if_desc.endpointList.each do |ep|
+              assert_operator 0, :<, ep.wMaxPacketSize, "packet size should be > 0"
+            end
+          end
+        end
+      end
+    end
+  end
 end

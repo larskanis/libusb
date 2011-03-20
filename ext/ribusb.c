@@ -1527,6 +1527,71 @@ static VALUE cDevice_bNumConfigurations (VALUE self)
   return INT2NUM(d->descriptor->bNumConfigurations);
 }
 
+/*
+* call-seq:
+*   device.getActiveConfigDescriptor -> Array<ConfigDescriptor>
+*   device.activeConfigDescriptor -> Array<ConfigDescriptor>
+*
+* Get the USB configuration descriptor for the currently active configuration.
+*
+* Returns an array of +RibUSB::ConfigDescriptor+ .
+*/
+static VALUE cDevice_getActiveConfigDescriptor (VALUE self)
+{
+  struct device_t *d;
+  struct libusb_config_descriptor *config;
+  int res;
+
+  Data_Get_Struct (self, struct device_t, d);
+  res = libusb_get_active_config_descriptor( d->device, &config);
+  if (res < 0)
+    rb_raise (rb_eRuntimeError, "Failed to get config descriptor: %s.", get_error_text (res));
+  return cConfigDescriptor_new(config);
+}
+
+/*
+* call-seq:
+*   device.getConfigDescriptor(config_index) -> Array<ConfigDescriptor>
+*   device.configDescriptor(config_index) -> Array<ConfigDescriptor>
+*
+* Get a USB configuration descriptor based on its index.
+*
+* Returns an array of +RibUSB::ConfigDescriptor+ .
+*/
+static VALUE cDevice_getConfigDescriptor (VALUE self, VALUE config_index)
+{
+  struct device_t *d;
+  struct libusb_config_descriptor *config;
+  int res;
+
+  Data_Get_Struct (self, struct device_t, d);
+  res = libusb_get_config_descriptor( d->device, NUM2INT(config_index), &config);
+  if (res < 0)
+    rb_raise (rb_eRuntimeError, "Failed to get config descriptor: %s.", get_error_text (res));
+  return cConfigDescriptor_new(config);
+}
+
+/*
+* call-seq:
+*   device.getConfigDescriptorByValue(config_index) -> Array<ConfigDescriptor>
+*   device.configDescriptorByValue(config_index) -> Array<ConfigDescriptor>
+*
+* Get a USB configuration descriptor with a specific bConfigurationValue.
+*
+* Returns an array of +RibUSB::ConfigDescriptor+ .
+*/
+static VALUE cDevice_getConfigDescriptorByValue (VALUE self, VALUE bConfigurationValue)
+{
+  struct device_t *d;
+  struct libusb_config_descriptor *config;
+  int res;
+
+  Data_Get_Struct (self, struct device_t, d);
+  res = libusb_get_config_descriptor_by_value( d->device, NUM2INT(bConfigurationValue), &config);
+  if (res < 0)
+    rb_raise (rb_eRuntimeError, "Failed to get config descriptor: %s.", get_error_text (res));
+  return cConfigDescriptor_new(config);
+}
 
 
 /******************************************************
@@ -2309,6 +2374,12 @@ void Init_ribusb_ext()
   rb_define_method (Device, "iProduct", cDevice_iProduct, 0);
   rb_define_method (Device, "iSerialNumber", cDevice_iSerialNumber, 0);
   rb_define_method (Device, "bNumConfigurations", cDevice_bNumConfigurations, 0);
+  rb_define_method (Device, "getActiveConfigDescriptor", cDevice_getActiveConfigDescriptor, 0);
+  rb_define_alias (Device, "activeConfigDescriptor", "getActiveConfigDescriptor");
+  rb_define_method (Device, "getConfigDescriptor", cDevice_getConfigDescriptor, 1);
+  rb_define_alias (Device, "configDescriptor", "getConfigDescriptor");
+  rb_define_method (Device, "getConfigDescriptorByValue", cDevice_getConfigDescriptorByValue, 1);
+  rb_define_alias (Device, "configDescriptorByValue", "getConfigDescriptorByValue");
 
   /* RibUSB::Transfer -- a class for asynchronous USB transfers */
   Transfer = rb_define_class_under (RibUSB, "Transfer", rb_cObject);
