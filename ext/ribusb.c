@@ -30,6 +30,14 @@
 # define RSTRING_LEN(s) (RSTRING(s)->len)
 #endif
 
+#ifndef HAS_RB_HASH_LOOKUP
+# define rb_hash_lookup(k, v) rb_hash_aref(k, v)
+#endif
+
+#ifndef LIBUSB_CALL
+# define LIBUSB_CALL
+#endif
+
 /******************************************************
 * global variables                                   *
 ******************************************************/
@@ -121,7 +129,7 @@ static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descrip
 * internal functions                                 *
 ******************************************************/
 
-static void callback_wrapper (struct libusb_transfer *transfer)
+static void LIBUSB_CALL callback_wrapper (struct libusb_transfer *transfer)
 {
   struct transfer_t *t;
 
