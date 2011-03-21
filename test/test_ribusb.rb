@@ -34,4 +34,9 @@ class TestRibusb < Test::Unit::TestCase
       end
     end
   end
+
+  def test_constants
+    assert_equal 7, LIBUSB_CLASS_PRINTER, "Printer class id should be defined"
+    assert_equal 48, LIBUSB_ISO_USAGE_TYPE_MASK, "iso usage type should be defined"
+  end
 end
