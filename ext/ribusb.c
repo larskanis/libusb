@@ -495,6 +495,24 @@ static VALUE cDevice_new (struct libusb_device *device)
 
 /*
 * call-seq:
+*   device.close
+*
+* Explicitly close an obtained device handle. This is also done by GC.
+*/
+static VALUE cDevice_close (VALUE self)
+{
+  struct device_t *d;
+
+  Data_Get_Struct (self, struct device_t, d);
+  if (d->handle)
+    libusb_close (d->handle);
+  d->handle = NULL;
+
+  return Qnil;
+}
+
+/*
+* call-seq:
 *   device.getBusNumber -> bus_number
 *   device.busNumber -> bus_number
 *
@@ -2336,6 +2354,7 @@ void Init_ribusb_ext()
 
   /* RibUSB::Device -- a class for individual USB devices accessed through _libusb_ */
   Device = rb_define_class_under (RibUSB, "Device", rb_cObject);
+  rb_define_method (Device, "close", cDevice_close, 0);
   rb_define_method (Device, "getBusNumber", cDevice_getBusNumber, 0);
   rb_define_alias (Device, "busNumber", "getBusNumber");
   rb_define_method (Device, "getDeviceAddress", cDevice_getDeviceAddress, 0);

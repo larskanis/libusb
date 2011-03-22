@@ -51,6 +51,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
   def teardown
     dev.releaseInterface(0) if dev
+    dev.close if dev
   end
 
   def send_mass_storage_command(dev, cdb, data_length, direction=LIBUSB_ENDPOINT_IN)
@@ -144,6 +145,12 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
     data = read_block(dev, 0, 1)
     assert_equal 512, data.length, "Read block should be 512 bytes"
+
+    # closing device handle shouldn't matter, in the meantime
+    dev.close
+    dev.close
+    dev.claimInterface(0)
+
     data = read_block(dev, 0, 2)
     assert_equal 1024, data.length, "Read block should be 1024 bytes"
   end
