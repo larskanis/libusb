@@ -1,3 +1,9 @@
+# This test requires a connected, but not mounted mass storage device with
+# read/write access allowed. Based on the following specifications:
+#   http://www.usb.org/developers/devclass_docs/usbmassbulk_10.pdf
+#   http://en.wikipedia.org/wiki/SCSI_command
+#
+
 require "test/unit"
 require "ribusb"
 
@@ -93,22 +99,21 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   end
 
   def send_inquiry(dev)
-    data_length = 0x24 # INQUIRY_LENGTH
-    cdb = [ 0x12, # Inquiry
-            data_length,
-            0,
-            ].pack('VCC')
+    expected_length = 0x24 # INQUIRY_LENGTH
+    cdb = [ 0x12, 0, 0, # Inquiry
+            expected_length, 0,
+            ].pack('CCCnC')
 
-    send_mass_storage_command( dev, cdb, data_length )
+    send_mass_storage_command( dev, cdb, expected_length )
   end
 
   def get_capacity(dev)
-    data_length = 0x08 # READ_CAPACITY_LENGTH
+    expected_length = 0x08 # READ_CAPACITY_LENGTH
     cdb = [ 0x25, # Read Capacity
-            "\0"*6,
-            ].pack('Va*')
+            "\0"*9,
+            ].pack('Ca*')
 
-    cap = send_mass_storage_command( dev, cdb, data_length )
+    cap = send_mass_storage_command( dev, cdb, expected_length )
 
     max_lba, block_size = cap.unpack('NN')
     device_size = (max_lba + 1) * block_size / (1024*1024*1024.0);
@@ -116,29 +121,43 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   end
 
   def read_block(dev, start, nr_blocks)
-    data_length = 0x200
-    cdb = [ 0x28, # Read(10)
-            start,
-            nr_blocks
-            ].pack('VVv')
+    expected_length = 0x200 * nr_blocks
+    cdb = [ 0x28, 0, # Read(10)
+            start, 0,
+            nr_blocks, 0,
+            ].pack('CCNCnC')
+    data = send_mass_storage_command( dev, cdb, expected_length )
+  end
 
-    data = send_mass_storage_command( dev, cdb, data_length )
+  def read_block_with_wrong_length(dev)
+    expected_length = 0x200
+    cdb = [ 0x28, 0, # Read(10)
+            1234, 0,
+            0, 0, # 0 blocks
+            ].pack('CCNCnC')
+    data = send_mass_storage_command( dev, cdb, expected_length )
   end
 
   def test_read_access
     send_inquiry(dev)
     get_capacity(dev)
 
-    data = read_block(dev, 1, 1)
+    data = read_block(dev, 0, 1)
     assert_equal 512, data.length, "Read block should be 512 bytes"
+    data = read_block(dev, 0, 2)
+    assert_equal 1024, data.length, "Read block should be 1024 bytes"
   end
 
   def test_read_failed
-    send_inquiry(dev)
-
-    # read a block, that is hopefully out of capacity
     assert_raise(CSWError, RuntimeError) do
-      read_block(dev, 2_000_000_000_000/0x200, 1)
+      read_block_with_wrong_length(dev)
+    end
+  end
+
+  def test_read_long
+    1000.times do |bl|
+      data = read_block(dev, bl, 1)
+      assert_equal 512, data.length, "Read block should be 512 bytes"
     end
   end
 end
