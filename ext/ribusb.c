@@ -135,7 +135,7 @@ static void LIBUSB_CALL callback_wrapper (struct libusb_transfer *transfer)
 {
   struct transfer_t *t;
 
-  Data_Get_Struct ((struct transfer_t *) (transfer->user_data), struct transfer_t, t);
+  Data_Get_Struct ((VALUE)(transfer->user_data), struct transfer_t, t);
   rb_funcall (t->proc, rb_intern("call"), 1, (VALUE *) transfer->user_data);
 }
 
