@@ -483,12 +483,15 @@ static VALUE cDevice_new (struct libusb_device *device)
   d->handle = NULL;
   d->descriptor = (struct libusb_device_descriptor *) malloc (sizeof (struct libusb_device_descriptor));
   if (!(d->descriptor)) {
+    free(d);
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for struct libusb_device_descriptor.");
     return Qnil;
   }
   res = libusb_get_device_descriptor (d->device, d->descriptor);
-  if (res < 0)
+  if (res < 0){
+    free(d);
     rb_raise (rb_eRuntimeError, "Failed to retrieve device descriptor: %s.", get_error_text (res));
+  }
 
   object = Data_Wrap_Struct (Device, NULL, cDevice_free, d);
   rb_obj_call_init (object, 0, 0);
