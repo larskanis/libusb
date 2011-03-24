@@ -85,21 +85,21 @@ struct config_descriptor_t {
 * Opaque structure for the RibUSB::Interface class
 */
 struct interface_t {
-  struct libusb_interface *interface;
+  const struct libusb_interface *interface;
 };
 
 /*
 * Opaque structure for the RibUSB::InterfaceDescriptor class
 */
 struct interface_descriptor_t {
-  struct libusb_interface_descriptor *descriptor;
+  const struct libusb_interface_descriptor *descriptor;
 };
 
 /*
 * Opaque structure for the RibUSB::EndpointDescriptor class
 */
 struct endpoint_descriptor_t {
-  struct libusb_endpoint_descriptor *descriptor;
+  const struct libusb_endpoint_descriptor *descriptor;
 };
 
 /*
@@ -121,9 +121,9 @@ struct transfer_t {
 static VALUE cDevice_new (struct libusb_device *device);
 void cTransfer_free (struct transfer_t *t);
 static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor);
-static VALUE cInterface_new (struct libusb_interface *interface);
-static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor);
-static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descriptor);
+static VALUE cInterface_new (const struct libusb_interface *interface);
+static VALUE cInterfaceDescriptor_new (const struct libusb_interface_descriptor *descriptor);
+static VALUE cEndpointDescriptor_new (const struct libusb_endpoint_descriptor *descriptor);
 
 
 
@@ -1779,7 +1779,7 @@ static VALUE cConfigDescriptor_interfaceList (VALUE self)
   array = rb_ary_new2 (n_array);
 
   for (i = 0; i < n_array; i ++)
-    rb_ary_store (array, i, cInterface_new (&(((struct libusb_interface *)d->descriptor->interface)[i])));
+    rb_ary_store (array, i, cInterface_new (d->descriptor->interface + i));
 
   return array;
 }
@@ -1806,7 +1806,7 @@ static VALUE cConfigDescriptor_extra (VALUE self)
 * RibUSB::Interface method definitions               *
 ******************************************************/
 
-static VALUE cInterface_new (struct libusb_interface *interface)
+static VALUE cInterface_new (const struct libusb_interface *interface)
 {
   struct interface_t *i;
   VALUE object;
@@ -1838,7 +1838,7 @@ static VALUE cInterface_altSettingList (VALUE self)
   array = rb_ary_new2 (n_array);
 
   for (i = 0; i < n_array; i ++)
-    rb_ary_store (array, i, cInterfaceDescriptor_new (&(((struct libusb_interface_descriptor *)d->interface->altsetting)[i])));
+    rb_ary_store (array, i, cInterfaceDescriptor_new (d->interface->altsetting + i));
 
   return array;
 }
@@ -1849,7 +1849,7 @@ static VALUE cInterface_altSettingList (VALUE self)
 * RibUSB::InterfaceDescriptor method definitions     *
 ******************************************************/
 
-static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descriptor)
+static VALUE cInterfaceDescriptor_new (const struct libusb_interface_descriptor *descriptor)
 {
   struct interface_descriptor_t *d;
   VALUE object;
@@ -2025,7 +2025,7 @@ static VALUE cInterfaceDescriptor_endpointList (VALUE self)
   array = rb_ary_new2 (n_array);
 
   for (i = 0; i < n_array; i ++)
-    rb_ary_store (array, i, cEndpointDescriptor_new (&(((struct libusb_endpoint_descriptor *)d->descriptor->endpoint)[i])));
+    rb_ary_store (array, i, cEndpointDescriptor_new (d->descriptor->endpoint + i));
 
   return array;
 }
@@ -2052,7 +2052,7 @@ static VALUE cInterfaceDescriptor_extra (VALUE self)
 * RibUSB::EndpointDescriptor method definitions      *
 ******************************************************/
 
-static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descriptor)
+static VALUE cEndpointDescriptor_new (const struct libusb_endpoint_descriptor *descriptor)
 {
   struct endpoint_descriptor_t *d;
   VALUE object;
