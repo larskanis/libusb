@@ -109,6 +109,8 @@ struct transfer_t {
   struct libusb_transfer *transfer;
   unsigned char *buffer;
   VALUE proc;
+  int foreign_data_in;
+  unsigned char *foreign_data_in_ptr;
 };
 
 
@@ -952,8 +954,7 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
 *   * If neither <tt>:dataIn</tt> nor <tt>:dataOut</tt> is specified, the transfer will only contain the setup packet but no data packet.
 *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value must be between 1 and 64 and specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
-*   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; data received is stored in this +String+.
-*   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+*   * If <tt>:dataIn</tt> is a +String+, an +in+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; data received is stored in this +String+.
 *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size must be between 1 and 64 and specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
 * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
 * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
@@ -999,23 +1000,13 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     bmRequestType |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
-      if (rb_block_given_p ()) {
-        rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#controlTransfer: :dataIn must not be a String when a block is passed.");
-        return Qnil;
-      }
       data = (unsigned char *) (RSTRING_PTR(dataIn));
       wLength = RSTRING_LEN(dataIn);
       foreign_data_in = 1;
       break;
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
-      if (rb_block_given_p ()) {
-        data = NULL;
-      } else {
-        data = (unsigned char *) malloc (wLength);
-        if (!data)
-          rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#controlTransfer.");
-      }
+      data = NULL;
       foreign_data_in = 0;
       break;
     default:
@@ -1045,6 +1036,8 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
       rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
       return Qnil;
     }
+    t->foreign_data_in = foreign_data_in;
+    t->foreign_data_in_ptr = data;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
     if (!(t->transfer)) {
@@ -1064,8 +1057,15 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     libusb_fill_control_transfer (t->transfer, d->handle, t->buffer, callback_wrapper, (void *) object, timeout);
 
     rb_obj_call_init (object, 0, 0);
+    /* don't GC dataIn, as long as transfer isn't */
+    rb_iv_set(object, "@dataIn", dataIn);
     return object;
   } else {
+    if( !foreign_data_in )
+      data = (unsigned char *) malloc (wLength);
+    if (!data && wLength )
+      rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for control transfer.");
+
     res = libusb_control_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Synchronous control transfer failed: %s.", get_error_text (res));
@@ -1074,7 +1074,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     if (foreign_data_in)
       return INT2NUM(res);
     else {
-      v = rb_str_new ((char *) data, wLength);
+      v = rb_str_new ((char *) data, res);
       free (data);
       return v;
     }
@@ -1098,8 +1098,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 * - The type and direction of the transfer is determined as follows:
 *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
 *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
-*   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
-*   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+*   * If <tt>:dataIn</tt> is a +String+, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
 *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
 * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
 * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
@@ -1140,23 +1139,15 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     endpoint |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
-      if (rb_block_given_p ()) {
-        rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#bulkTransfer: :dataIn must not be a String when a block is passed.");
-        return Qnil;
-      }
       data = (unsigned char *) (RSTRING_PTR(dataIn));
       wLength = RSTRING_LEN(dataIn);
       foreign_data_in = 1;
       break;
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
-      if (rb_block_given_p ()) {
-        data = NULL;
-      } else {
-        data = (unsigned char *) malloc (wLength);
-        if (!data)
-          rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#bulkTransfer.");
-      }
+      data = (unsigned char *) malloc (wLength);
+      if (!data)
+        rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#bulkTransfer.");
       foreign_data_in = 0;
       break;
     default:
@@ -1182,24 +1173,20 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
       return Qnil;
     }
+    t->foreign_data_in = foreign_data_in;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
     if (!(t->transfer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate bulk transfer.");
       return Qnil;
     }
-    t->buffer = (unsigned char *) malloc (wLength);
-    if (!(t->buffer)) {
-      rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for bulk transfer.");
-      return Qnil;
-    }
-    if (data) {
-      memcpy(t->buffer, data, wLength); /* XXXXXX do we really need to copy the data? */
-    }
+    t->buffer = foreign_data_in ? NULL : data;
     object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
-    libusb_fill_bulk_transfer (t->transfer, d->handle, endpoint, t->buffer, wLength, callback_wrapper, (void *) object, timeout);
+    libusb_fill_bulk_transfer (t->transfer, d->handle, endpoint, data, wLength, callback_wrapper, (void *) object, timeout);
 
     rb_obj_call_init (object, 0, 0);
+    /* don't GC dataIn, as long as transfer isn't */
+    rb_iv_set(object, "@dataIn", dataIn);
     return object;
   } else {
     res = libusb_bulk_transfer (d->handle, endpoint, data, wLength, &transferred, timeout);
@@ -1210,7 +1197,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     if (foreign_data_in)
       return INT2NUM(transferred);
     else {
-      v = rb_str_new ((char *) data, wLength);
+      v = rb_str_new ((char *) data, transferred);
       free (data);
       return v;
     }
@@ -1234,8 +1221,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 * - The type and direction of the transfer is determined as follows:
 *   * If a block is passed, the transfer is asynchronous and the method returns immediately. Otherwise, the transfer is synchronous and the method returns when the transfer has completed or timed out.
 *   * If <tt>:dataIn</tt> is a +Fixnum+, an +in+ transfer is started; its value specifies the size of the data packet. A new +String+ is created for the data received if the transfer is successful.
-*   * If <tt>:dataIn</tt> is a +String+ and no block is present, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
-*   * Specifying <tt>:dataIn</tt> as a +String+ while passing a block is invalid and results in an error.
+*   * If <tt>:dataIn</tt> is a +String+, an +in+ transfer is started; its size specifies the size of the data packet; data received is stored in this +String+.
 *   * If <tt>:dataOut</tt> is a +String+, an +out+ transfer is started; its size specifies the size of the data packet; the contents of this +String+ are sent as the data packet.
 * - If no block is passed, perform the transfer immediately and block until the transfer has completed or timed out, or until any other error occurs.
 * - If a block is passed, prepare and return a RibUSB::Transfer without starting any USB transaction.
@@ -1276,23 +1262,15 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     endpoint |= 0x80; /* in transfer */
     switch (TYPE(dataIn)) {
     case T_STRING:
-      if (rb_block_given_p ()) {
-        rb_raise (rb_eRuntimeError, "Invalid parameters to RibUSB::Device#interruptTransfer: :dataIn must not be a String when a block is passed.");
-        return Qnil;
-      }
       data = (unsigned char *) (RSTRING_PTR(dataIn));
       wLength = RSTRING_LEN(dataIn);
       foreign_data_in = 1;
       break;
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
-      if (rb_block_given_p ()) {
-        data = NULL;
-      } else {
-        data = (unsigned char *) malloc (wLength);
-        if (!data)
-          rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
-      }
+      data = (unsigned char *) malloc (wLength);
+      if (!data)
+        rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
       foreign_data_in = 0;
       break;
     default:
@@ -1318,24 +1296,20 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
       rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
       return Qnil;
     }
+    t->foreign_data_in = foreign_data_in;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
     if (!(t->transfer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate interrupt transfer.");
       return Qnil;
     }
-    t->buffer = (unsigned char *) malloc (wLength);
-    if (!(t->buffer)) {
-      rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for interrupt transfer.");
-      return Qnil;
-    }
-    if (data) {
-      memcpy(t->buffer, data, wLength); /* XXXXXX do we really need to copy the data? */
-    }
+    t->buffer = foreign_data_in ? NULL : data;
     object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
-    libusb_fill_interrupt_transfer (t->transfer, d->handle, endpoint, t->buffer, wLength, callback_wrapper, (void *) object, timeout);
+    libusb_fill_interrupt_transfer (t->transfer, d->handle, endpoint, data, wLength, callback_wrapper, (void *) object, timeout);
 
     rb_obj_call_init (object, 0, 0);
+    /* don't GC dataIn, as long as transfer isn't */
+    rb_iv_set(object, "@dataIn", dataIn);
     return object;
   } else {
     res = libusb_interrupt_transfer (d->handle, endpoint, data, wLength, &transferred, timeout);
@@ -1346,7 +1320,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     if (foreign_data_in)
       return INT2NUM(transferred);
     else {
-      v = rb_str_new ((char *) data, wLength);
+      v = rb_str_new ((char *) data, transferred);
       free (data);
       return v;
     }
@@ -1619,7 +1593,7 @@ static VALUE cDevice_getConfigDescriptorByValue (VALUE self, VALUE bConfiguratio
 void cTransfer_free (struct transfer_t *t)
 {
   libusb_free_transfer (t->transfer);
-  free (t->buffer);
+  if( t->buffer ) free (t->buffer);
   free (t);
 }
 
@@ -1709,6 +1683,54 @@ static VALUE cTransfer_status (VALUE self)
   default:
     rb_raise (rb_eRuntimeError, "Invalid transfer status: %i.", t->transfer->status);
     break;
+  }
+}
+
+/*
+* call-seq:
+*   transfer.result -> result
+*
+* Retrieve the result of the asynchronous transfer. For failed transfers
+* an exception is raised.
+*
+* Use outside of an asynchronous transfer callback block leads to undefined behaviour.
+*
+* Returns the received data or the number of transferred bytes
+* depending on the :dataIn / :dataOut parameter.
+*/
+static VALUE cTransfer_result (VALUE self)
+{
+  struct transfer_t *t;
+  enum libusb_error err;
+
+  Data_Get_Struct (self, struct transfer_t, t);
+  switch (t->transfer->status) {
+    case LIBUSB_TRANSFER_ERROR: err = LIBUSB_ERROR_IO; break;
+    case LIBUSB_TRANSFER_TIMED_OUT: err = LIBUSB_ERROR_TIMEOUT; break;
+    case LIBUSB_TRANSFER_CANCELLED: err = LIBUSB_ERROR_INTERRUPTED; break;
+    case LIBUSB_TRANSFER_STALL: err = LIBUSB_ERROR_PIPE; break;
+    case LIBUSB_TRANSFER_NO_DEVICE: err = LIBUSB_ERROR_NO_DEVICE; break;
+    case LIBUSB_TRANSFER_OVERFLOW: err = LIBUSB_ERROR_OVERFLOW; break;
+    default: err = LIBUSB_ERROR_OTHER;
+  }
+
+  if( t->transfer->status != LIBUSB_TRANSFER_COMPLETED )
+    rb_raise (rb_eRuntimeError, "Error while asynchronous transfer: %s.", get_error_text (err));
+
+  if( t->transfer->type == LIBUSB_TRANSFER_TYPE_CONTROL ){
+    /* control transfer */
+    if( t->foreign_data_in ){
+      memcpy(t->foreign_data_in_ptr, libusb_control_transfer_get_data(t->transfer), t->transfer->actual_length);
+      return INT2NUM(t->transfer->actual_length);
+    }else{
+      return rb_str_new ((char *) libusb_control_transfer_get_data(t->transfer), t->transfer->actual_length);
+    }
+  }else{
+    if( t->foreign_data_in ){
+      return INT2NUM(t->transfer->actual_length);
+    }else{
+      return rb_str_new ((char *) t->buffer, t->transfer->actual_length);
+    }
   }
 }
 
@@ -2405,6 +2427,7 @@ void Init_ribusb_ext()
   rb_define_method (Transfer, "submit", cTransfer_submit, 0);
   rb_define_method (Transfer, "cancel", cTransfer_cancel, 0);
   rb_define_method (Transfer, "status", cTransfer_status, 0);
+  rb_define_method (Transfer, "result", cTransfer_result, 0);
 
   /* RibUSB::ConfigDescriptor -- a class for USB config descriptors */
   ConfigDescriptor = rb_define_class_under (RibUSB, "ConfigDescriptor", rb_cObject);
