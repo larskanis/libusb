@@ -7,7 +7,8 @@ class TestRibusb < Test::Unit::TestCase
   attr_accessor :usb
 
   def setup
-    @usb = Bus.new
+    @usb = Context.new
+    @usb.debug = 0
   end
 
   def test_find
@@ -22,11 +23,37 @@ class TestRibusb < Test::Unit::TestCase
 
   def test_descriptors
     usb.find do |dev|
-      dev.bNumConfigurations.times do |config_index|
-        config_desc = dev.configDescriptor(config_index)
-        config_desc.interfaceList.each do |interface|
-          interface.altSettingList.each do |if_desc|
-            if_desc.endpointList.each do |ep|
+      assert_match(/Device/, dev.inspect, "Device#inspect should work")
+      dev.configurations.each do |config_desc|
+        assert_match(/ConfigDescriptor/, config_desc.inspect, "ConfigDescriptor#inspect should work")
+        assert dev.configurations.include?(config_desc), "Device#configurations should include this one"
+
+        config_desc.interfaces.each do |interface|
+          assert_match(/Interface/, interface.inspect, "Interface#inspect should work")
+
+          assert dev.interfaces.include?(interface), "Device#interfaces should include this one"
+          assert config_desc.interfaces.include?(interface), "ConfigDescriptor#interfaces should include this one"
+
+          interface.altSettings.each do |if_desc|
+            assert_match(/InterfaceDescriptor/, if_desc.inspect, "InterfaceDescriptor#inspect should work")
+
+            assert dev.interface_descriptors.include?(if_desc), "Device#interface_descriptors should include this one"
+            assert config_desc.interface_descriptors.include?(if_desc), "ConfigDescriptor#interface_descriptors should include this one"
+            assert interface.altSettings.include?(if_desc), "Inteerface#altSettings should include this one"
+
+            if_desc.endpoints.each do |ep|
+              assert_match(/EndpointDescriptor/, ep.inspect, "EndpointDescriptor#inspect should work")
+
+              assert dev.endpoints.include?(ep), "Device#endpoints should include this one"
+              assert config_desc.endpoints.include?(ep), "ConfigDescriptor#endpoints should include this one"
+              assert interface.endpoints.include?(ep), "Inteerface#endpoints should include this one"
+              assert if_desc.endpoints.include?(ep), "InterfaceDescriptor#endpoints should include this one"
+
+              assert_equal if_desc, ep.interface_descriptor, "backref should be correct"
+              assert_equal interface, ep.interface, "backref should be correct"
+              assert_equal config_desc, ep.configuration, "backref should be correct"
+              assert_equal dev, ep.device, "backref should be correct"
+
               assert_operator 0, :<, ep.wMaxPacketSize, "packet size should be > 0"
             end
           end

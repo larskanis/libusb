@@ -20,31 +20,26 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   attr_accessor :endpoint_out
 
   def setup
-    @usb = Bus.new
+    @usb = Context.new
     @usb.debug = 3
     @asynchron = false
 
     usb.find do |dev|
-      dev.bNumConfigurations.times do |config_index|
-        config_desc = dev.configDescriptor(config_index)
-        config_desc.interfaceList.each do |interface|
-          interface.altSettingList.each do |if_desc|
-            if if_desc.bInterfaceClass == LIBUSB_CLASS_MASS_STORAGE &&
-                  ( if_desc.bInterfaceSubClass == 0x01 || if_desc.bInterfaceSubClass == 0x06 ) &&
-                  if_desc.bInterfaceProtocol == 0x50
+      dev.interface_descriptors.each do |if_desc|
+        if if_desc.bInterfaceClass == LIBUSB_CLASS_MASS_STORAGE &&
+              ( if_desc.bInterfaceSubClass == 0x01 || if_desc.bInterfaceSubClass == 0x06 ) &&
+              if_desc.bInterfaceProtocol == 0x50
 
-              @dev = dev
-              @if_desc = if_desc
-            end
-          end
+          @dev = dev
+          @if_desc = if_desc
         end
       end
     end
 
     abort "no mass storage device found" unless @dev
 
-    @endpoint_in = @if_desc.endpointList.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
-    @endpoint_out = @if_desc.endpointList.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
+    @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
+    @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
 
     if dev.kernelDriverActive?(0)
       dev.detachKernelDriver(0)

@@ -43,7 +43,7 @@
 ******************************************************/
 
 static VALUE RibUSB;
-static VALUE Bus;
+static VALUE Context;
 static VALUE Device;
 static VALUE ConfigDescriptor;
 static VALUE Interface;
@@ -59,7 +59,7 @@ static const char *VERSION = "0.0.1";
 ******************************************************/
 
 /*
-* Opaque structure for the RibUSB::Bus class
+* Opaque structure for the RibUSB::Context class
 */
 struct usb_t {
   struct libusb_context *context;
@@ -118,9 +118,9 @@ struct transfer_t {
 /******************************************************
 * internal prototypes                                *
 ******************************************************/
-static VALUE cDevice_new (struct libusb_device *device);
+static VALUE cDevice_new (struct libusb_device *device, VALUE context);
 void cTransfer_free (struct transfer_t *t);
-static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor);
+static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor, VALUE device);
 static VALUE cInterface_new (const struct libusb_interface *interface, VALUE config_descriptor);
 static VALUE cInterfaceDescriptor_new (const struct libusb_interface_descriptor *descriptor, VALUE interface);
 static VALUE cEndpointDescriptor_new (const struct libusb_endpoint_descriptor *descriptor, VALUE interface_descriptor);
@@ -237,10 +237,10 @@ static VALUE mRibUSB_getError (VALUE self, VALUE number)
 
 
 /******************************************************
-* RibUSB::Bus method definitions                     *
+* RibUSB::Context method definitions                     *
 ******************************************************/
 
-void cBus_free (struct usb_t *u)
+void cContext_free (struct usb_t *u)
 {
   libusb_exit (u->context);
 
@@ -249,15 +249,15 @@ void cBus_free (struct usb_t *u)
 
 /*
 * call-seq:
-*   RibUSB::Bus.new -> bus
+*   RibUSB::Context.new -> bus
 *
-* Create an instance of RibUSB::Bus.
+* Create an instance of RibUSB::Context.
 *
 * Effectively creates a _libusb_ context (the context itself being stored in an opaque structure). The memory associated with the bus is automatically freed on garbage collection when possible.
 *
 * If successful, returns the bus object, otherwise raises an exception and returns either +nil+ or the _libusb_ error code (+FixNum+).
 */
-static VALUE cBus_new (VALUE self)
+static VALUE cContext_new (VALUE self)
 {
   struct libusb_context *context;
   struct usb_t *u;
@@ -270,7 +270,7 @@ static VALUE cBus_new (VALUE self)
   }
   u = ALLOC(struct usb_t);
   u->context = context;
-  object = Data_Wrap_Struct (Bus, NULL, cBus_free, u);
+  object = Data_Wrap_Struct (Context, NULL, cContext_free, u);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -286,7 +286,7 @@ static VALUE cBus_new (VALUE self)
 *
 * Returns +nil+ and never raises an exception.
 */
-static VALUE cBus_setDebug (VALUE self, VALUE level)
+static VALUE cContext_setDebug (VALUE self, VALUE level)
 {
   struct usb_t *u;
 
@@ -317,7 +317,7 @@ static VALUE cBus_setDebug (VALUE self, VALUE level)
 *
 * Note: this list provides no information whatsoever on whether or not any given device can be accessed. Insufficient privilege and use by other software can prevent access to any device.
 */
-static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
+static VALUE cContext_find (int argc, VALUE *argv, VALUE self)
 {
   struct usb_t *u;
   struct libusb_device **list;
@@ -375,7 +375,7 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
         mask |= 0x80;
       }
     } else
-      rb_raise (rb_eRuntimeError, "Argument to RibUSB::Bus#find must be a hash or nil, if specified.");
+      rb_raise (rb_eRuntimeError, "Argument to RibUSB::Context#find must be a hash or nil, if specified.");
   }
 
   Data_Get_Struct (self, struct usb_t, u);
@@ -389,7 +389,7 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
   array = rb_ary_new ();
 
   for (i = 0; i < res; i ++) {
-    device = cDevice_new (list[i]);               /* XXX not very nice */
+    device = cDevice_new (list[i], self);               /* XXX not very nice */
     Data_Get_Struct (device, struct device_t, d); /* XXX not very nice */
     if ((mask & 0x01) && (bDeviceClass != d->descriptor->bDeviceClass))
       continue;
@@ -422,13 +422,13 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
 
 /*
 * call-seq:
-*   RibUSB::Bus.handleEvents -> nil
+*   RibUSB::Context.handleEvents -> nil
 *
 * Handles all pending USB events on the bus.
 *
 * If successful, returns +nil+, otherwise raises an exception and returns either the _libusb_ error code (+FixNum+).
 */
-static VALUE cBus_handleEvents (VALUE self)
+static VALUE cContext_handleEvents (VALUE self)
 {
   struct usb_t *u;
   int res;
@@ -458,7 +458,7 @@ void cDevice_free (struct device_t *d)
 }
 
 /* XXXXXX does this need to be a separate function??? */
-static VALUE cDevice_new (struct libusb_device *device)
+static VALUE cDevice_new (struct libusb_device *device, VALUE context)
 {
   struct device_t *d;
   VALUE object;
@@ -477,6 +477,7 @@ static VALUE cDevice_new (struct libusb_device *device)
   }
 
   object = Data_Wrap_Struct (Device, NULL, cDevice_free, d);
+  rb_iv_set(object, "@context", context);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1413,7 +1414,7 @@ static VALUE cDevice_getActiveConfigDescriptor (VALUE self)
   res = libusb_get_active_config_descriptor( d->device, &config);
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to get config descriptor: %s.", get_error_text (res));
-  return cConfigDescriptor_new(config);
+  return cConfigDescriptor_new(config, self);
 }
 
 /*
@@ -1435,7 +1436,7 @@ static VALUE cDevice_getConfigDescriptor (VALUE self, VALUE config_index)
   res = libusb_get_config_descriptor( d->device, NUM2INT(config_index), &config);
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to get config descriptor: %s.", get_error_text (res));
-  return cConfigDescriptor_new(config);
+  return cConfigDescriptor_new(config, self);
 }
 
 /*
@@ -1457,7 +1458,7 @@ static VALUE cDevice_getConfigDescriptorByValue (VALUE self, VALUE bConfiguratio
   res = libusb_get_config_descriptor_by_value( d->device, NUM2INT(bConfigurationValue), &config);
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to get config descriptor: %s.", get_error_text (res));
-  return cConfigDescriptor_new(config);
+  return cConfigDescriptor_new(config, self);
 }
 
 
@@ -1619,7 +1620,7 @@ void cConfigDescriptor_free (struct config_descriptor_t *c)
   xfree (c);
 }
 
-static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
+static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor, VALUE device)
 {
   struct config_descriptor_t *d;
   VALUE object;
@@ -1627,6 +1628,7 @@ static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
   d = ALLOC(struct config_descriptor_t);
   d->descriptor = descriptor;
   object = Data_Wrap_Struct (ConfigDescriptor, NULL, cConfigDescriptor_free, d);
+  rb_iv_set(object, "@device", device);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1761,13 +1763,13 @@ static VALUE cConfigDescriptor_maxPower (VALUE self)
 
 /*
 * call-seq:
-*   descriptor.interfaceList -> interfaceList
+*   descriptor.interfaces -> interfaces
 *
 * Retrieve the list of interfaces in this configuration.
 *
 * Returns an array of +RibUSB::Interface+ and never raises an exception.
 */
-static VALUE cConfigDescriptor_interfaceList (VALUE self)
+static VALUE cConfigDescriptor_interfaces (VALUE self)
 {
   struct config_descriptor_t *d;
   VALUE array;
@@ -1814,20 +1816,20 @@ static VALUE cInterface_new (const struct libusb_interface *interface, VALUE con
   i = ALLOC(struct interface_t);
   i->interface = interface;
   object = Data_Wrap_Struct (Interface, NULL, xfree, i);
-  rb_iv_set(object, "@config_descriptor", config_descriptor);
+  rb_iv_set(object, "@configuration", config_descriptor);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
 
 /*
 * call-seq:
-*   interface.altSettingList -> altSettingList
+*   interface.altSettings -> altSettings
 *
 * Retrieve the list of interface descriptors.
 *
 * Returns an array of +RibUSB::Interface+ and never raises an exception.
 */
-static VALUE cInterface_altSettingList (VALUE self)
+static VALUE cInterface_altSettings (VALUE self)
 {
   struct interface_t *d;
   VALUE array;
@@ -2009,13 +2011,13 @@ static VALUE cInterfaceDescriptor_iInterface (VALUE self)
 
 /*
 * call-seq:
-*   descriptor.endpointList -> endpointList
+*   descriptor.endpoints -> endpoints
 *
 * Retrieve the list of endpoints in this interface.
 *
 * Returns an array of +RibUSB::Endpoint+ and never raises an exception.
 */
-static VALUE cInterfaceDescriptor_endpointList (VALUE self)
+static VALUE cInterfaceDescriptor_endpoints (VALUE self)
 {
   struct interface_descriptor_t *d;
   VALUE array;
@@ -2225,13 +2227,13 @@ void Init_ribusb_ext()
 
   rb_define_singleton_method (RibUSB, "getError", mRibUSB_getError, 1);
 
-  /* RibUSB::Bus -- a class for _libusb_ bus-handling sessions */
-  Bus = rb_define_class_under (RibUSB, "Bus", rb_cObject);
-  rb_define_singleton_method (Bus, "new", cBus_new, 0);
-  rb_define_method (Bus, "setDebug", cBus_setDebug, 1);
-  rb_define_alias (Bus, "debug=", "setDebug");
-  rb_define_method (Bus, "find", cBus_find, -1);
-  rb_define_method (Bus, "handleEvents", cBus_handleEvents, 0);
+  /* RibUSB::Context -- a class for _libusb_ bus-handling sessions */
+  Context = rb_define_class_under (RibUSB, "Context", rb_cObject);
+  rb_define_singleton_method (Context, "new", cContext_new, 0);
+  rb_define_method (Context, "setDebug", cContext_setDebug, 1);
+  rb_define_alias (Context, "debug=", "setDebug");
+  rb_define_method (Context, "find", cContext_find, -1);
+  rb_define_method (Context, "handleEvents", cContext_handleEvents, 0);
 
   /* RibUSB::Device -- a class for individual USB devices accessed through _libusb_ */
   Device = rb_define_class_under (RibUSB, "Device", rb_cObject);
@@ -2280,6 +2282,7 @@ void Init_ribusb_ext()
   rb_define_alias (Device, "configDescriptor", "getConfigDescriptor");
   rb_define_method (Device, "getConfigDescriptorByValue", cDevice_getConfigDescriptorByValue, 1);
   rb_define_alias (Device, "configDescriptorByValue", "getConfigDescriptorByValue");
+  rb_define_attr (Device, "context", 1, 0);
 
   /* RibUSB::Transfer -- a class for asynchronous USB transfers */
   Transfer = rb_define_class_under (RibUSB, "Transfer", rb_cObject);
@@ -2298,13 +2301,14 @@ void Init_ribusb_ext()
   rb_define_method (ConfigDescriptor, "iConfiguration", cConfigDescriptor_iConfiguration, 0);
   rb_define_method (ConfigDescriptor, "bmAttributes", cConfigDescriptor_bmAttributes, 0);
   rb_define_method (ConfigDescriptor, "maxPower", cConfigDescriptor_maxPower, 0);
-  rb_define_method (ConfigDescriptor, "interfaceList", cConfigDescriptor_interfaceList, 0);
+  rb_define_method (ConfigDescriptor, "interfaces", cConfigDescriptor_interfaces, 0);
   rb_define_method (ConfigDescriptor, "extra", cConfigDescriptor_extra, 0);
+  rb_define_attr (ConfigDescriptor, "device", 1, 0);
 
   /* RibUSB::Interface -- a class for USB interfaces */
   Interface = rb_define_class_under (RibUSB, "Interface", rb_cObject);
-  rb_define_method (Interface, "altSettingList", cInterface_altSettingList, 0);
-  rb_define_attr (Interface, "config_descriptor", 1, 0);
+  rb_define_method (Interface, "altSettings", cInterface_altSettings, 0);
+  rb_define_attr (Interface, "configuration", 1, 0);
 
   /* RibUSB::InterfaceDescriptor -- a class for USB interface descriptors */
   InterfaceDescriptor = rb_define_class_under (RibUSB, "InterfaceDescriptor", rb_cObject);
@@ -2317,7 +2321,7 @@ void Init_ribusb_ext()
   rb_define_method (InterfaceDescriptor, "bInterfaceSubClass", cInterfaceDescriptor_bInterfaceSubClass, 0);
   rb_define_method (InterfaceDescriptor, "bInterfaceProtocol", cInterfaceDescriptor_bInterfaceProtocol, 0);
   rb_define_method (InterfaceDescriptor, "iInterface", cInterfaceDescriptor_iInterface, 0);
-  rb_define_method (InterfaceDescriptor, "endpointList", cInterfaceDescriptor_endpointList, 0);
+  rb_define_method (InterfaceDescriptor, "endpoints", cInterfaceDescriptor_endpoints, 0);
   rb_define_method (InterfaceDescriptor, "extra", cInterfaceDescriptor_extra, 0);
   rb_define_attr (InterfaceDescriptor, "interface", 1, 0);
 
