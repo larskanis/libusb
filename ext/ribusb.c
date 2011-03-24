@@ -481,6 +481,17 @@ static VALUE cDevice_new (struct libusb_device *device)
   return object;
 }
 
+static void ensure_open_device(struct device_t *d)
+{
+  int res;
+  if (d->handle == NULL) {
+    res = libusb_open (d->device, &(d->handle));
+    if (res < 0) {
+      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
+    }
+  }
+}
+
 /*
 * call-seq:
 *   device.close
@@ -580,12 +591,7 @@ static VALUE cDevice_getConfiguration (VALUE self)
   int c;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_get_configuration (d->handle, &c);
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to obtain configuration value: %s.", get_error_text (res));
@@ -609,12 +615,7 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_set_configuration (d->handle, NUM2INT(configuration));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to set configuration: %s.", get_error_text (res));
@@ -637,12 +638,7 @@ static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_claim_interface (d->handle, NUM2INT(interface));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to claim interface: %s.", get_error_text (res));
@@ -664,12 +660,7 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_release_interface (d->handle, NUM2INT(interface));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to release interface: %s.", get_error_text (res));
@@ -693,12 +684,7 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_set_interface_alt_setting (d->handle, NUM2INT(interface), NUM2INT(setting));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to set interface alternate setting: %s.", get_error_text (res));
@@ -721,12 +707,7 @@ static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_clear_halt (d->handle, NUM2INT(endpoint));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to clear halt/stall condition: %s.", get_error_text (res));
@@ -746,12 +727,7 @@ static VALUE cDevice_resetDevice (VALUE self)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_reset_device (d->handle);
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to reset device: %s.", get_error_text (res));
@@ -774,12 +750,7 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_kernel_driver_active (d->handle, NUM2INT(interface));
   if (res < 0) {
     rb_raise (rb_eRuntimeError, "Failed to determine whether a kernel driver is active on interface: %s.", get_error_text (res));
@@ -805,12 +776,7 @@ static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_detach_kernel_driver (d->handle, NUM2INT(interface));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to detach kernel driver: %s.", get_error_text (res));
@@ -833,12 +799,7 @@ static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
   int res;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_attach_kernel_driver (d->handle, NUM2INT(interface));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to re-attach kernel driver: %s.", get_error_text (res));
@@ -863,12 +824,7 @@ static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
   char c[256];
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_get_string_descriptor_ascii (d->handle, NUM2INT(index), (unsigned char *) c, sizeof (c));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", get_error_text (res));
@@ -894,12 +850,7 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
   char c[256];
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
   res = libusb_get_string_descriptor (d->handle, NUM2INT(index), NUM2INT(langid), (unsigned char *) c, sizeof (c));
   if (res < 0)
     rb_raise (rb_eRuntimeError, "Failed to retrieve descriptor string: %s.", get_error_text (res));
@@ -954,12 +905,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
   VALUE object;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
 
   bmRequestType = NUM2INT(get_opt (hash, "bmRequestType", 1));
   bRequest = NUM2INT(get_opt (hash, "bRequest", 1));
@@ -1082,12 +1028,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
   VALUE object;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
 
   endpoint = NUM2INT(get_opt (hash, "endpoint", 1));
   dataIn = get_opt (hash, "dataIn", 0);
@@ -1195,12 +1136,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
   VALUE object;
 
   Data_Get_Struct (self, struct device_t, d);
-  if (d->handle == NULL) {
-    res = libusb_open (d->device, &(d->handle));
-    if (res < 0) {
-      rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-    }
-  }
+  ensure_open_device(d);
 
   endpoint = NUM2INT(get_opt (hash, "endpoint", 1));
   dataIn = get_opt (hash, "dataIn", 0);
