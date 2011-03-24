@@ -244,7 +244,7 @@ void cBus_free (struct usb_t *u)
 {
   libusb_exit (u->context);
 
-  free (u);
+  xfree (u);
 }
 
 /*
@@ -268,10 +268,7 @@ static VALUE cBus_new (VALUE self)
   if (res) {
     rb_raise (rb_eRuntimeError, "Failed to initialize libusb: %s.", get_error_text (res));
   }
-  u = (struct usb_t *) malloc (sizeof (struct usb_t));
-  if (!u) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Bus object.");
-  }
+  u = ALLOC(struct usb_t);
   u->context = context;
   object = Data_Wrap_Struct (Bus, NULL, cBus_free, u);
   rb_obj_call_init (object, 0, 0);
@@ -457,7 +454,7 @@ void cDevice_free (struct device_t *d)
 
   libusb_unref_device (d->device);
 
-  free (d);
+  xfree (d);
 }
 
 /* XXXXXX does this need to be a separate function??? */
@@ -467,21 +464,15 @@ static VALUE cDevice_new (struct libusb_device *device)
   VALUE object;
   int res;
 
-  d = (struct device_t *) malloc (sizeof (struct device_t));
-  if (!d) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Device object.");
-  }
+  d = ALLOC(struct device_t);
   libusb_ref_device (device);
   d->device = device;
   d->handle = NULL;
-  d->descriptor = (struct libusb_device_descriptor *) malloc (sizeof (struct libusb_device_descriptor));
-  if (!(d->descriptor)) {
-    free(d);
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for struct libusb_device_descriptor.");
-  }
+  d->descriptor = ALLOC(struct libusb_device_descriptor);
   res = libusb_get_device_descriptor (d->device, d->descriptor);
   if (res < 0){
-    free(d);
+    xfree(d);
+    xfree(d->descriptor);
     rb_raise (rb_eRuntimeError, "Failed to retrieve device descriptor: %s.", get_error_text (res));
   }
 
@@ -1011,10 +1002,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     timeout = NUM2INT(v);
 
   if (rb_block_given_p ()) {
-    t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
-    if (!t) {
-      rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-    }
+    t = ALLOC(struct transfer_t);
     t->foreign_data_in = foreign_data_in;
     t->foreign_data_in_ptr = data;
     t->proc = rb_block_proc ();
@@ -1022,10 +1010,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     if (!(t->transfer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate control transfer.");
     }
-    t->buffer = (unsigned char *) malloc (LIBUSB_CONTROL_SETUP_SIZE + wLength);
-    if (!(t->buffer)) {
-      rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for control transfer.");
-    }
+    t->buffer = (unsigned char *) xmalloc (LIBUSB_CONTROL_SETUP_SIZE + wLength);
     libusb_fill_control_setup (t->buffer, bmRequestType, bRequest, wValue, wIndex, wLength);
     if (data) {
       memcpy(t->buffer + LIBUSB_CONTROL_SETUP_SIZE, data, wLength);
@@ -1039,9 +1024,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     return object;
   } else {
     if( !foreign_data_in )
-      data = (unsigned char *) malloc (wLength);
-    if (!data && wLength )
-      rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for control transfer.");
+      data = (unsigned char *) xmalloc (wLength);
 
     res = libusb_control_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
     if (res < 0) {
@@ -1051,7 +1034,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
       return INT2NUM(res);
     else {
       v = rb_str_new ((char *) data, res);
-      free (data);
+      xfree (data);
       return v;
     }
   }
@@ -1120,9 +1103,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       break;
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
-      data = (unsigned char *) malloc (wLength);
-      if (!data)
-        rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#bulkTransfer.");
+      data = (unsigned char *) xmalloc (wLength);
       foreign_data_in = 0;
       break;
     default:
@@ -1142,10 +1123,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     timeout = NUM2INT(v);
 
   if (rb_block_given_p ()) {
-    t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
-    if (!t) {
-      rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-    }
+    t = ALLOC(struct transfer_t);
     t->foreign_data_in = foreign_data_in;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
@@ -1169,7 +1147,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       return INT2NUM(transferred);
     else {
       v = rb_str_new ((char *) data, transferred);
-      free (data);
+      xfree (data);
       return v;
     }
   }
@@ -1238,9 +1216,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
       break;
     case T_FIXNUM:
       wLength = NUM2INT(dataIn);
-      data = (unsigned char *) malloc (wLength);
-      if (!data)
-        rb_raise (rb_eRuntimeError, "Failed to allocate memory for data packet in RibUSB::Device#interruptTransfer.");
+      data = (unsigned char *) xmalloc (wLength);
       foreign_data_in = 0;
       break;
     default:
@@ -1260,10 +1236,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     timeout = NUM2INT(v);
 
   if (rb_block_given_p ()) {
-    t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
-    if (!t) {
-      rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-    }
+    t = ALLOC(struct transfer_t);
     t->foreign_data_in = foreign_data_in;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
@@ -1287,7 +1260,7 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
       return INT2NUM(transferred);
     else {
       v = rb_str_new ((char *) data, transferred);
-      free (data);
+      xfree (data);
       return v;
     }
   }
@@ -1559,8 +1532,8 @@ static VALUE cDevice_getConfigDescriptorByValue (VALUE self, VALUE bConfiguratio
 void cTransfer_free (struct transfer_t *t)
 {
   libusb_free_transfer (t->transfer);
-  if( t->buffer ) free (t->buffer);
-  free (t);
+  if( t->buffer ) xfree (t->buffer);
+  xfree (t);
 }
 
 /*
@@ -1707,7 +1680,7 @@ void cConfigDescriptor_free (struct config_descriptor_t *c)
 {
   libusb_free_config_descriptor (c->descriptor);
 
-  free (c);
+  xfree (c);
 }
 
 static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
@@ -1715,10 +1688,7 @@ static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
   struct config_descriptor_t *d;
   VALUE object;
 
-  d = (struct config_descriptor_t *) malloc (sizeof (struct config_descriptor_t));
-  if (!d) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::ConfigDescriptor object.");
-  }
+  d = ALLOC(struct config_descriptor_t);
   d->descriptor = descriptor;
   object = Data_Wrap_Struct (ConfigDescriptor, NULL, cConfigDescriptor_free, d);
   rb_obj_call_init (object, 0, 0);
@@ -1905,12 +1875,9 @@ static VALUE cInterface_new (struct libusb_interface *interface)
   struct interface_t *i;
   VALUE object;
 
-  i = (struct interface_t *) malloc (sizeof (struct interface_t));
-  if (!i) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Interface object.");
-  }
+  i = ALLOC(struct interface_t);
   i->interface = interface;
-  object = Data_Wrap_Struct (Interface, NULL, free, i);
+  object = Data_Wrap_Struct (Interface, NULL, xfree, i);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -1951,12 +1918,9 @@ static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descr
   struct interface_descriptor_t *d;
   VALUE object;
 
-  d = (struct interface_descriptor_t *) malloc (sizeof (struct interface_descriptor_t));
-  if (!d) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::InterfaceDescriptor object.");
-  }
+  d = ALLOC(struct interface_descriptor_t);
   d->descriptor = descriptor;
-  object = Data_Wrap_Struct (InterfaceDescriptor, NULL, free, d);
+  object = Data_Wrap_Struct (InterfaceDescriptor, NULL, xfree, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
@@ -2157,12 +2121,9 @@ static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descrip
   struct endpoint_descriptor_t *d;
   VALUE object;
 
-  d = (struct endpoint_descriptor_t *) malloc (sizeof (struct endpoint_descriptor_t));
-  if (!d) {
-    rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::EndpointDescriptor object.");
-  }
+  d = ALLOC(struct endpoint_descriptor_t);
   d->descriptor = descriptor;
-  object = Data_Wrap_Struct (EndpointDescriptor, NULL, free, d);
+  object = Data_Wrap_Struct (EndpointDescriptor, NULL, xfree, d);
   rb_obj_call_init (object, 0, 0);
   return object;
 }
