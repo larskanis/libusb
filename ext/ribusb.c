@@ -146,7 +146,6 @@ VALUE get_opt (VALUE hash, const char *key, int mandatory)
   opt = rb_hash_lookup (hash, ID2SYM(rb_intern (key)));
   if (mandatory && (opt == Qnil)) {
     rb_raise (rb_eRuntimeError, "Option :%s not specified.", key);
-    return Qnil;
   }
   return opt;
 }
@@ -232,7 +231,6 @@ static VALUE mRibUSB_getError (VALUE self, VALUE number)
     return array;
   } else {
     rb_raise (rb_eRuntimeError, "Error number %i does not exist.", error);
-    return Qnil;
   }
 }
 
@@ -269,12 +267,10 @@ static VALUE cBus_new (VALUE self)
   res = libusb_init (&context);
   if (res) {
     rb_raise (rb_eRuntimeError, "Failed to initialize libusb: %s.", get_error_text (res));
-    return INT2NUM(res);
   }
   u = (struct usb_t *) malloc (sizeof (struct usb_t));
   if (!u) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Bus object.");
-    return Qnil;
   }
   u->context = context;
   object = Data_Wrap_Struct (Bus, NULL, cBus_free, u);
@@ -391,7 +387,6 @@ static VALUE cBus_find (int argc, VALUE *argv, VALUE self)
 
   if (res < 0) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for list of devices: %s.", get_error_text (res));
-    return INT2NUM(res);
   }
 
   array = rb_ary_new ();
@@ -445,7 +440,6 @@ static VALUE cBus_handleEvents (VALUE self)
   res = libusb_handle_events (u->context);
   if (res) {
     rb_raise (rb_eRuntimeError, "Failed to handle pending USB events: %s.", get_error_text (res));
-    return INT2NUM(res);
   }
   return Qnil;
 }
@@ -476,7 +470,6 @@ static VALUE cDevice_new (struct libusb_device *device)
   d = (struct device_t *) malloc (sizeof (struct device_t));
   if (!d) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Device object.");
-    return Qnil;
   }
   libusb_ref_device (device);
   d->device = device;
@@ -485,7 +478,6 @@ static VALUE cDevice_new (struct libusb_device *device)
   if (!(d->descriptor)) {
     free(d);
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for struct libusb_device_descriptor.");
-    return Qnil;
   }
   res = libusb_get_device_descriptor (d->device, d->descriptor);
   if (res < 0){
@@ -601,7 +593,6 @@ static VALUE cDevice_getConfiguration (VALUE self)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_get_configuration (d->handle, &c);
@@ -631,7 +622,6 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_set_configuration (d->handle, NUM2INT(configuration));
@@ -660,7 +650,6 @@ static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_claim_interface (d->handle, NUM2INT(interface));
@@ -688,7 +677,6 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_release_interface (d->handle, NUM2INT(interface));
@@ -718,7 +706,6 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_set_interface_alt_setting (d->handle, NUM2INT(interface), NUM2INT(setting));
@@ -747,7 +734,6 @@ static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_clear_halt (d->handle, NUM2INT(endpoint));
@@ -773,7 +759,6 @@ static VALUE cDevice_resetDevice (VALUE self)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_reset_device (d->handle);
@@ -802,13 +787,11 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_kernel_driver_active (d->handle, NUM2INT(interface));
   if (res < 0) {
     rb_raise (rb_eRuntimeError, "Failed to determine whether a kernel driver is active on interface: %s.", get_error_text (res));
-    return INT2NUM(res);
   } else if (res == 1)
     return Qtrue;
   else
@@ -835,7 +818,6 @@ static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_detach_kernel_driver (d->handle, NUM2INT(interface));
@@ -864,7 +846,6 @@ static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_attach_kernel_driver (d->handle, NUM2INT(interface));
@@ -895,7 +876,6 @@ static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_get_string_descriptor_ascii (d->handle, NUM2INT(index), (unsigned char *) c, sizeof (c));
@@ -927,7 +907,6 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
   res = libusb_get_string_descriptor (d->handle, NUM2INT(index), NUM2INT(langid), (unsigned char *) c, sizeof (c));
@@ -988,7 +967,6 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
 
@@ -1014,7 +992,6 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
       break;
     default:
       rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#controlTransfer.");
-      break;
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     bmRequestType &= 0x7f; /* out transfer */
@@ -1037,7 +1014,6 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
     if (!t) {
       rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-      return Qnil;
     }
     t->foreign_data_in = foreign_data_in;
     t->foreign_data_in_ptr = data;
@@ -1045,12 +1021,10 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     t->transfer = libusb_alloc_transfer (0);
     if (!(t->transfer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate control transfer.");
-      return Qnil;
     }
     t->buffer = (unsigned char *) malloc (LIBUSB_CONTROL_SETUP_SIZE + wLength);
     if (!(t->buffer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate data buffer for control transfer.");
-      return Qnil;
     }
     libusb_fill_control_setup (t->buffer, bmRequestType, bRequest, wValue, wIndex, wLength);
     if (data) {
@@ -1072,7 +1046,6 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     res = libusb_control_transfer (d->handle, bmRequestType, bRequest, wValue, wIndex, data, wLength, timeout);
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Synchronous control transfer failed: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
     if (foreign_data_in)
       return INT2NUM(res);
@@ -1130,7 +1103,6 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
 
@@ -1155,7 +1127,6 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       break;
     default:
       rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#bulkTransfer.");
-      break;
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     endpoint &= 0x7f; /* out transfer */
@@ -1174,14 +1145,12 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
     if (!t) {
       rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-      return Qnil;
     }
     t->foreign_data_in = foreign_data_in;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
     if (!(t->transfer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate bulk transfer.");
-      return Qnil;
     }
     t->buffer = foreign_data_in ? NULL : data;
     object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
@@ -1195,7 +1164,6 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
     res = libusb_bulk_transfer (d->handle, endpoint, data, wLength, &transferred, timeout);
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Synchronous bulk transfer failed: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
     if (foreign_data_in)
       return INT2NUM(transferred);
@@ -1253,7 +1221,6 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     res = libusb_open (d->device, &(d->handle));
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Failed to open USB device: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
   }
 
@@ -1278,7 +1245,6 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
       break;
     default:
       rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#interruptTransfer.");
-      break;
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     endpoint &= 0x7f; /* out transfer */
@@ -1297,14 +1263,12 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     t = (struct transfer_t *) malloc (sizeof (struct transfer_t));
     if (!t) {
       rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Transfer object.");
-      return Qnil;
     }
     t->foreign_data_in = foreign_data_in;
     t->proc = rb_block_proc ();
     t->transfer = libusb_alloc_transfer (0);
     if (!(t->transfer)) {
       rb_raise (rb_eRuntimeError, "Failed to allocate interrupt transfer.");
-      return Qnil;
     }
     t->buffer = foreign_data_in ? NULL : data;
     object = Data_Wrap_Struct (Transfer, NULL, cTransfer_free, t);
@@ -1318,7 +1282,6 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
     res = libusb_interrupt_transfer (d->handle, endpoint, data, wLength, &transferred, timeout);
     if (res < 0) {
       rb_raise (rb_eRuntimeError, "Synchronous interrupt transfer failed: %s.", get_error_text (res));
-      return INT2NUM(res);
     }
     if (foreign_data_in)
       return INT2NUM(transferred);
@@ -1617,7 +1580,6 @@ static VALUE cTransfer_submit (VALUE self)
   res = libusb_submit_transfer (t->transfer);
   if (res) {
     rb_raise (rb_eRuntimeError, "Failed to submit asynchronous transfer: %s.", get_error_text (res));
-    return INT2NUM(res);
   } else
     return Qnil;
 }
@@ -1639,7 +1601,6 @@ static VALUE cTransfer_cancel (VALUE self)
   res = libusb_cancel_transfer (t->transfer);
   if (res) {
     rb_raise (rb_eRuntimeError, "Failed to cancel asynchronous transfer: %s.", get_error_text (res));
-    return INT2NUM(res);
   } else
     return Qnil;
 }
@@ -1685,7 +1646,6 @@ static VALUE cTransfer_status (VALUE self)
     break;
   default:
     rb_raise (rb_eRuntimeError, "Invalid transfer status: %i.", t->transfer->status);
-    break;
   }
 }
 
@@ -1758,7 +1718,6 @@ static VALUE cConfigDescriptor_new (struct libusb_config_descriptor *descriptor)
   d = (struct config_descriptor_t *) malloc (sizeof (struct config_descriptor_t));
   if (!d) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::ConfigDescriptor object.");
-    return Qnil;
   }
   d->descriptor = descriptor;
   object = Data_Wrap_Struct (ConfigDescriptor, NULL, cConfigDescriptor_free, d);
@@ -1949,7 +1908,6 @@ static VALUE cInterface_new (struct libusb_interface *interface)
   i = (struct interface_t *) malloc (sizeof (struct interface_t));
   if (!i) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::Interface object.");
-    return Qnil;
   }
   i->interface = interface;
   object = Data_Wrap_Struct (Interface, NULL, free, i);
@@ -1996,7 +1954,6 @@ static VALUE cInterfaceDescriptor_new (struct libusb_interface_descriptor *descr
   d = (struct interface_descriptor_t *) malloc (sizeof (struct interface_descriptor_t));
   if (!d) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::InterfaceDescriptor object.");
-    return Qnil;
   }
   d->descriptor = descriptor;
   object = Data_Wrap_Struct (InterfaceDescriptor, NULL, free, d);
@@ -2203,7 +2160,6 @@ static VALUE cEndpointDescriptor_new (struct libusb_endpoint_descriptor *descrip
   d = (struct endpoint_descriptor_t *) malloc (sizeof (struct endpoint_descriptor_t));
   if (!d) {
     rb_raise (rb_eRuntimeError, "Failed to allocate memory for RibUSB::EndpointDescriptor object.");
-    return Qnil;
   }
   d->descriptor = descriptor;
   object = Data_Wrap_Struct (EndpointDescriptor, NULL, free, d);
