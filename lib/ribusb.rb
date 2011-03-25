@@ -116,6 +116,7 @@ module RibUSB
       end
     end
 
+    # Return manufacturer of the device as String.
     def manufacturer
       return @manufacturer if defined? @manufacturer
       @manufacturer = tryStringDescriptorASCII(self.iManufacturer)
@@ -123,6 +124,7 @@ module RibUSB
       @manufacturer
     end
 
+    # Return product name of the device as String.
     def product
       return @product if defined? @product
       @product = tryStringDescriptorASCII(self.iProduct)
@@ -130,6 +132,7 @@ module RibUSB
       @product
     end
 
+    # Return serial number of the device as String.
     def serial_number
       return @serial_number if defined? @serial_number
       @serial_number = tryStringDescriptorASCII(self.iSerialNumber)
@@ -137,6 +140,7 @@ module RibUSB
       @serial_number
     end
 
+    # Return configurations of the device as Array of ConfigDescriptor s.
     def configurations
       configs = []
       bNumConfigurations.times do |config_index|
@@ -145,8 +149,11 @@ module RibUSB
       configs
     end
 
+    # Return all interfaces of the device as Array of Interface s.
     def interfaces() self.configurations.map {|d| d.interfaces }.flatten end
+    # Return all interface decriptions of the device as Array of InterfaceDescriptor s.
     def interface_descriptors() self.interfaces.map {|d| d.altSettings }.flatten end
+    # Return all endpoints of all interfaces of the device as Array of EndpointDescriptor s.
     def endpoints() self.interface_descriptors.map {|d| d.endpoints }.flatten end
 
     def <=>(o)
@@ -170,12 +177,15 @@ module RibUSB
       "\#<#{self.class} #{attrs.join(' ')}>"
     end
 
+    # Return name of the configuration as String.
     def description
       return @description if defined? @description
       @description = device.tryStringDescriptorASCII(self.iConfiguration)
     end
 
+    # Return all interface decriptions of the configuration as Array of InterfaceDescriptor s.
     def interface_descriptors() self.interfaces.map {|d| d.altSettings }.flatten end
+    # Return all endpoints of all interfaces of the configuration as Array of EndpointDescriptor s.
     def endpoints() self.interface_descriptors.map {|d| d.endpoints }.flatten end
 
     def <=>(o)
@@ -188,7 +198,9 @@ module RibUSB
   class Interface
     include Comparable
 
+    # The Device the Interface belongs to.
     def device() self.configuration.device end
+    # Return all endpoints of all alternative settings as Array of EndpointDescriptor s.
     def endpoints() self.altSettings.map {|d| d.endpoints }.flatten end
 
     def <=>(o)
@@ -209,12 +221,15 @@ module RibUSB
       "\#<#{self.class} #{attrs.join(' ')}>"
     end
 
+    # Return name of the Interface as String.
     def description
       return @description if defined? @description
       @description = device.tryStringDescriptorASCII(self.iInterface)
     end
 
+    # The Device the InterfaceDescriptor belongs to.
     def device() self.interface.configuration.device end
+    # The ConfigDescriptor the InterfaceDescriptor belongs to.
     def configuration() self.interface.configuration end
 
     def <=>(o)
@@ -243,8 +258,11 @@ module RibUSB
       "\#<#{self.class} #{num} #{inout} #{type.join(" ")}>"
     end
 
+    # The Device the EndpointDescriptor belongs to.
     def device() self.interface_descriptor.interface.configuration.device end
+    # The ConfigDescriptor the EndpointDescriptor belongs to.
     def configuration() self.interface_descriptor.interface.configuration end
+    # The Interface the EndpointDescriptor belongs to.
     def interface() self.interface_descriptor.interface end
 
     def <=>(o)

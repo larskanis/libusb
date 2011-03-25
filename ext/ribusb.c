@@ -2282,6 +2282,7 @@ void Init_ribusb_ext()
   rb_define_alias (Device, "configDescriptor", "getConfigDescriptor");
   rb_define_method (Device, "getConfigDescriptorByValue", cDevice_getConfigDescriptorByValue, 1);
   rb_define_alias (Device, "configDescriptorByValue", "getConfigDescriptorByValue");
+  /* The Context the device belongs to. */
   rb_define_attr (Device, "context", 1, 0);
 
   /* RibUSB::Transfer -- a class for asynchronous USB transfers */
@@ -2303,11 +2304,13 @@ void Init_ribusb_ext()
   rb_define_method (ConfigDescriptor, "maxPower", cConfigDescriptor_maxPower, 0);
   rb_define_method (ConfigDescriptor, "interfaces", cConfigDescriptor_interfaces, 0);
   rb_define_method (ConfigDescriptor, "extra", cConfigDescriptor_extra, 0);
+  /* The Device the configuration belongs to. */
   rb_define_attr (ConfigDescriptor, "device", 1, 0);
 
   /* RibUSB::Interface -- a class for USB interfaces */
   Interface = rb_define_class_under (RibUSB, "Interface", rb_cObject);
   rb_define_method (Interface, "altSettings", cInterface_altSettings, 0);
+  /* The ConfigDescriptor the interface belongs to. */
   rb_define_attr (Interface, "configuration", 1, 0);
 
   /* RibUSB::InterfaceDescriptor -- a class for USB interface descriptors */
@@ -2323,6 +2326,7 @@ void Init_ribusb_ext()
   rb_define_method (InterfaceDescriptor, "iInterface", cInterfaceDescriptor_iInterface, 0);
   rb_define_method (InterfaceDescriptor, "endpoints", cInterfaceDescriptor_endpoints, 0);
   rb_define_method (InterfaceDescriptor, "extra", cInterfaceDescriptor_extra, 0);
+  /* The Interface the interface description belongs to. */
   rb_define_attr (InterfaceDescriptor, "interface", 1, 0);
 
   /* RibUSB::EndpointDescriptor -- a class for USB endpoint descriptors */
@@ -2336,6 +2340,7 @@ void Init_ribusb_ext()
   rb_define_method (EndpointDescriptor, "bRefresh", cEndpointDescriptor_bRefresh, 0);
   rb_define_method (EndpointDescriptor, "bSynchAddress", cEndpointDescriptor_bSynchAddress, 0);
   rb_define_method (EndpointDescriptor, "extra", cEndpointDescriptor_extra, 0);
+  /* The InterfaceDescriptor the endpoint belongs to. */
   rb_define_attr (EndpointDescriptor, "interface_descriptor", 1, 0);
 
 
