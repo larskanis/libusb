@@ -2,7 +2,7 @@
 COPYING
 History.txt
 Manifest.txt
-README.txt
+README.rdoc
 Rakefile
 ext/extconf.rb
 ext/ribusb.c

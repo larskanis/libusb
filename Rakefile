@@ -10,7 +10,8 @@ hoe = Hoe.spec 'ribusb' do
 
   spec_extras[:extensions] = 'ext/extconf.rb'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
-  self.extra_rdoc_files << 'ext/ribusb.c'
+  self.readme_file = 'README.rdoc'
+  self.extra_rdoc_files << self.readme_file << 'ext/ribusb.c'
   self.rubyforge_name = 'ribusb'
 end
 
