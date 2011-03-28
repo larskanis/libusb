@@ -144,7 +144,11 @@ module RibUSB
     def configurations
       configs = []
       bNumConfigurations.times do |config_index|
-        configs << configDescriptor(config_index)
+        begin
+          configs << configDescriptor(config_index)
+        rescue RuntimeError
+          # On Windows some devices don't return it's configuration.
+        end
       end
       configs
     end
