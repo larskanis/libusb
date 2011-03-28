@@ -41,7 +41,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
     @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
 
-    if dev.kernelDriverActive?(0)
+    if RUBY_PLATFORM=~/linux/i && dev.kernelDriverActive?(0)
       dev.detachKernelDriver(0)
     end
     dev.claimInterface(0)
