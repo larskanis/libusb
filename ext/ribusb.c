@@ -16,7 +16,7 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
   MA 02111-1307, USA.
 
-  This program is copyright by András G. Major, 2009.
+  This program is copyright by AndrÃ¡s G. Major, 2009.
   Please visit the project website at http://ribusb.rubyforge.org/
   for support.
 */
@@ -207,7 +207,7 @@ const char *get_error_text (int number)
 
 /*
 * call-seq:
-*   RibUSB.getError(number) -> [name, text]
+*   RibUSB.get_error(number) -> [name, text]
 *
 * Get the textual error description corresponding to a _libusb_ error code.
 *
@@ -217,7 +217,7 @@ const char *get_error_text (int number)
 *
 * On success (if the error number is valid), returns an array of two strings, otherwise raises an exception and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
 */
-static VALUE mRibUSB_getError (VALUE self, VALUE number)
+static VALUE mRibUSB_get_error (VALUE self, VALUE number)
 {
   int error;
   const char *name, *text;
@@ -277,7 +277,7 @@ static VALUE cContext_new (VALUE self)
 
 /*
 * call-seq:
-*   bus.setDebug(level) -> nil
+*   bus.set_debug(level) -> nil
 *   bus.debug=level -> nil
 *
 * Set the debug level of the current _libusb_ context.
@@ -286,7 +286,7 @@ static VALUE cContext_new (VALUE self)
 *
 * Returns +nil+ and never raises an exception.
 */
-static VALUE cContext_setDebug (VALUE self, VALUE level)
+static VALUE cContext_set_debug (VALUE self, VALUE level)
 {
   struct usb_t *u;
 
@@ -422,13 +422,13 @@ static VALUE cContext_find (int argc, VALUE *argv, VALUE self)
 
 /*
 * call-seq:
-*   RibUSB::Context.handleEvents -> nil
+*   RibUSB::Context.handle_events -> nil
 *
 * Handles all pending USB events on the bus.
 *
 * If successful, returns +nil+, otherwise raises an exception and returns either the _libusb_ error code (+FixNum+).
 */
-static VALUE cContext_handleEvents (VALUE self)
+static VALUE cContext_handle_events (VALUE self)
 {
   struct usb_t *u;
   int res;
@@ -513,14 +513,14 @@ static VALUE cDevice_close (VALUE self)
 
 /*
 * call-seq:
-*   device.getBusNumber -> bus_number
-*   device.busNumber -> bus_number
+*   device.get_bus_number -> bus_number
+*   device.bus_number -> bus_number
 *
 * Get bus number.
 *
 * On success, returns the USB bus number (+FixNum+) the device is connected to, otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_getBusNumber (VALUE self)
+static VALUE cDevice_get_bus_number (VALUE self)
 {
   struct device_t *d;
   int res;
@@ -534,14 +534,14 @@ static VALUE cDevice_getBusNumber (VALUE self)
 
 /*
 * call-seq:
-*   device.getDeviceAddress -> address
-*   device.deviceAddress -> address
+*   device.get_device_address -> address
+*   device.device_address -> address
 *
 * Get device address.
 *
 * On success, returns the USB address on the bus (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_getDeviceAddress (VALUE self)
+static VALUE cDevice_get_device_address (VALUE self)
 {
   struct device_t *d;
   int res;
@@ -555,8 +555,8 @@ static VALUE cDevice_getDeviceAddress (VALUE self)
 
 /*
 * call-seq:
-*   device.getMaxPacketSize(endpoint) -> max_packet_size
-*   device.maxPacketSize(endpoint) -> max_packet_size
+*   device.get_max_packet_size(endpoint) -> max_packet_size
+*   device.max_packet_size(endpoint) -> max_packet_size
 *
 * Get maximum packet size.
 *
@@ -564,7 +564,7 @@ static VALUE cDevice_getDeviceAddress (VALUE self)
 *
 * On success, returns the maximum packet size of the endpoint (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
+static VALUE cDevice_get_max_packet_size (VALUE self, VALUE endpoint)
 {
   struct device_t *d;
   int res;
@@ -578,14 +578,14 @@ static VALUE cDevice_getMaxPacketSize (VALUE self, VALUE endpoint)
 
 /*
 * call-seq:
-*   device.getConfiguration -> configuration
+*   device.get_configuration -> configuration
 *   device.configuration -> configuration
 *
 * Get currently active configuration.
 *
 * On success, returns the bConfigurationValue of the active configuration of the device (+FixNum+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_getConfiguration (VALUE self)
+static VALUE cDevice_get_configuration (VALUE self)
 {
   struct device_t *d;
   int res;
@@ -601,7 +601,7 @@ static VALUE cDevice_getConfiguration (VALUE self)
 
 /*
 * call-seq:
-*   device.setConfiguration(configuration) -> nil
+*   device.set_configuration(configuration) -> nil
 *   device.configuration=(configuration) -> nil
 *
 * Set active configuration.
@@ -610,7 +610,7 @@ static VALUE cDevice_getConfiguration (VALUE self)
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
+static VALUE cDevice_set_configuration (VALUE self, VALUE configuration)
 {
   struct device_t *d;
   int res;
@@ -625,7 +625,7 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
 
 /*
 * call-seq:
-*   device.claimInterface(interface) -> nil
+*   device.claim_interface(interface) -> nil
 *
 * Claim interface.
 *
@@ -633,7 +633,7 @@ static VALUE cDevice_setConfiguration (VALUE self, VALUE configuration)
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
+static VALUE cDevice_claim_interface (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -648,14 +648,14 @@ static VALUE cDevice_claimInterface (VALUE self, VALUE interface)
 
 /*
 * call-seq:
-*   device.releaseInterface(interface) -> nil
+*   device.release_interface(interface) -> nil
 * Release interface.
 *
 * - +interface+ is a +FixNum+ containing the interface number.
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
+static VALUE cDevice_release_interface (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -670,7 +670,7 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
 
 /*
 * call-seq:
-*   device.setInterfaceAltSetting(interface, setting) -> nil
+*   device.set_interface_alt_setting(interface, setting) -> nil
 *
 * Set alternate setting for an interface.
 *
@@ -679,7 +679,7 @@ static VALUE cDevice_releaseInterface (VALUE self, VALUE interface)
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE setting)
+static VALUE cDevice_set_interface_alt_setting (VALUE self, VALUE interface, VALUE setting)
 {
   struct device_t *d;
   int res;
@@ -694,7 +694,7 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
 
 /*
 * call-seq:
-*   device.clearHalt(endpoint) -> nil
+*   device.clear_halt(endpoint) -> nil
 *
 * Clear halt/stall condition for an endpoint.
 *
@@ -702,7 +702,7 @@ static VALUE cDevice_setInterfaceAltSetting (VALUE self, VALUE interface, VALUE 
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
+static VALUE cDevice_clear_halt (VALUE self, VALUE endpoint)
 {
   struct device_t *d;
   int res;
@@ -716,13 +716,13 @@ static VALUE cDevice_clearHalt (VALUE self, VALUE endpoint)
 }
 
 /*
-* call-seq: device.resetDevice -> nil
+* call-seq: device.reset_device -> nil
 *
 * Reset device.
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_resetDevice (VALUE self)
+static VALUE cDevice_reset_device (VALUE self)
 {
   struct device_t *d;
   int res;
@@ -737,7 +737,7 @@ static VALUE cDevice_resetDevice (VALUE self)
 
 /*
 * call-seq:
-*   device.kernelDriverActive?(interface) -> result
+*   device.kernel_driver_active?(interface) -> result
 *
 * Determine if a kernel driver is active on a given interface.
 *
@@ -745,7 +745,7 @@ static VALUE cDevice_resetDevice (VALUE self)
 *
 * On success, returns whether or not the device interface is claimed by a kernel driver (+true+ or +false+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
+static VALUE cDevice_kernel_driver_activeQ (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -763,7 +763,7 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
 
 /*
 * call-seq:
-*   device.detachKernelDriver(interface) -> nil
+*   device.detach_kernel_driver(interface) -> nil
 *
 * Detach a kernel driver from an interface.
 *
@@ -771,7 +771,7 @@ static VALUE cDevice_kernelDriverActiveQ (VALUE self, VALUE interface)
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
+static VALUE cDevice_detach_kernel_driver (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -786,7 +786,7 @@ static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
 
 /*
 * call-seq:
-*   device.attachKernelDriver(interface) -> nil
+*   device.attach_kernel_driver(interface) -> nil
 *
 * Re-attach a kernel driver from an interface.
 *
@@ -794,7 +794,7 @@ static VALUE cDevice_detachKernelDriver (VALUE self, VALUE interface)
 *
 * Returns +nil+ in any case, and raises an exception on failure.
 */
-static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
+static VALUE cDevice_attach_kernel_driver (VALUE self, VALUE interface)
 {
   struct device_t *d;
   int res;
@@ -809,8 +809,8 @@ static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
 
 /*
 * call-seq:
-*   device.getStringDescriptorASCII(index) -> desc
-*   device.stringDescriptorASCII(index) -> desc
+*   device.get_string_descriptor_ascii(index) -> desc
+*   device.string_descriptor_ascii(index) -> desc
 *
 * - +index+ is a +FixNum+ specifying the index of the descriptor string.
 *
@@ -818,7 +818,7 @@ static VALUE cDevice_attachKernelDriver (VALUE self, VALUE interface)
 *
 * On success, returns the ASCII descriptor string of given index (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
+static VALUE cDevice_get_string_descriptor_ascii (VALUE self, VALUE index)
 {
   struct device_t *d;
   int res;
@@ -834,8 +834,8 @@ static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
 
 /*
 * call-seq:
-*   device.getStringDescriptor(index, langid) -> desc
-*   device.stringDescriptor(index, langid) -> desc
+*   device.get_string_descriptor(index, langid) -> desc
+*   device.string_descriptor(index, langid) -> desc
 *
 * - +index+ is a +FixNum+ specifying the index of the descriptor string.
 * - +langid+ is a +FixNum+ specifying the ID of the language to be retrieved
@@ -844,7 +844,7 @@ static VALUE cDevice_getStringDescriptorASCII (VALUE self, VALUE index)
 *
 * On success, returns the descriptor string of given index in given language (+String+), otherwise raises an exception and returns the _libusb_ error code (+FixNum+).
 */
-static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
+static VALUE cDevice_get_string_descriptor (VALUE self, VALUE index, VALUE langid)
 {
   struct device_t *d;
   int res;
@@ -860,9 +860,9 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 
 /*
 * call-seq:
-*   device.controlTransfer(args) -> count
-*   device.controlTransfer(args) -> data
-*   device.controlTransfer(args) {block} -> transfer
+*   device.control_transfer(args) -> count
+*   device.control_transfer(args) -> data
+*   device.control_transfer(args) {block} -> transfer
 *
 * Perform or prepare a control transfer.
 *
@@ -890,7 +890,7 @@ static VALUE cDevice_getStringDescriptor (VALUE self, VALUE index, VALUE langid)
 * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
 * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
 */
-static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
+static VALUE cDevice_control_transfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
   uint8_t bmRequestType, bRequest;
@@ -929,7 +929,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
       foreign_data_in = 0;
       break;
     default:
-      rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#controlTransfer.");
+      rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#control_transfer.");
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     bmRequestType &= 0x7f; /* out transfer */
@@ -940,7 +940,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
     data = NULL;
     wLength = 0;
   } else
-    rb_raise (rb_eRuntimeError, "Options :dataIn and :dataOut must not both be non-nil in RibUSB::Device#controlTransfer.");
+    rb_raise (rb_eRuntimeError, "Options :dataIn and :dataOut must not both be non-nil in RibUSB::Device#control_transfer.");
 
   v = get_opt (hash, "timeout", 0);
   if (NIL_P(v))
@@ -989,9 +989,9 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 
 /*
 * call-seq:
-*   device.bulkTransfer(args) -> count
-*   device.bulkTransfer(args) -> data
-*   device.bulkTransfer(args) {block} -> transfer
+*   device.bulk_transfer(args) -> count
+*   device.bulk_transfer(args) -> data
+*   device.bulk_transfer(args) {block} -> transfer
 *
 * Perform or prepare a bulk transfer.
 *
@@ -1014,7 +1014,7 @@ static VALUE cDevice_controlTransfer (VALUE self, VALUE hash)
 * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
 * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
 */
-static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
+static VALUE cDevice_bulk_transfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
   unsigned char endpoint;
@@ -1049,14 +1049,14 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
       foreign_data_in = 0;
       break;
     default:
-      rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#bulkTransfer.");
+      rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#bulk_transfer.");
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     endpoint &= 0x7f; /* out transfer */
     data = (unsigned char *) (RSTRING_PTR(dataOut));
     wLength = RSTRING_LEN(dataOut);
   } else
-    rb_raise (rb_eRuntimeError, "Exactly one of :dataIn and :dataOut must be non-nil in RibUSB::Device#bulkTransfer.");
+    rb_raise (rb_eRuntimeError, "Exactly one of :dataIn and :dataOut must be non-nil in RibUSB::Device#bulk_transfer.");
 
   v = get_opt (hash, "timeout", 0);
   if (NIL_P(v))
@@ -1097,9 +1097,9 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 
 /*
 * call-seq:
-*   device.interruptTransfer(args) -> count
-*   device.interruptTransfer(args) -> data
-*   device.interruptTransfer(args) {block} -> transfer
+*   device.interrupt_transfer(args) -> count
+*   device.interrupt_transfer(args) -> data
+*   device.interrupt_transfer(args) {block} -> transfer
 *
 * Perform or prepare a interrupt transfer.
 *
@@ -1122,7 +1122,7 @@ static VALUE cDevice_bulkTransfer (VALUE self, VALUE hash)
 * - the number of bytes transferred if either <tt>:dataIn</tt> or <tt>:dataOut</tt> is a +String+;
 * - a +String+ containing the data packet if <tt>:dataIn</tt> is a +Fixnum+.
 */
-static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
+static VALUE cDevice_interrupt_transfer (VALUE self, VALUE hash)
 {
   struct device_t *d;
   unsigned char endpoint;
@@ -1157,14 +1157,14 @@ static VALUE cDevice_interruptTransfer (VALUE self, VALUE hash)
       foreign_data_in = 0;
       break;
     default:
-      rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#interruptTransfer.");
+      rb_raise (rb_eRuntimeError, "Option :dataIn must be either a String or a Fixnum in RibUSB::Device#interrupt_transfer.");
     }
   } else if ((NIL_P(dataIn)) && (!NIL_P(dataOut))) {
     endpoint &= 0x7f; /* out transfer */
     data = (unsigned char *) (RSTRING_PTR(dataOut));
     wLength = RSTRING_LEN(dataOut);
   } else
-    rb_raise (rb_eRuntimeError, "Exactly one of :dataIn and :dataOut must be non-nil in RibUSB::Device#interruptTransfer.");
+    rb_raise (rb_eRuntimeError, "Exactly one of :dataIn and :dataOut must be non-nil in RibUSB::Device#interrupt_transfer.");
 
   v = get_opt (hash, "timeout", 0);
   if (NIL_P(v))
@@ -1397,14 +1397,14 @@ static VALUE cDevice_bNumConfigurations (VALUE self)
 
 /*
 * call-seq:
-*   device.getActiveConfigDescriptor -> Array<ConfigDescriptor>
-*   device.activeConfigDescriptor -> Array<ConfigDescriptor>
+*   device.get_active_config_descriptor -> Array<ConfigDescriptor>
+*   device.active_config_descriptor -> Array<ConfigDescriptor>
 *
 * Get the USB configuration descriptor for the currently active configuration.
 *
 * Returns an array of +RibUSB::ConfigDescriptor+ .
 */
-static VALUE cDevice_getActiveConfigDescriptor (VALUE self)
+static VALUE cDevice_get_active_config_descriptor (VALUE self)
 {
   struct device_t *d;
   struct libusb_config_descriptor *config;
@@ -1419,14 +1419,14 @@ static VALUE cDevice_getActiveConfigDescriptor (VALUE self)
 
 /*
 * call-seq:
-*   device.getConfigDescriptor(config_index) -> Array<ConfigDescriptor>
-*   device.configDescriptor(config_index) -> Array<ConfigDescriptor>
+*   device.get_config_descriptor(config_index) -> Array<ConfigDescriptor>
+*   device.config_descriptor(config_index) -> Array<ConfigDescriptor>
 *
 * Get a USB configuration descriptor based on its index.
 *
 * Returns an array of +RibUSB::ConfigDescriptor+ .
 */
-static VALUE cDevice_getConfigDescriptor (VALUE self, VALUE config_index)
+static VALUE cDevice_get_config_descriptor (VALUE self, VALUE config_index)
 {
   struct device_t *d;
   struct libusb_config_descriptor *config;
@@ -1441,14 +1441,14 @@ static VALUE cDevice_getConfigDescriptor (VALUE self, VALUE config_index)
 
 /*
 * call-seq:
-*   device.getConfigDescriptorByValue(config_index) -> Array<ConfigDescriptor>
-*   device.configDescriptorByValue(config_index) -> Array<ConfigDescriptor>
+*   device.get_config_descriptor_by_value(config_index) -> Array<ConfigDescriptor>
+*   device.config_descriptor_by_value(config_index) -> Array<ConfigDescriptor>
 *
 * Get a USB configuration descriptor with a specific bConfigurationValue.
 *
 * Returns an array of +RibUSB::ConfigDescriptor+ .
 */
-static VALUE cDevice_getConfigDescriptorByValue (VALUE self, VALUE bConfigurationValue)
+static VALUE cDevice_get_config_descriptor_by_value (VALUE self, VALUE bConfigurationValue)
 {
   struct device_t *d;
   struct libusb_config_descriptor *config;
@@ -1823,13 +1823,13 @@ static VALUE cInterface_new (const struct libusb_interface *interface, VALUE con
 
 /*
 * call-seq:
-*   interface.altSettings -> altSettings
+*   interface.alt_settings -> alt_settings
 *
 * Retrieve the list of interface descriptors.
 *
 * Returns an array of +RibUSB::Interface+ and never raises an exception.
 */
-static VALUE cInterface_altSettings (VALUE self)
+static VALUE cInterface_alt_settings (VALUE self)
 {
   struct interface_t *d;
   VALUE array;
@@ -2225,44 +2225,44 @@ void Init_ribusb_ext()
   /* Library version */
   rb_define_const( RibUSB, "VERSION", rb_str_new2(VERSION) );
 
-  rb_define_singleton_method (RibUSB, "getError", mRibUSB_getError, 1);
+  rb_define_singleton_method (RibUSB, "get_error", mRibUSB_get_error, 1);
 
   /* RibUSB::Context -- a class for _libusb_ bus-handling sessions */
   Context = rb_define_class_under (RibUSB, "Context", rb_cObject);
   rb_define_singleton_method (Context, "new", cContext_new, 0);
-  rb_define_method (Context, "setDebug", cContext_setDebug, 1);
-  rb_define_alias (Context, "debug=", "setDebug");
+  rb_define_method (Context, "set_debug", cContext_set_debug, 1);
+  rb_define_alias (Context, "debug=", "set_debug");
   rb_define_method (Context, "find", cContext_find, -1);
-  rb_define_method (Context, "handleEvents", cContext_handleEvents, 0);
+  rb_define_method (Context, "handle_events", cContext_handle_events, 0);
 
   /* RibUSB::Device -- a class for individual USB devices accessed through _libusb_ */
   Device = rb_define_class_under (RibUSB, "Device", rb_cObject);
   rb_define_method (Device, "close", cDevice_close, 0);
-  rb_define_method (Device, "getBusNumber", cDevice_getBusNumber, 0);
-  rb_define_alias (Device, "busNumber", "getBusNumber");
-  rb_define_method (Device, "getDeviceAddress", cDevice_getDeviceAddress, 0);
-  rb_define_alias (Device, "deviceAddress", "getDeviceAddress");
-  rb_define_method (Device, "getMaxPacketSize", cDevice_getMaxPacketSize, 1);
-  rb_define_alias (Device, "maxPacketSize", "getMaxPacketSize");
-  rb_define_method (Device, "getConfiguration", cDevice_getConfiguration, 0);
-  rb_define_alias (Device, "configuration", "getConfiguration");
-  rb_define_method (Device, "setConfiguration", cDevice_setConfiguration, 1);
-  rb_define_alias (Device, "configuration=", "setConfiguration");
-  rb_define_method (Device, "claimInterface", cDevice_claimInterface, 1);
-  rb_define_method (Device, "releaseInterface", cDevice_releaseInterface, 1);
-  rb_define_method (Device, "setInterfaceAltSetting", cDevice_setInterfaceAltSetting, 2);
-  rb_define_method (Device, "clearHalt", cDevice_clearHalt, 1);
-  rb_define_method (Device, "resetDevice", cDevice_resetDevice, 0);
-  rb_define_method (Device, "kernelDriverActive?", cDevice_kernelDriverActiveQ, 1);
-  rb_define_method (Device, "detachKernelDriver", cDevice_detachKernelDriver, 1);
-  rb_define_method (Device, "attachKernelDriver", cDevice_attachKernelDriver, 1);
-  rb_define_method (Device, "getStringDescriptorASCII", cDevice_getStringDescriptorASCII, 1);
-  rb_define_alias (Device, "stringDescriptorASCII", "getStringDescriptorASCII");
-  rb_define_method (Device, "getStringDescriptor", cDevice_getStringDescriptor, 2);
-  rb_define_alias (Device, "stringDescriptor", "getStringDescriptor");
-  rb_define_method (Device, "controlTransfer", cDevice_controlTransfer, 1);
-  rb_define_method (Device, "bulkTransfer", cDevice_bulkTransfer, 1);
-  rb_define_method (Device, "interruptTransfer", cDevice_interruptTransfer, 1);
+  rb_define_method (Device, "get_bus_number", cDevice_get_bus_number, 0);
+  rb_define_alias (Device, "bus_number", "get_bus_number");
+  rb_define_method (Device, "get_device_address", cDevice_get_device_address, 0);
+  rb_define_alias (Device, "device_address", "get_device_address");
+  rb_define_method (Device, "get_max_packet_size", cDevice_get_max_packet_size, 1);
+  rb_define_alias (Device, "max_packet_size", "get_max_packet_size");
+  rb_define_method (Device, "get_configuration", cDevice_get_configuration, 0);
+  rb_define_alias (Device, "configuration", "get_configuration");
+  rb_define_method (Device, "set_configuration", cDevice_set_configuration, 1);
+  rb_define_alias (Device, "configuration=", "set_configuration");
+  rb_define_method (Device, "claim_interface", cDevice_claim_interface, 1);
+  rb_define_method (Device, "release_interface", cDevice_release_interface, 1);
+  rb_define_method (Device, "set_interface_alt_setting", cDevice_set_interface_alt_setting, 2);
+  rb_define_method (Device, "clear_halt", cDevice_clear_halt, 1);
+  rb_define_method (Device, "reset_device", cDevice_reset_device, 0);
+  rb_define_method (Device, "kernel_driver_active?", cDevice_kernel_driver_activeQ, 1);
+  rb_define_method (Device, "detach_kernel_driver", cDevice_detach_kernel_driver, 1);
+  rb_define_method (Device, "attach_kernel_driver", cDevice_attach_kernel_driver, 1);
+  rb_define_method (Device, "get_string_descriptor_ascii", cDevice_get_string_descriptor_ascii, 1);
+  rb_define_alias (Device, "string_descriptor_ascii", "get_string_descriptor_ascii");
+  rb_define_method (Device, "get_string_descriptor", cDevice_get_string_descriptor, 2);
+  rb_define_alias (Device, "string_descriptor", "get_string_descriptor");
+  rb_define_method (Device, "control_transfer", cDevice_control_transfer, 1);
+  rb_define_method (Device, "bulk_transfer", cDevice_bulk_transfer, 1);
+  rb_define_method (Device, "interrupt_transfer", cDevice_interrupt_transfer, 1);
 
   rb_define_method (Device, "bcdUSB", cDevice_bcdUSB, 0);
   rb_define_method (Device, "bDeviceClass", cDevice_bDeviceClass, 0);
@@ -2276,12 +2276,12 @@ void Init_ribusb_ext()
   rb_define_method (Device, "iProduct", cDevice_iProduct, 0);
   rb_define_method (Device, "iSerialNumber", cDevice_iSerialNumber, 0);
   rb_define_method (Device, "bNumConfigurations", cDevice_bNumConfigurations, 0);
-  rb_define_method (Device, "getActiveConfigDescriptor", cDevice_getActiveConfigDescriptor, 0);
-  rb_define_alias (Device, "activeConfigDescriptor", "getActiveConfigDescriptor");
-  rb_define_method (Device, "getConfigDescriptor", cDevice_getConfigDescriptor, 1);
-  rb_define_alias (Device, "configDescriptor", "getConfigDescriptor");
-  rb_define_method (Device, "getConfigDescriptorByValue", cDevice_getConfigDescriptorByValue, 1);
-  rb_define_alias (Device, "configDescriptorByValue", "getConfigDescriptorByValue");
+  rb_define_method (Device, "get_active_config_descriptor", cDevice_get_active_config_descriptor, 0);
+  rb_define_alias (Device, "active_config_descriptor", "get_active_config_descriptor");
+  rb_define_method (Device, "get_config_descriptor", cDevice_get_config_descriptor, 1);
+  rb_define_alias (Device, "config_descriptor", "get_config_descriptor");
+  rb_define_method (Device, "get_config_descriptor_by_value", cDevice_get_config_descriptor_by_value, 1);
+  rb_define_alias (Device, "config_descriptor_by_value", "get_config_descriptor_by_value");
   /* The Context the device belongs to. */
   rb_define_attr (Device, "context", 1, 0);
 
@@ -2309,7 +2309,7 @@ void Init_ribusb_ext()
 
   /* RibUSB::Interface -- a class for USB interfaces */
   Interface = rb_define_class_under (RibUSB, "Interface", rb_cObject);
-  rb_define_method (Interface, "altSettings", cInterface_altSettings, 0);
+  rb_define_method (Interface, "alt_settings", cInterface_alt_settings, 0);
   /* The ConfigDescriptor the interface belongs to. */
   rb_define_attr (Interface, "configuration", 1, 0);
 

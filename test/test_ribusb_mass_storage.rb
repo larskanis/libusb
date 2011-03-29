@@ -41,17 +41,17 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
     @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
 
-    if RUBY_PLATFORM=~/linux/i && dev.kernelDriverActive?(0)
-      dev.detachKernelDriver(0)
+    if RUBY_PLATFORM=~/linux/i && dev.kernel_driver_active?(0)
+      dev.detach_kernel_driver(0)
     end
-    dev.claimInterface(0)
+    dev.claim_interface(0)
 
     # clear any pending data
-    dev.clearHalt(endpoint_in)
+    dev.clear_halt(endpoint_in)
   end
 
   def teardown
-    dev.releaseInterface(0) if dev
+    dev.release_interface(0) if dev
     dev.close if dev
   end
 
@@ -65,10 +65,10 @@ class TestRibusbMassStorage < Test::Unit::TestCase
       end
 
       transfer.submit
-      usb.handleEvents
+      usb.handle_events
       until stop
         sleep 0.001
-        usb.handleEvents
+        usb.handle_events
       end
       transfer.result
     else
@@ -76,10 +76,10 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     end
   end
   def control_transfer(args)
-    do_transfer(:controlTransfer, args)
+    do_transfer(:control_transfer, args)
   end
   def bulk_transfer(args)
-    do_transfer(:bulkTransfer, args)
+    do_transfer(:bulk_transfer, args)
   end
 
   def send_mass_storage_command(cdb, data_length, direction=LIBUSB_ENDPOINT_IN)
@@ -98,7 +98,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
       recv = bulk_transfer(:endpoint=>endpoint_in, :dataIn=>data_length)
     rescue => err
       if err.to_s=~/pipe error/
-        dev.clearHalt(endpoint_in)
+        dev.clear_halt(endpoint_in)
       end
     end
 
@@ -113,7 +113,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
       bulk_transfer(:endpoint=>endpoint_in, :dataIn=>buffer)
     rescue => err
       if (retries-=1)>=0 && err.to_s=~/pipe error/
-        dev.clearHalt(endpoint_in)
+        dev.clear_halt(endpoint_in)
         retry
       end
       raise
@@ -207,7 +207,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     # closing device handle shouldn't matter, in the meantime
     dev.close
     dev.close
-    dev.claimInterface(0)
+    dev.claim_interface(0)
 
     data = read_block(0, 2)
     assert_equal 1024, data.length, "Read block should be 1024 bytes"

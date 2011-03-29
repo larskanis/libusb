@@ -17,7 +17,7 @@ class TestRibusb < Test::Unit::TestCase
     assert_kind_of Device, devlist.first, "Bus#find should return Devices"
 
     usb.find do |dev|
-      assert_equal devlist.shift.deviceAddress, dev.deviceAddress, "Bus#find with block should give same devices"
+      assert_equal devlist.shift.device_address, dev.device_address, "Bus#find with block should give same devices"
     end
   end
 
@@ -34,12 +34,12 @@ class TestRibusb < Test::Unit::TestCase
           assert dev.interfaces.include?(interface), "Device#interfaces should include this one"
           assert config_desc.interfaces.include?(interface), "ConfigDescriptor#interfaces should include this one"
 
-          interface.altSettings.each do |if_desc|
+          interface.alt_settings.each do |if_desc|
             assert_match(/InterfaceDescriptor/, if_desc.inspect, "InterfaceDescriptor#inspect should work")
 
             assert dev.interface_descriptors.include?(if_desc), "Device#interface_descriptors should include this one"
             assert config_desc.interface_descriptors.include?(if_desc), "ConfigDescriptor#interface_descriptors should include this one"
-            assert interface.altSettings.include?(if_desc), "Inteerface#altSettings should include this one"
+            assert interface.alt_settings.include?(if_desc), "Inteerface#alt_settings should include this one"
 
             if_desc.endpoints.each do |ep|
               assert_match(/EndpointDescriptor/, ep.inspect, "EndpointDescriptor#inspect should work")
