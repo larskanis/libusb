@@ -16,6 +16,12 @@ This project is being developed by András G. Major and is hosted on RubyForge.
 
 RibUSB is covered by the GNU Public License version 2.
 
+== FEATURES:
+* Access to descriptors of devices, configurations, interfaces, settings and endpoints
+* Synchronous and asynchronous communication for bulk, control and interrupt transfers
+* Compatibility layer for ruby-usb[http://www.a-k-r.org/ruby-usb/] (API based on libusb-0.1)
+* Download as source or precompiled win32 gems
+
 == SYNOPSIS:
 
   require "ribusb"
@@ -28,6 +34,8 @@ RibUSB is covered by the GNU Public License version 2.
 
 RibUSB::Context#find is used to get all or only particular devices. A RibUSB::Device can be used to communicate with the USB device
 by RibUSB::Device#control_transfer, RibUSB::Device#bulk_transfer or RibUSB::Device#interrupt_transfer.
+
+RibUSB is compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See ::USB for description of ruby-usb compatibility layer.
 
 == REQUIREMENTS:
 

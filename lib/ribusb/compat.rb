@@ -23,6 +23,21 @@
 require 'ribusb'
 require 'forwardable'
 
+# Compatibility layer for ruby-usb[http://www.a-k-r.org/ruby-usb/] (API based on libusb-0.1)
+#
+# This module provides some limited compatibility to ruby-usb.
+#
+# Usage example:
+#   begin
+#     require 'usb'
+#   rescue LoadError
+#     require 'ribusb/compat'
+#   end
+#   p USB.devices => [#<USB::Device ...>]
+#
+# Known issues:
+# * Exceptions are different between ruby-usb and RibUSB and are not converted
+# * libusb-1.0 doesn't explicitly manage USB-buses, so only one Bus is used currently
 module USB
   DefaultContext = RibUSB::Context.new
   
