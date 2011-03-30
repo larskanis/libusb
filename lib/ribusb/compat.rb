@@ -123,7 +123,7 @@ module USB
   end
   
   def USB.each_device_by_class(devclass, subclass=nil, protocol=nil)
-    devs = DefaultContext.find :bDeviceClass=>devclass, :bDeviceSubClass=>subclass, :bDeviceProtocol=>protocol
+    devs = DefaultContext.find_with_interfaces :bDeviceClass=>devclass, :bDeviceSubClass=>subclass, :bDeviceProtocol=>protocol
     devs.each do |dev|
       yield Device.new(dev)
     end
@@ -156,6 +156,7 @@ module USB
 
   class Device
     extend Forwardable
+    include Comparable
 
     def initialize(dev)
       @dev = dev
@@ -166,6 +167,10 @@ module USB
         :bcdDevice, :iManufacturer, :iProduct, :iSerialNumber, :bNumConfigurations,
         :manufacturer, :product, :serial_number,
         :inspect
+
+    def <=>(o)
+      @dev<=>o.instance_variable_get(:@dev)
+    end
 
     def open
       h = DevHandle.new(@dev)
@@ -183,12 +188,13 @@ module USB
     def bus; DefaultBus; end
     def configurations; @dev.configurations.map{|c| Configuration.new(c) }; end
     def interfaces; @dev.interfaces.map{|c| Interface.new(c) }; end
-    def settings; @dev.settings.map{|c| InterfaceDescriptor.new(c) }; end
-    def endpoints; @dev.endpoints.map{|c| EndpointDescriptor.new(c) }; end
+    def settings; @dev.interface_descriptors.map{|c| Setting.new(c) }; end
+    def endpoints; @dev.endpoints.map{|c| Endpoint.new(c) }; end
   end
 
   class Configuration
     extend Forwardable
+    include Comparable
 
     def initialize(cd)
       @cd = cd
@@ -197,6 +203,10 @@ module USB
     def_delegators :@cd, :bLength, :bDescriptorType, :wTotalLength, :bNumInterfaces,
         :bConfigurationValue, :iConfiguration, :bmAttributes, :maxPower,
         :inspect
+
+    def <=>(o)
+      @cd<=>o.instance_variable_get(:@cd)
+    end
 
     def bus; DefaultBus; end
     def device() Device.new(@cd.device) end
@@ -207,22 +217,28 @@ module USB
 
   class Interface
     extend Forwardable
+    include Comparable
     
     def initialize(i)
       @i = i
     end
     
-    def_delegators :@id, :inspect
-    
+    def_delegators :@i, :inspect
+
+    def <=>(o)
+      @i<=>o.instance_variable_get(:@i)
+    end
+
     def bus() self.configuration.device.bus end
     def device() self.configuration.device end
     def configuration; Configuration.new(@i.configuration); end
-    def settings; @i.settings.map{|c| Setting.new(c) }; end
+    def settings; @i.alt_settings.map{|c| Setting.new(c) }; end
     def endpoints() self.settings.map {|d| d.endpoints }.flatten end
   end
 
   class Setting
     extend Forwardable
+    include Comparable
 
     def initialize(id)
       @id = id
@@ -231,6 +247,10 @@ module USB
     def_delegators :@id, :bLength, :bDescriptorType, :bInterfaceNumber, :bAlternateSetting,
         :bNumEndpoints, :bInterfaceClass, :bInterfaceSubClass, :bInterfaceProtocol,
         :iInterface, :inspect
+
+    def <=>(o)
+      @id<=>o.instance_variable_get(:@id)
+    end
 
     def bus() self.interface.configuration.device.bus end
     def device() self.interface.configuration.device end
@@ -241,6 +261,7 @@ module USB
 
   class Endpoint
     extend Forwardable
+    include Comparable
 
     def initialize(ep)
       @ep = ep
@@ -249,6 +270,10 @@ module USB
     def_delegators :@ep, :bLength, :bDescriptorType, :bEndpointAddress, :bmAttributes,
         :wMaxPacketSize, :bInterval, :bRefresh, :bSynchAddress,
         :inspect
+
+    def <=>(o)
+      @ep<=>o.instance_variable_get(:@ep)
+    end
 
     def bus() self.setting.interface.configuration.device.bus end
     def device() self.setting.interface.configuration.device end
@@ -303,8 +328,20 @@ module USB
 #   rb_define_method(rb_cUSB_DevHandle, "usb_get_descriptor_by_endpoint", rusb_get_descriptor_by_endpoint, 4);
 
     if LIBUSB_HAS_DETACH_KERNEL_DRIVER_NP
-      def usb_detach_kernel_driver_np(interface)
+      def usb_detach_kernel_driver_np(interface, dummy=nil)
         @dev.detach_kernel_driver(interface)
+      end
+    end
+
+    if LIBUSB_HAS_GET_DRIVER_NP
+      def usb_get_driver_np(interface, buffer)
+        if @dev.kernel_driver_active?(interface)
+          t = "unknown driver"
+          buffer[0, t.length] = t
+        else
+          raise Errno::ENODATA, "No data available"
+        end
+        nil
       end
     end
 
