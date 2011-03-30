@@ -7,6 +7,7 @@ Rakefile
 ext/extconf.rb
 ext/ribusb.c
 lib/ribusb.rb
+lib/ribusb/compat.rb
 test/test_ribusb.rb
 test/test_ribusb_gc.rb
 test/test_ribusb_mass_storage.rb
