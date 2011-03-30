@@ -51,7 +51,7 @@ static VALUE InterfaceDescriptor;
 static VALUE EndpointDescriptor;
 static VALUE Transfer;
 
-static const char *VERSION = "0.0.1";
+static const char *VERSION = "0.1.0";
 
 
 /******************************************************
