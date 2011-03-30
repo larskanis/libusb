@@ -148,7 +148,9 @@ module USB
     
     def_delegators :@dev, :bLength, :bDescriptorType, :bcdUSB, :bDeviceClass,
         :bDeviceSubClass, :bDeviceProtocol, :bMaxPacketSize0, :idVendor, :idProduct,
-        :bcdDevice, :iManufacturer, :iProduct, :iSerialNumber, :bNumConfigurations
+        :bcdDevice, :iManufacturer, :iProduct, :iSerialNumber, :bNumConfigurations,
+        :manufacturer, :product, :serial_number,
+        :inspect
 
     def open
       h = DevHandle.new(@dev)
@@ -178,7 +180,8 @@ module USB
     end
 
     def_delegators :@cd, :bLength, :bDescriptorType, :wTotalLength, :bNumInterfaces,
-        :bConfigurationValue, :iConfiguration, :bmAttributes, :maxPower
+        :bConfigurationValue, :iConfiguration, :bmAttributes, :maxPower,
+        :inspect
 
     def bus; DefaultBus; end
     def device() Device.new(@cd.device) end
@@ -188,9 +191,13 @@ module USB
   end
 
   class Interface
+    extend Forwardable
+    
     def initialize(i)
       @i = i
     end
+    
+    def_delegators :@id, :inspect
     
     def bus() self.configuration.device.bus end
     def device() self.configuration.device end
@@ -208,7 +215,7 @@ module USB
 
     def_delegators :@id, :bLength, :bDescriptorType, :bInterfaceNumber, :bAlternateSetting,
         :bNumEndpoints, :bInterfaceClass, :bInterfaceSubClass, :bInterfaceProtocol,
-        :iInterface
+        :iInterface, :inspect
 
     def bus() self.interface.configuration.device.bus end
     def device() self.interface.configuration.device end
@@ -225,7 +232,8 @@ module USB
     end
 
     def_delegators :@ep, :bLength, :bDescriptorType, :bEndpointAddress, :bmAttributes,
-        :wMaxPacketSize, :bInterval, :bRefresh, :bSynchAddress
+        :wMaxPacketSize, :bInterval, :bRefresh, :bSynchAddress,
+        :inspect
 
     def bus() self.setting.interface.configuration.device.bus end
     def device() self.setting.interface.configuration.device end
