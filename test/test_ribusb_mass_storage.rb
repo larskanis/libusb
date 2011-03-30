@@ -38,6 +38,10 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
     abort "no mass storage device found" unless @dev
 
+    devs = usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bInterfaceSubClass=>0x01, :bInterfaceProtocol=>0x50 )
+    devs += usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bInterfaceSubClass=>0x06, :bInterfaceProtocol=>0x50 )
+    assert_equal @dev, devs.last, "find and find_with_interfaces should deliver the same device"
+
     @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
     @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
 

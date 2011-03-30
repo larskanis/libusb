@@ -86,6 +86,23 @@ module RibUSB
   end
   # :startdoc:
 
+  class Context
+    def find_with_interfaces(hash={}, &block)
+      devs = find(hash, &block)
+      devs += find(:bDeviceClass=>LIBUSB_CLASS_PER_INTERFACE) do |dev|
+        if dev.interface_descriptors.any?{|id|
+              ( !hash[:bDeviceClass] || id.bInterfaceClass == hash[:bDeviceClass] ) &&
+              ( !hash[:bDeviceSubClass] || id.bInterfaceSubClass == hash[:bDeviceSubClass] ) &&
+              ( !hash[:bDeviceProtocol] || id.bInterfaceProtocol == hash[:bDeviceProtocol] ) }
+          yield dev if block_given?
+        else
+          false
+        end
+      end
+      return devs
+    end
+  end
+
   class Device
     include Comparable
 
