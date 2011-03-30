@@ -22,12 +22,12 @@ RibUSB is covered by the GNU Public License version 2.
 
   usb = RibUSB::Context.new
   device = usb.find(:idVendor => 0x04b4, :idProduct => 0x8613).first
-  device.claimInterface(0)
-  device.controlTransfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
-  device.releaseInterface(0)
+  device.claim_interface(0)
+  device.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
+  device.release_interface(0)
 
 RibUSB::Context#find is used to get all or only particular devices. A RibUSB::Device can be used to communicate with the USB device
-by RibUSB::Device#controlTransfer, RibUSB::Device#bulkTransfer or RibUSB::Device#interruptTransfer.
+by RibUSB::Device#control_transfer, RibUSB::Device#bulk_transfer or RibUSB::Device#interrupt_transfer.
 
 == REQUIREMENTS:
 
