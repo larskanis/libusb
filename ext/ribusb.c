@@ -182,89 +182,6 @@ static void raise_error(int error_code, const char *text)
   }
 }
 
-/******************************************************
-* RibUSB method definitions                          *
-******************************************************/
-
-int get_error (int number, const char **name, const char **text)
-{
-  struct error_t {
-    int number;
-    const char *name;
-    const char *text;
-  };
-  static const struct error_t error_list[] = {
-    { LIBUSB_SUCCESS, "LIBUSB_SUCCESS", "success (no error)" },
-    { LIBUSB_ERROR_IO, "LIBUSB_ERROR_IO", "input/output error" },
-    { LIBUSB_ERROR_INVALID_PARAM, "LIBUSB_ERROR_INVALID_PARAM", "invalid parameter" },
-    { LIBUSB_ERROR_ACCESS, "LIBUSB_ERROR_ACCESS", "access denied (insuffucient permissions)" },
-    { LIBUSB_ERROR_NO_DEVICE, "LIBUSB_ERROR_NO_DEVICE", "no such device" },
-    { LIBUSB_ERROR_NOT_FOUND, "LIBUSB_ERROR_NOT_FOUND", "entity not found" },
-    { LIBUSB_ERROR_BUSY, "LIBUSB_ERROR_BUSY", "resource busy" },
-    { LIBUSB_ERROR_TIMEOUT, "LIBUSB_ERROR_TIMEOUT", "operation timed out" },
-    { LIBUSB_ERROR_OVERFLOW, "LIBUSB_ERROR_OVERFLOW", "overflow" },
-    { LIBUSB_ERROR_PIPE, "LIBUSB_ERROR_PIPE", "pipe error" },
-    { LIBUSB_ERROR_INTERRUPTED, "LIBUSB_ERROR_INTERRUPTED", "system call interrupted (perhaps due to signal)" },
-    { LIBUSB_ERROR_NO_MEM, "LIBUSB_ERROR_NO_MEM", "insufficient memory" },
-    { LIBUSB_ERROR_NOT_SUPPORTED, "LIBUSB_ERROR_NOT_SUPPORTED", "operation not supported or unimplemented on this platform" },
-    { LIBUSB_ERROR_OTHER, "LIBUSB_ERROR_OTHER", "other error" }
-  };
-  static const int n_error_list = sizeof (error_list) / sizeof (struct error_t);
-  static int i;
-
-  for (i = 0; i < n_error_list; i ++)
-    if (number == error_list[i].number) {
-      if (name)
-        *name = error_list[i].name;
-      if (text)
-        *text = error_list[i].text;
-      return 1;
-      break;
-    }
-  return 0;
-}
-
-const char *get_error_text (int number)
-{
-  const char *text;
-  static const char unknown[] = "unknown error number";
-
-  if (get_error (number, NULL, &text))
-    return text;
-  else
-    return unknown;
-}
-
-/*
-* call-seq:
-*   RibUSB.get_error(number) -> [name, text]
-*
-* Get the textual error description corresponding to a _libusb_ error code.
-*
-* - +number+ is an integer containing the error returned by a _libusb_ function.
-* - +name+ is a +String+ containing the name of the error as used in the C header file <tt>libusb.h</tt>.
-* - +text+ is a verbose description of the error, in English, using lower-case letters and no punctuation.
-*
-* On success (if the error number is valid), returns an array of two strings, otherwise raises an exception and returns +nil+. A value <tt>0</tt> for +number+ is a valid error number. All valid values for +number+ are non-positive.
-*/
-static VALUE mRibUSB_get_error (VALUE self, VALUE number)
-{
-  int error;
-  const char *name, *text;
-  VALUE array;
-
-  error = NUM2INT(number);
-  if (get_error (error, &name, &text)) {
-    array = rb_ary_new2 (2);
-    rb_ary_store (array, 0, rb_str_new2 (name));
-    rb_ary_store (array, 1, rb_str_new2 (text));
-    return array;
-  } else {
-    rb_raise (rb_eRuntimeError, "Error number %i does not exist.", error);
-  }
-}
-
-
 
 /******************************************************
 * RibUSB::Context method definitions                     *
@@ -2248,8 +2165,6 @@ void Init_ribusb_ext()
 
   /* Library version */
   rb_define_const( RibUSB, "VERSION", rb_str_new2(VERSION) );
-
-  rb_define_singleton_method (RibUSB, "get_error", mRibUSB_get_error, 1);
 
   /* RibUSB::Context -- a class for _libusb_ bus-handling sessions */
   Context = rb_define_class_under (RibUSB, "Context", rb_cObject);
