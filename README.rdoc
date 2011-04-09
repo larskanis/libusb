@@ -42,6 +42,8 @@ RibUSB is compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See ::USB for 
 == REQUIREMENTS:
 
 * libusb version 1.0 or greater
+* Ruby MRI 1.8, 1.9 or Rubinius
+* Linux, MacOSX or Windows system
 
 == INSTALL:
 
@@ -66,6 +68,19 @@ From now on, you can use the RibUSB extension from any instance of Ruby on that 
   require "ribusb"
 
 Please browse the documentation on the website for example uses of RibUSB. Have fun.
+
+
+== Usage on Windows
+
+In contrast to Linux, any access to an USB device by RibUSB on Windows requires a proper driver
+installed in the system. Fortunately creating such a driver is quite easy with
+Zadig[http://www.libusb.org/wiki/libwdi/zadig]. Select the interesting USB device
+and press "Install Driver". That's it. You may take the generated output directory
+with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
+systems.
+
+RibUSB can be used as precompiled Windows gem, so there should be no need for a compiler.
+
 
 == Cross compiling for mswin32
 
