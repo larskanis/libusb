@@ -7,6 +7,7 @@ require 'rake/extensiontask'
 
 hoe = Hoe.spec 'ribusb' do
   developer('András G. Major', 'andras.g.major@gmail.com')
+  developer('Lars Kanis', 'kanis@comcard.de')
 
   self.readme_file = 'README.rdoc'
   spec_extras[:extensions] = 'ext/extconf.rb'

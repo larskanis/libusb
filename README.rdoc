@@ -2,7 +2,9 @@
 
 = Access USB devices from Ruby via libusb.
 
-* http://ribusb.rubyforge.net/
+* hosted on RubyForge: http://rubyforge.org/projects/ribusb
+* development at Github: http://github.com/larskanis/ribusb
+* API documentation: http://ribusb.rubyforge.org/ribusb
 
 == DESCRIPTION:
 
@@ -12,7 +14,7 @@ RibUSB is a Ruby extension that gives a Ruby programmer access to all functional
 * This Ruby extension supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API and is thus not supported.
 * The API is currently work-in-progress. Do not rely on it being stable just yet.
 
-This project is being developed by András G. Major and is hosted on RubyForge.
+This project is being developed by András G. Major and Lars Kanis, is hosted on RubyForge[http://rubyforge.org/projects/ribusb] and Github[http://github.com/larskanis/ribusb].
 
 RibUSB is covered by the GNU Public License version 2.
 
