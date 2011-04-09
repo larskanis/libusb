@@ -4,7 +4,7 @@
 * usable async transfers
 * migration to rake-compiler and hoe
 * cross compiled Windows gems
-* finer exception classes
+* distinct exception classes
 * new compatibility layer for ruby-usb.gem
 * many helper methods for different USB descriptors
 * add LIBUSB constants
