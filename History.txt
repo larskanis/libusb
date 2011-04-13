@@ -1,6 +1,15 @@
-=== 1.0.0 / 2011-03-18
+=== 0.1.0 / 2011-04-xx
 
-* 1 major enhancement
+* add test suite based on mass storage devices
+* usable async transfers
+* migration to rake-compiler and hoe
+* cross compiled Windows gems
+* distinct exception classes
+* new compatibility layer for ruby-usb.gem
+* many helper methods for different USB descriptors
+* add LIBUSB constants
+* downcase methods names
 
-  * Birthday!
+=== 0.0.1 / 2009-06-23
 
+* first public release

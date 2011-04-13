@@ -7,12 +7,14 @@ require 'rake/extensiontask'
 
 hoe = Hoe.spec 'ribusb' do
   developer('András G. Major', 'andras.g.major@gmail.com')
+  developer('Lars Kanis', 'kanis@comcard.de')
 
   self.readme_file = 'README.rdoc'
   spec_extras[:extensions] = 'ext/extconf.rb'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
   self.extra_rdoc_files << self.readme_file << 'ext/ribusb.c'
   self.rubyforge_name = 'ribusb'
+  rdoc_locations << 'larskanis@rubyforge.org:/var/www/gforge-projects/ribusb/ribusb'
 end
 
 ENV['RUBY_CC_VERSION'] ||= '1.8.6:1.9.2'

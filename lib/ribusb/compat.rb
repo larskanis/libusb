@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 #   RibUSB -- Ruby bindings to libusb.
-# 
+#
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
 #   published by the Free Software Foundation; version 2 of the License.
-# 
+#
 #   This program is distributed in the hope that it will be useful, but
 #   WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #   General Public License for more details.
-# 
+#
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
@@ -40,7 +40,7 @@ require 'forwardable'
 # * libusb-1.0 doesn't explicitly manage USB-buses, so only one Bus is used currently
 module USB
   DefaultContext = RibUSB::Context.new
-  
+
   USB_CLASS_PER_INTERFACE = RibUSB::LIBUSB_CLASS_PER_INTERFACE
   USB_CLASS_AUDIO = RibUSB::LIBUSB_CLASS_AUDIO
   USB_CLASS_COMM = RibUSB::LIBUSB_CLASS_COMM
@@ -51,7 +51,7 @@ module USB
   USB_CLASS_HUB = RibUSB::LIBUSB_CLASS_HUB
   USB_CLASS_DATA = RibUSB::LIBUSB_CLASS_DATA
   USB_CLASS_VENDOR_SPEC = RibUSB::LIBUSB_CLASS_VENDOR_SPEC
-  
+
   USB_DT_DEVICE = RibUSB::LIBUSB_DT_DEVICE
   USB_DT_CONFIG = RibUSB::LIBUSB_DT_CONFIG
   USB_DT_STRING = RibUSB::LIBUSB_DT_STRING
@@ -67,12 +67,12 @@ module USB
   USB_DT_ENDPOINT_SIZE = RibUSB::LIBUSB_DT_ENDPOINT_SIZE
   USB_DT_ENDPOINT_AUDIO_SIZE = RibUSB::LIBUSB_DT_ENDPOINT_AUDIO_SIZE
   USB_DT_HUB_NONVAR_SIZE = RibUSB::LIBUSB_DT_HUB_NONVAR_SIZE
-  
+
   USB_ENDPOINT_ADDRESS_MASK = RibUSB::LIBUSB_ENDPOINT_ADDRESS_MASK
   USB_ENDPOINT_DIR_MASK = RibUSB::LIBUSB_ENDPOINT_DIR_MASK
   USB_ENDPOINT_IN = RibUSB::LIBUSB_ENDPOINT_IN
   USB_ENDPOINT_OUT = RibUSB::LIBUSB_ENDPOINT_OUT
-  
+
   USB_ENDPOINT_TYPE_MASK = RibUSB::LIBUSB_TRANSFER_TYPE_MASK
   USB_ENDPOINT_TYPE_CONTROL = RibUSB::LIBUSB_TRANSFER_TYPE_CONTROL
   USB_ENDPOINT_TYPE_ISOCHRONOUS = RibUSB::LIBUSB_TRANSFER_TYPE_ISOCHRONOUS
@@ -98,10 +98,10 @@ module USB
   USB_RECIP_INTERFACE = RibUSB::LIBUSB_RECIPIENT_INTERFACE
   USB_RECIP_ENDPOINT = RibUSB::LIBUSB_RECIPIENT_ENDPOINT
   USB_RECIP_OTHER = RibUSB::LIBUSB_RECIPIENT_OTHER
-  
+
   LIBUSB_HAS_GET_DRIVER_NP = RUBY_PLATFORM=~/mswin|mingw/ ? false : true
   LIBUSB_HAS_DETACH_KERNEL_DRIVER_NP = RUBY_PLATFORM=~/mswin|mingw/ ? false : true
-  
+
 # not defined by libusb-1.0:
 #   USB_MAXENDPOINTS
 #   USB_MAXINTERFACES
@@ -121,7 +121,7 @@ module USB
   def USB.find_bus(n)
     DefaultBus
   end
-  
+
   def USB.each_device_by_class(devclass, subclass=nil, protocol=nil)
     devs = DefaultContext.find_with_interfaces :bDeviceClass=>devclass, :bDeviceSubClass=>subclass, :bDeviceProtocol=>protocol
     devs.each do |dev|
@@ -161,7 +161,7 @@ module USB
     def initialize(dev)
       @dev = dev
     end
-    
+
     def_delegators :@dev, :bLength, :bDescriptorType, :bcdUSB, :bDeviceClass,
         :bDeviceSubClass, :bDeviceProtocol, :bMaxPacketSize0, :idVendor, :idProduct,
         :bcdDevice, :iManufacturer, :iProduct, :iSerialNumber, :bNumConfigurations,
@@ -218,11 +218,11 @@ module USB
   class Interface
     extend Forwardable
     include Comparable
-    
+
     def initialize(i)
       @i = i
     end
-    
+
     def_delegators :@i, :inspect
 
     def <=>(o)
@@ -293,8 +293,6 @@ module USB
     def usb_clear_halt(c); @dev.clear_halt(c); end
     def usb_reset; @dev.reset_device; end
     def usb_claim_interface(c); @dev.claim_interface(c); end
-    def usb_release_interface(c); @dev.release_interface(c); end
-    def usb_release_interface(c); @dev.release_interface(c); end
     def usb_release_interface(c); @dev.release_interface(c); end
     def usb_get_string(index, langid, buffer)
       t = @dev.string_descriptor(index, langid)
