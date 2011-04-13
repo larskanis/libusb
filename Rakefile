@@ -93,8 +93,7 @@ end
 
 file LIBUSB_CONFIGURE => STATIC_LIBUSB_BUILDDIR do |t|
   Dir.chdir( STATIC_LIBUSB_BUILDDIR ) do
-    sh "sh autogen.sh"
-    LIBUSB_MAKEFILE.unlink if LIBUSB_MAKEFILE.exist?
+    sh "sh autogen.sh && make distclean"
   end
 end
 
