@@ -74,7 +74,7 @@ Please browse the documentation on the website for example uses of RibUSB. Have 
 
 In contrast to Linux, any access to an USB device by RibUSB on Windows requires a proper driver
 installed in the system. Fortunately creating such a driver is quite easy with
-Zadig[http://www.libusb.org/wiki/libwdi/zadig]. Select the interesting USB device
+Zadig[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page]. Select the interesting USB device
 and press "Install Driver". That's it. You may take the generated output directory
 with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
 systems.
