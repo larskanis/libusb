@@ -119,6 +119,8 @@ end
 task LIBUSB_A => [ LIBUSB_MAKEFILE ] do |t|
   Dir.chdir( STATIC_LIBUSB_BUILDDIR ) do
     sh 'make'
+    # remove libusb.dll to get a static build
+    sh "rm #{STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb*.dll*'} || true"
   end
 end
 
