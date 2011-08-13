@@ -17,7 +17,7 @@ hoe = Hoe.spec 'ribusb' do
   rdoc_locations << 'larskanis@rubyforge.org:/var/www/gforge-projects/ribusb/ribusb'
 end
 
-ENV['RUBY_CC_VERSION'] ||= '1.8.6:1.9.2'
+ENV['RUBY_CC_VERSION'] ||= '1.8.7:1.9.2'
 
 # Cross-compilation constants
 GEMSPEC = hoe.spec
