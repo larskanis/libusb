@@ -20,7 +20,6 @@ end
 ENV['RUBY_CC_VERSION'] ||= '1.8.7:1.9.2'
 
 # Cross-compilation constants
-GEMSPEC = hoe.spec
 COMPILE_HOME               = Pathname( "~/.rake-compiler" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
