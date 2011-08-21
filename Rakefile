@@ -17,10 +17,9 @@ hoe = Hoe.spec 'ribusb' do
   rdoc_locations << 'larskanis@rubyforge.org:/var/www/gforge-projects/ribusb/ribusb'
 end
 
-ENV['RUBY_CC_VERSION'] ||= '1.8.6:1.9.2'
+ENV['RUBY_CC_VERSION'] ||= '1.8.7:1.9.2'
 
 # Cross-compilation constants
-GEMSPEC = hoe.spec
 COMPILE_HOME               = Pathname( "~/.rake-compiler" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
@@ -31,14 +30,14 @@ STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from git repo
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '295c9d1'
-LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
-LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
+# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '295c9d1'
+# LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
+# LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from Pete Batard's git repo
-# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '098b40d'
-# LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
-# LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION}.tar.bz2"
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '098b40d'
+LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
+LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION}.tar.bz2"
 
 # Static libusb build vars
 STATIC_LIBUSB_BUILDDIR    = STATIC_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2")
@@ -119,6 +118,8 @@ end
 task LIBUSB_A => [ LIBUSB_MAKEFILE ] do |t|
   Dir.chdir( STATIC_LIBUSB_BUILDDIR ) do
     sh 'make'
+    # remove libusb.dll to get a static build
+    sh "rm #{STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb*.dll*'} || true"
   end
 end
 
