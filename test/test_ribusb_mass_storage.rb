@@ -15,6 +15,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   BOMS_GET_MAX_LUN = 0xFE
 
   attr_accessor :usb
+  attr_accessor :device
   attr_accessor :dev
   attr_accessor :endpoint_in
   attr_accessor :endpoint_out
@@ -27,23 +28,26 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     usb.find do |dev|
       dev.interface_descriptors.each do |if_desc|
         if if_desc.bInterfaceClass == LIBUSB_CLASS_MASS_STORAGE &&
-              ( if_desc.bInterfaceSubClass == 0x01 || if_desc.bInterfaceSubClass == 0x06 ) &&
+              ( #if_desc.bInterfaceSubClass == 0x01 ||
+                if_desc.bInterfaceSubClass == 0x06 ) &&
               if_desc.bInterfaceProtocol == 0x50
 
-          @dev = dev
+          @device = dev
           @if_desc = if_desc
         end
       end
     end
 
-    abort "no mass storage device found" unless @dev
+    abort "no mass storage device found" unless @device
 
-    devs = usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bInterfaceSubClass=>0x01, :bInterfaceProtocol=>0x50 )
-    devs += usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bInterfaceSubClass=>0x06, :bInterfaceProtocol=>0x50 )
-    assert_equal @dev, devs.last, "find and find_with_interfaces should deliver the same device"
+#     devs = usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bDeviceSubClass=>0x01, :bDeviceProtocol=>0x50 )
+    devs = usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bDeviceSubClass=>0x06, :bDeviceProtocol=>0x50 )
+    assert_equal @device, devs.last, "find and find_with_interfaces should deliver the same device"
 
     @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
     @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
+
+    @dev = @device.open
 
     if RUBY_PLATFORM=~/linux/i && dev.kernel_driver_active?(0)
       dev.detach_kernel_driver(0)
