@@ -104,7 +104,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
     begin
       recv = bulk_transfer(:endpoint=>endpoint_in, :dataIn=>data_length)
-    rescue LIBUSB_ERROR_PIPE => err
+    rescue  => err
       assert_match( /pipe error/, err.to_s, "a LIBUSB_ERROR_PIPE should tell about pipe error")
       dev.clear_halt(endpoint_in)
     end
@@ -114,18 +114,17 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   end
 
   def get_mass_storage_status(expected_tag)
-    buffer = " "*13
     retries = 5
-    length = begin
-      bulk_transfer(:endpoint=>endpoint_in, :dataIn=>buffer)
-    rescue LIBUSB_ERROR_PIPE => err
+    buffer = begin
+      bulk_transfer(:endpoint=>endpoint_in, :dataIn=>13)
+    rescue => err
       if (retries-=1)>=0
         dev.clear_halt(endpoint_in)
         retry
       end
       raise
     end
-    assert_equal 13, length, "CSW should be 13 bytes long"
+    assert_equal 13, buffer.bytesize, "CSW should be 13 bytes long"
 
     dCSWSignature, dCSWTag, dCSWDataResidue, bCSWStatus = buffer.unpack('a4VVC')
 

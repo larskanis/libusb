@@ -148,64 +148,6 @@ module LIBUSB
         :user_data, :pointer,
         :buffer, :pointer,
         :num_iso_packets, :int
-
-      def submit!(&block)
-        callback(&block) if block_given?
-        res = Call.libusb_submit_transfer( self )
-        raise "error #{res.inspect} in libusb_submit_transfer" if res!=:SUCCESS
-      end
-
-      def callback(&block)
-        # Save proc to instance variable so that GC doesn't free
-        # the proc object before the transfer.
-        @callback_proc = proc do |pTrans|
-          block.call(self)
-        end
-        self[:callback] = @callback_proc
-      end
-
-      def cancel!
-        res = Call.libusb_cancel_transfer( self )
-        raise "error #{res.inspect} in libusb_cancel_transfer" if res!=:SUCCESS
-      end
-    end
-    
-    class BulkTransfer
-      def initialize(dev_handle, endpoint)
-        super()
-        @transfer = Call::Transfer.new
-        @transfer[:dev_handle] = dev_handle.pHandle
-        @transfer[:type] = TRANSFER_TYPE_BULK
-        @transfer[:endpoint] = endpoint
-        @transfer[:timeout] = 1000
-      end
-
-      def buffer=(string)
-        @buffer = FFI::MemoryPointer.new(string.bytesize, 1, false)
-        @buffer.write_string(string)
-        @transfer[:buffer] = @buffer
-        @transfer[:length] = @buffer.size
-      end
-
-      def buffer
-        @transfer[:buffer].read_string(@transfer[:length])
-      end
-
-      def actual_buffer
-        @transfer[:buffer].read_string(@transfer[:actual_length])
-      end
-
-      def submit!(&block)
-        @transfer.submit!(&block)
-      end
-      
-      def callback(&block)
-        @transfer.callback
-      end
-      
-      def cancel!
-        @transfer.cancel
-      end
     end
   end
 
@@ -286,6 +228,70 @@ module LIBUSB
   end
   # :startdoc:
   
+
+  class BulkTransfer
+    def initialize(dev_handle, endpoint)
+      @dev_handle = dev_handle
+      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
+      @transfer[:dev_handle] = dev_handle.pHandle
+      @transfer[:type] = TRANSFER_TYPE_BULK
+      @transfer[:endpoint] = endpoint
+      @transfer[:timeout] = 1000
+      
+      class << @transfer
+        def libusb_free_transfer
+          Call.libusb_free_transfer(self)
+        end
+      end
+      ObjectSpace.define_finalizer(self, @transfer.method(:libusb_free_transfer))
+    end
+
+    def buffer=(string)
+      @buffer = FFI::MemoryPointer.new(string.bytesize, 1, false)
+      @buffer.write_string(string)
+      @transfer[:buffer] = @buffer
+      @transfer[:length] = @buffer.size
+    end
+
+    def buffer
+      @transfer[:buffer].read_string(@transfer[:length])
+    end
+
+    def actual_length
+      @transfer[:actual_length]
+    end
+
+    def actual_buffer
+      @transfer[:buffer].read_string(@transfer[:actual_length])
+    end
+
+    def callback
+      # Save proc to instance variable so that GC doesn't free
+      # the proc object before the transfer.
+      @callback_proc = proc do |pTrans|
+        yield self
+      end
+      @transfer[:callback] = @callback_proc
+    end
+
+    def status
+      @transfer[:status]
+    end
+    
+    def submit!(&block)
+      callback(&block) if block_given?
+      
+#       puts "submit transfer #{@transfer.inspect} buffer: #{@transfer[:buffer].inspect} length: #{@transfer[:length].inspect} status: #{@transfer[:status].inspect} callback: #{@transfer[:callback].inspect} dev_handle: #{@transfer[:dev_handle].inspect}"
+
+      res = Call.libusb_submit_transfer( @transfer )
+      raise "error #{res.inspect} in libusb_submit_transfer" if res!=:SUCCESS
+    end
+
+    def cancel!
+      res = Call.libusb_cancel_transfer( @transfer )
+      raise "error #{res.inspect} in libusb_cancel_transfer" if res!=:SUCCESS
+    end
+  end
 
   class DeviceDescriptor < FFI::Struct
     include Comparable
@@ -546,7 +552,7 @@ module LIBUSB
       pDevs = []
       size.times do |devi|
         pDev = ppDevs.get_pointer(devi*FFI.type_size(:pointer))
-        pDevs << Device.new(pDev)
+        pDevs << Device.new(self, pDev)
       end
       Call.libusb_free_device_list(ppDevs, 1)
       pDevs
@@ -590,7 +596,10 @@ module LIBUSB
   class Device
     include Comparable
 
-    def initialize pDev
+    attr_reader :context
+
+    def initialize context, pDev
+      @context = context
       class << pDev
         def unref_device
           Call.libusb_unref_device(self)
@@ -609,7 +618,7 @@ module LIBUSB
       ppHandle = FFI::MemoryPointer.new :pointer
       res = Call.libusb_open(@pDev, ppHandle)
       raise "error #{res.inspect} in libusb_open" if res!=:SUCCESS
-      handle = Handle.new ppHandle.read_pointer
+      handle = Handle.new self, ppHandle.read_pointer
       return yield handle if block_given?
       handle
     end
@@ -728,8 +737,10 @@ module LIBUSB
 
   class Handle
     attr_reader :pHandle
+    attr_reader :device
     
-    def initialize pHandle
+    def initialize device, pHandle
+      @device = device
       @pHandle = pHandle
     end
 
@@ -791,6 +802,36 @@ module LIBUSB
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_detach_kernel_driver(@pHandle, interface)
       raise "error #{res} in libusb_detach_kernel_driver" if res!=:SUCCESS
+    end
+
+    def bulk_transfer(args={})
+      timeout = args.delete(:timeout)
+      endpoint = args.delete(:endpoint)
+      dataOut = args.delete(:dataOut)
+      dataIn = args.delete(:dataIn)
+      raise "invalid params #{args.inspect}" unless args.empty?
+
+      tr = BulkTransfer.new self, endpoint
+      if dataOut
+        tr.buffer = dataOut
+      else
+        tr.buffer = " " * dataIn
+      end
+      
+      stop = false
+      tr.submit! do |tr2|
+        stop = true
+      end
+      until stop
+        device.context.handle_events
+      end
+      raise "error in bulk transfer #{tr.status}" unless tr.status==:TRANSFER_COMPLETED
+      
+      if dataOut
+        tr.actual_length
+      else
+        tr.actual_buffer
+      end
     end
   end
 
