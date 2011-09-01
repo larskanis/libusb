@@ -212,7 +212,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
     # closing device handle shouldn't matter, in the meantime
     dev.close
-    dev.close
+    @dev = @device.open
     dev.claim_interface(0)
 
     data = read_block(0, 2)

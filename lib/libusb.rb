@@ -135,7 +135,7 @@ module LIBUSB
           :wLength, :uint16
     end
 
-    class Transfer < FFI::Struct
+    class Transfer < FFI::ManagedStruct
       layout :dev_handle, :libusb_device_handle,
         :flags, :uint8,
         :endpoint, :uchar,
@@ -148,6 +148,10 @@ module LIBUSB
         :user_data, :pointer,
         :buffer, :pointer,
         :num_iso_packets, :int
+
+      def self.release(ptr)
+        Call.libusb_free_transfer(ptr)
+      end
     end
   end
 
@@ -230,23 +234,28 @@ module LIBUSB
   
 
   class BulkTransfer
-    def initialize(dev_handle, endpoint)
-      @dev_handle = dev_handle
+    def initialize
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
-      @transfer[:dev_handle] = dev_handle.pHandle
       @transfer[:type] = TRANSFER_TYPE_BULK
-      @transfer[:endpoint] = endpoint
       @transfer[:timeout] = 1000
-      
-      class << @transfer
-        def libusb_free_transfer
-          Call.libusb_free_transfer(self)
-        end
-      end
-      ObjectSpace.define_finalizer(self, @transfer.method(:libusb_free_transfer))
+    end
+
+    def dev_handle=(dev)
+      @transfer[:dev_handle] = @dev_handle = dev.pHandle
+    end
+
+    # Timeout in ms
+    def timeout=(value)
+      @transfer[:timeout] = value
+    end
+
+    def endpoint=(endpoint)
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      @transfer[:endpoint] = endpoint
     end
 
     def buffer=(string)
+      free_buffer
       @buffer = FFI::MemoryPointer.new(string.bytesize, 1, false)
       @buffer.write_string(string)
       @transfer[:buffer] = @buffer
@@ -257,6 +266,22 @@ module LIBUSB
       @transfer[:buffer].read_string(@transfer[:length])
     end
 
+    def free_buffer
+      if @buffer
+        @buffer.free
+        @buffer = nil
+        @transfer[:buffer] = nil
+        @transfer[:length] = 0
+      end
+    end
+
+    def alloc_buffer(len)
+      free_buffer
+      @buffer = FFI::MemoryPointer.new(len, 1, false)
+      @transfer[:buffer] = @buffer
+      @transfer[:length] = @buffer.size
+    end
+
     def actual_length
       @transfer[:actual_length]
     end
@@ -265,11 +290,11 @@ module LIBUSB
       @transfer[:buffer].read_string(@transfer[:actual_length])
     end
 
-    def callback
+    def callback=(proc)
       # Save proc to instance variable so that GC doesn't free
       # the proc object before the transfer.
       @callback_proc = proc do |pTrans|
-        yield self
+        proc.call(self)
       end
       @transfer[:callback] = @callback_proc
     end
@@ -279,7 +304,7 @@ module LIBUSB
     end
     
     def submit!(&block)
-      callback(&block) if block_given?
+      self.callback = block if block_given?
       
 #       puts "submit transfer #{@transfer.inspect} buffer: #{@transfer[:buffer].inspect} length: #{@transfer[:length].inspect} status: #{@transfer[:status].inspect} callback: #{@transfer[:callback].inspect} dev_handle: #{@transfer[:dev_handle].inspect}"
 
@@ -312,7 +337,7 @@ module LIBUSB
         :bNumConfigurations, :uint8
   end
 
-  class Configuration < FFI::Struct
+  class Configuration < FFI::ManagedStruct
     include Comparable
 
     layout :bLength, :uint8,
@@ -336,6 +361,10 @@ module LIBUSB
     def initialize(device, *args)
       @device = device
       super(*args)
+    end
+
+    def self.release(ptr)
+      Call.libusb_free_config_descriptor(ptr)
     end
 
     attr_reader :device
@@ -601,7 +630,7 @@ module LIBUSB
     def initialize context, pDev
       @context = context
       class << pDev
-        def unref_device
+        def unref_device(id)
           Call.libusb_unref_device(self)
         end
       end
@@ -618,7 +647,7 @@ module LIBUSB
       ppHandle = FFI::MemoryPointer.new :pointer
       res = Call.libusb_open(@pDev, ppHandle)
       raise "error #{res.inspect} in libusb_open" if res!=:SUCCESS
-      handle = Handle.new self, ppHandle.read_pointer
+      handle = DevHandle.new self, ppHandle.read_pointer
       return yield handle if block_given?
       handle
     end
@@ -640,13 +669,7 @@ module LIBUSB
       ppConfig = FFI::MemoryPointer.new :pointer
       Call.libusb_get_config_descriptor(@pDev, index, ppConfig)
       pConfig = ppConfig.read_pointer
-      class << pConfig
-        def free_config
-          Call.libusb_free_config_descriptor(self)
-        end
-      end
       config = Configuration.new(self, pConfig)
-      ObjectSpace.define_finalizer(config, pConfig.method(:free_config))
       config
     end
 
@@ -735,7 +758,7 @@ module LIBUSB
     end
   end
 
-  class Handle
+  class DevHandle
     attr_reader :pHandle
     attr_reader :device
     
@@ -806,16 +829,19 @@ module LIBUSB
 
     def bulk_transfer(args={})
       timeout = args.delete(:timeout)
-      endpoint = args.delete(:endpoint)
+      endpoint = args.delete(:endpoint) || raise("no endpoint given")
       dataOut = args.delete(:dataOut)
       dataIn = args.delete(:dataIn)
       raise "invalid params #{args.inspect}" unless args.empty?
 
-      tr = BulkTransfer.new self, endpoint
+      tr = BulkTransfer.new
+      tr.dev_handle = self
+      tr.endpoint = endpoint
+      tr.timeout = timeout if timeout
       if dataOut
         tr.buffer = dataOut
-      else
-        tr.buffer = " " * dataIn
+      elsif dataIn
+        tr.alloc_buffer(dataIn)
       end
       
       stop = false
