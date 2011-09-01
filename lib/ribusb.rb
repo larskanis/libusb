@@ -6,7 +6,10 @@ RibUSB = LIBUSB
 module RibUSB
   Call::ClassCode.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
   Call::TransferTypes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
+  Call::RequestTypes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
+  Call::DescriptorTypes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
   Call::EndpointDirections.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
+  Call::RequestRecipients.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
 
   class Configuration
     alias interface_descriptors settings

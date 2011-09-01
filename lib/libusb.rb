@@ -68,6 +68,32 @@ module LIBUSB
       :ENDPOINT_OUT, 0x00,
     ]
 
+    DescriptorTypes = enum :libusb_descriptor_type, [
+      :DT_DEVICE, 0x01,
+      :DT_CONFIG, 0x02,
+      :DT_STRING, 0x03,
+      :DT_INTERFACE, 0x04,
+      :DT_ENDPOINT, 0x05,
+      :DT_HID, 0x21,
+      :DT_REPORT, 0x22,
+      :DT_PHYSICAL, 0x23,
+      :DT_HUB, 0x29,
+    ]
+    
+    RequestTypes = enum :libusb_request_type, [
+      :REQUEST_TYPE_STANDARD, (0x00 << 5),
+      :REQUEST_TYPE_CLASS, (0x01 << 5),
+      :REQUEST_TYPE_VENDOR, (0x02 << 5),
+      :REQUEST_TYPE_RESERVED, (0x03 << 5),
+    ]
+
+    RequestRecipients = enum :libusb_request_recipient, [
+      :RECIPIENT_DEVICE, 0x00,
+      :RECIPIENT_INTERFACE, 0x01,
+      :RECIPIENT_ENDPOINT, 0x02,
+      :RECIPIENT_OTHER, 0x03,
+    ]
+
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device_handle
     
@@ -157,6 +183,8 @@ module LIBUSB
 
   Call::ClassCode.to_h.each{|k,v| const_set(k,v) }
   Call::TransferTypes.to_h.each{|k,v| const_set(k,v) }
+  Call::RequestTypes.to_h.each{|k,v| const_set(k,v) }
+  Call::DescriptorTypes.to_h.each{|k,v| const_set(k,v) }
 
   
   # :stopdoc:
