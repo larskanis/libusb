@@ -94,6 +94,14 @@ module LIBUSB
       :RECIPIENT_OTHER, 0x03,
     ]
 
+    IsoSyncTypes = enum :libusb_iso_sync_type, [
+      :ISO_SYNC_TYPE_NONE, 0,
+      :ISO_SYNC_TYPE_ASYNC, 1,
+      :ISO_SYNC_TYPE_ADAPTIVE, 2,
+      :ISO_SYNC_TYPE_SYNC, 3,
+    ]
+
+
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device_handle
     
@@ -185,6 +193,9 @@ module LIBUSB
   Call::TransferTypes.to_h.each{|k,v| const_set(k,v) }
   Call::RequestTypes.to_h.each{|k,v| const_set(k,v) }
   Call::DescriptorTypes.to_h.each{|k,v| const_set(k,v) }
+  Call::EndpointDirections.to_h.each{|k,v| const_set(k,v) }
+  Call::RequestRecipients.to_h.each{|k,v| const_set(k,v) }
+  Call::IsoSyncTypes.to_h.each{|k,v| const_set(k,v) }
 
   class Error < RuntimeError
   end
@@ -204,6 +215,8 @@ module LIBUSB
   end
 
   CONTROL_SETUP_SIZE = 8
+  ISO_USAGE_TYPE_MASK = 0x30
+
   
   # :stopdoc:
   # http://www.usb.org/developers/defined_class
@@ -355,12 +368,12 @@ module LIBUSB
 #       puts "submit transfer #{@transfer.inspect} buffer: #{@transfer[:buffer].inspect} length: #{@transfer[:length].inspect} status: #{@transfer[:status].inspect} callback: #{@transfer[:callback].inspect} dev_handle: #{@transfer[:dev_handle].inspect}"
 
       res = Call.libusb_submit_transfer( @transfer )
-      raise_error res, "in libusb_submit_transfer" if res!=0
+      LIBUSB.raise_error res, "in libusb_submit_transfer" if res!=0
     end
 
     def cancel!
       res = Call.libusb_cancel_transfer( @transfer )
-      raise_error res, "in libusb_cancel_transfer" if res!=0
+      LIBUSB.raise_error res, "in libusb_cancel_transfer" if res!=0
     end
 
     TransferStatusToError = {
@@ -518,13 +531,15 @@ module LIBUSB
 
     attr_reader :configuration
 
-    def settings
+    def alt_settings
       ifs = []
       self[:num_altsetting].times do |i|
         ifs << Setting.new(self, self[:altsetting] + i*Setting.size)
       end
       return ifs
     end
+    alias settings alt_settings
+    
     # The Device the Interface belongs to.
     def device() self.configuration.device end
     # Return all endpoints of all alternative settings as Array of EndpointDescriptor s.
@@ -644,14 +659,14 @@ module LIBUSB
     end
 
     # The Device the EndpointDescriptor belongs to.
-    def device() self.interface_descriptor.interface.configuration.device end
+    def device() self.setting.interface.configuration.device end
     # The ConfigDescriptor the EndpointDescriptor belongs to.
-    def configuration() self.interface_descriptor.interface.configuration end
+    def configuration() self.setting.interface.configuration end
     # The Interface the EndpointDescriptor belongs to.
-    def interface() self.interface_descriptor.interface end
+    def interface() self.setting.interface end
 
     def <=>(o)
-      t = interface_descriptor<=>o.interface_descriptor
+      t = setting<=>o.setting
       t = bEndpointAddress<=>o.bEndpointAddress if t==0
       t
     end
@@ -707,7 +722,7 @@ module LIBUSB
     
     def find_with_interfaces(hash={}, &block)
       devs = find(hash, &block)
-      devs += find(:bDeviceClass=>LIBUSB_CLASS_PER_INTERFACE) do |dev|
+      devs += find(:bDeviceClass=>CLASS_PER_INTERFACE) do |dev|
         if dev.settings.any?{|id|
               ( !hash[:bDeviceClass] || id.bInterfaceClass == hash[:bDeviceClass] ) &&
               ( !hash[:bDeviceSubClass] || id.bInterfaceSubClass == hash[:bDeviceSubClass] ) &&
@@ -739,13 +754,13 @@ module LIBUSB
 
       @pDevDesc = DeviceDescriptor.new
       res = Call.libusb_get_device_descriptor(@pDev, @pDevDesc)
-      raise_error res, "in libusb_get_device_descriptor" if res!=0
+      LIBUSB.raise_error res, "in libusb_get_device_descriptor" if res!=0
     end
 
     def open
       ppHandle = FFI::MemoryPointer.new :pointer
       res = Call.libusb_open(@pDev, ppHandle)
-      raise_error res, "in libusb_open" if res!=0
+      LIBUSB.raise_error res, "in libusb_open" if res!=0
       handle = DevHandle.new self, ppHandle.read_pointer
       return yield handle if block_given?
       handle
@@ -787,7 +802,7 @@ module LIBUSB
       attrs << self.product
       attrs << self.serial_number
       if self.bDeviceClass == LIBUSB::CLASS_PER_INTERFACE
-        devclass = self.interface_descriptors.map {|i|
+        devclass = self.settings.map {|i|
           LIBUSB.dev_string(i.bInterfaceClass, i.bInterfaceSubClass, i.bInterfaceProtocol)
         }.join(", ")
       else
@@ -874,57 +889,57 @@ module LIBUSB
     def string_descriptor_ascii(index)
       pString = FFI::MemoryPointer.new 0x100
       res = Call.libusb_get_string_descriptor_ascii(@pHandle, index, pString, pString.size)
-      raise_error res, "in libusb_get_string_descriptor_ascii" unless res>=0
+      LIBUSB.raise_error res, "in libusb_get_string_descriptor_ascii" unless res>=0
       pString.read_string(res)
     end
 
     def claim_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_claim_interface(@pHandle, interface)
-      raise_error res, "in libusb_claim_interface" if res!=0
+      LIBUSB.raise_error res, "in libusb_claim_interface" if res!=0
     end
 
     def release_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_release_interface(@pHandle, interface)
-      raise_error res, "in libusb_release_interface" if res!=0
+      LIBUSB.raise_error res, "in libusb_release_interface" if res!=0
     end
     
     def set_configuration(configuration)
       configuration = configuration.bConfigurationValue if configuration.respond_to? :bConfigurationValue
       res = Call.libusb_set_configuration(@pHandle, interface)
-      raise_error res, "in libusb_set_configuration" if res!=0
+      LIBUSB.raise_error res, "in libusb_set_configuration" if res!=0
     end
     
     def set_interface_alt_setting(interface_number_or_setting, alternate_setting=nil)
       alternate_setting ||= interface_number_or_setting.bAlternateSetting if interface_number_or_setting.respond_to? :bAlternateSetting
       interface_number_or_setting = interface_number_or_setting.bInterfaceNumber if interface_number_or_setting.respond_to? :bInterfaceNumber
       res = Call.libusb_set_interface_alt_setting(@pHandle, interface_number_or_setting, alternate_setting)
-      raise_error res, "in libusb_set_interface_alt_setting" if res!=0
+      LIBUSB.raise_error res, "in libusb_set_interface_alt_setting" if res!=0
     end
 
     def clear_halt(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_clear_halt(@pHandle, endpoint)
-      raise_error res, "in libusb_clear_halt" if res!=0
+      LIBUSB.raise_error res, "in libusb_clear_halt" if res!=0
     end
     
     def reset_device
       res = Call.libusb_reset_device(@pHandle)
-      raise_error res, "in libusb_reset_device" if res!=0
+      LIBUSB.raise_error res, "in libusb_reset_device" if res!=0
     end
 
     def kernel_driver_active?(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_kernel_driver_active(@pHandle, interface)
-      raise_error res, "in libusb_kernel_driver_active" unless res>=0
+      LIBUSB.raise_error res, "in libusb_kernel_driver_active" unless res>=0
       return res==1
     end
 
     def detach_kernel_driver(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_detach_kernel_driver(@pHandle, interface)
-      raise_error res, "in libusb_detach_kernel_driver" if res!=0
+      LIBUSB.raise_error res, "in libusb_detach_kernel_driver" if res!=0
     end
 
     def bulk_transfer(args={})

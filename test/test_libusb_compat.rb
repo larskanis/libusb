@@ -1,7 +1,7 @@
 require "test/unit"
-require "ribusb/compat"
+require "libusb/compat"
 
-class TestRibusbCompat < Test::Unit::TestCase
+class TestLibusbCompat < Test::Unit::TestCase
   include USB
 
   attr_accessor :usb

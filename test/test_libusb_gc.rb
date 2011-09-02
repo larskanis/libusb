@@ -2,10 +2,10 @@
 # invalid memmory access.
 
 require "test/unit"
-require "ribusb"
+require "libusb"
 
-class TestRibusbGc < Test::Unit::TestCase
-  include RibUSB
+class TestLibusbGc < Test::Unit::TestCase
+  include LIBUSB
 
   def get_some_endpoint
     Context.new.find do |dev|

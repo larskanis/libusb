@@ -5,10 +5,10 @@
 #
 
 require "test/unit"
-require "ribusb"
+require "libusb"
 
-class TestRibusbMassStorage < Test::Unit::TestCase
-  include RibUSB
+class TestLibusbMassStorage < Test::Unit::TestCase
+  include LIBUSB
 
   class CSWError < RuntimeError; end
   BOMS_RESET = 0xFF
@@ -26,8 +26,8 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     @asynchron = false
 
     usb.find do |dev|
-      dev.interface_descriptors.each do |if_desc|
-        if if_desc.bInterfaceClass == LIBUSB_CLASS_MASS_STORAGE &&
+      dev.settings.each do |if_desc|
+        if if_desc.bInterfaceClass == CLASS_MASS_STORAGE &&
               ( #if_desc.bInterfaceSubClass == 0x01 ||
                 if_desc.bInterfaceSubClass == 0x06 ) &&
               if_desc.bInterfaceProtocol == 0x50
@@ -40,12 +40,12 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
     abort "no mass storage device found" unless @device
 
-#     devs = usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bDeviceSubClass=>0x01, :bDeviceProtocol=>0x50 )
-    devs = usb.find_with_interfaces( :bDeviceClass=>LIBUSB_CLASS_MASS_STORAGE, :bDeviceSubClass=>0x06, :bDeviceProtocol=>0x50 )
+#     devs = usb.find_with_interfaces( :bDeviceClass=>CLASS_MASS_STORAGE, :bDeviceSubClass=>0x01, :bDeviceProtocol=>0x50 )
+    devs = usb.find_with_interfaces( :bDeviceClass=>CLASS_MASS_STORAGE, :bDeviceSubClass=>0x06, :bDeviceProtocol=>0x50 )
     assert_equal @device, devs.last, "find and find_with_interfaces should deliver the same device"
 
-    @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN != 0 }.bEndpointAddress
-    @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&LIBUSB_ENDPOINT_IN == 0 }.bEndpointAddress
+    @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }.bEndpointAddress
+    @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN == 0 }.bEndpointAddress
 
     @dev = @device.open
 
@@ -90,7 +90,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     do_transfer(:bulk_transfer, args)
   end
 
-  def send_mass_storage_command(cdb, data_length, direction=LIBUSB_ENDPOINT_IN)
+  def send_mass_storage_command(cdb, data_length, direction=ENDPOINT_IN)
     @tag ||= 0
     @tag += 1
     expected_tag = @tag
@@ -174,13 +174,13 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
   def mass_storage_reset
     res = control_transfer(
-      :bmRequestType=>LIBUSB_ENDPOINT_OUT|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
+      :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
       :bRequest=>BOMS_RESET,
       :wValue=>0, :wIndex=>0)
     assert_equal 0, res, "BOMS_RESET response should be 0 byte"
 
     res = control_transfer(
-      :bmRequestType=>LIBUSB_ENDPOINT_OUT|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
+      :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
       :bRequest=>BOMS_RESET,
       :wValue=>0, :wIndex=>0, :dataOut=>'')
     assert_equal 0, res, "BOMS_RESET response should be 0 byte"
@@ -188,7 +188,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
   def read_max_lun
     res = control_transfer(
-      :bmRequestType=>LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
+      :bmRequestType=>ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
       :bRequest=>BOMS_GET_MAX_LUN,
       :wValue=>0, :wIndex=>0, :dataIn=>1)
     assert_equal [1].pack("C"), res, "BOMS_GET_MAX_LUN response is usually 1"
