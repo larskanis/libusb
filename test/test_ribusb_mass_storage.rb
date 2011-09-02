@@ -104,8 +104,8 @@ class TestRibusbMassStorage < Test::Unit::TestCase
 
     begin
       recv = bulk_transfer(:endpoint=>endpoint_in, :dataIn=>data_length)
-    rescue  => err
-      assert_match( /pipe error/, err.to_s, "a LIBUSB_ERROR_PIPE should tell about pipe error")
+    rescue LIBUSB::ERROR_PIPE => err
+      assert_match( /pipe error/, err.to_s, "a LIBUSB::ERROR_PIPE should tell about pipe error")
       dev.clear_halt(endpoint_in)
     end
 
@@ -117,7 +117,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
     retries = 5
     buffer = begin
       bulk_transfer(:endpoint=>endpoint_in, :dataIn=>13)
-    rescue => err
+    rescue LIBUSB::ERROR_PIPE => err
       if (retries-=1)>=0
         dev.clear_halt(endpoint_in)
         retry
@@ -215,7 +215,7 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   end
 
   def test_read_failed
-    assert_raise(CSWError, LIBUSB_ERROR_TIMEOUT) do
+    assert_raise(CSWError, LIBUSB::ERROR_TIMEOUT) do
       invalid_command
     end
   end

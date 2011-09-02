@@ -4,7 +4,7 @@ require 'libusb'
 RibUSB = LIBUSB
 
 module RibUSB
-  Call::ClassCode.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
+  Call::ClassCodes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
   Call::TransferTypes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
   Call::RequestTypes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }
   Call::DescriptorTypes.to_h.each{|k,v| const_set("LIBUSB_#{k}",v) }

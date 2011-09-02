@@ -6,7 +6,7 @@ module LIBUSB
     extend FFI::Library
     ffi_lib 'libusb-1.0'
 
-    ClassCode = enum :libusb_class_code, [
+    ClassCodes = enum :libusb_class_code, [
       :CLASS_PER_INTERFACE, 0,
       :CLASS_AUDIO, 1,
       :CLASS_COMM, 2,
@@ -21,7 +21,7 @@ module LIBUSB
       :CLASS_VENDOR_SPEC, 0xff
     ]
 
-    Error = enum :libusb_error, [
+    Errors = enum :libusb_error, [
       :SUCCESS, 0,
       :ERROR_IO, -1,
       :ERROR_INVALID_PARAM, -2,
@@ -97,7 +97,7 @@ module LIBUSB
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device_handle
     
-    attach_function 'libusb_init', [ :pointer ], :libusb_error
+    attach_function 'libusb_init', [ :pointer ], :int
     attach_function 'libusb_exit', [ :pointer ], :void
     attach_function 'libusb_set_debug', [:pointer, :int], :void
 
@@ -106,39 +106,39 @@ module LIBUSB
     attach_function 'libusb_ref_device', [:pointer], :pointer
     attach_function 'libusb_unref_device', [:pointer], :void
 
-    attach_function 'libusb_get_device_descriptor', [:pointer, :pointer], :libusb_error
-    attach_function 'libusb_get_active_config_descriptor', [:pointer, :pointer], :libusb_error
-    attach_function 'libusb_get_config_descriptor', [:pointer, :uint8, :pointer], :libusb_error
-    attach_function 'libusb_get_config_descriptor_by_value', [:pointer, :uint8, :pointer], :libusb_error
+    attach_function 'libusb_get_device_descriptor', [:pointer, :pointer], :int
+    attach_function 'libusb_get_active_config_descriptor', [:pointer, :pointer], :int
+    attach_function 'libusb_get_config_descriptor', [:pointer, :uint8, :pointer], :int
+    attach_function 'libusb_get_config_descriptor_by_value', [:pointer, :uint8, :pointer], :int
     attach_function 'libusb_free_config_descriptor', [:pointer], :void
     attach_function 'libusb_get_bus_number', [:pointer], :uint8
     attach_function 'libusb_get_device_address', [:pointer], :uint8
     attach_function 'libusb_get_max_packet_size', [:pointer, :uint8], :int
     attach_function 'libusb_get_max_iso_packet_size', [:pointer, :uint8], :int
 
-    attach_function 'libusb_open', [:pointer, :pointer], :libusb_error
+    attach_function 'libusb_open', [:pointer, :pointer], :int
     attach_function 'libusb_close', [:pointer], :void
     attach_function 'libusb_get_device', [:libusb_device_handle], :pointer
 
-    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :libusb_error
-    attach_function 'libusb_claim_interface', [:libusb_device_handle, :int], :libusb_error
-    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :libusb_error
+    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_claim_interface', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int
     
     attach_function 'libusb_open_device_with_vid_pid', [:pointer, :int, :int], :pointer
 
-    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :libusb_error
-    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :libusb_error
-    attach_function 'libusb_reset_device', [:libusb_device_handle], :libusb_error
+    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int
+    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_reset_device', [:libusb_device_handle], :int
     
-    attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :libusb_error
-    attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :libusb_error
-    attach_function 'libusb_attach_kernel_driver', [:libusb_device_handle, :int], :libusb_error
+    attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_attach_kernel_driver', [:libusb_device_handle, :int], :int
     
-    attach_function 'libusb_get_string_descriptor_ascii', [:pointer, :uint8, :pointer, :int], :libusb_error
+    attach_function 'libusb_get_string_descriptor_ascii', [:pointer, :uint8, :pointer, :int], :int
 
     attach_function 'libusb_alloc_transfer', [:int], :pointer
-    attach_function 'libusb_submit_transfer', [:pointer], :libusb_error
-    attach_function 'libusb_cancel_transfer', [:pointer], :libusb_error
+    attach_function 'libusb_submit_transfer', [:pointer], :int
+    attach_function 'libusb_cancel_transfer', [:pointer], :int
     attach_function 'libusb_free_transfer', [:pointer], :void
 
     attach_function 'libusb_handle_events', [:libusb_context], :void
@@ -181,13 +181,29 @@ module LIBUSB
     end
   end
 
-  Call::ClassCode.to_h.each{|k,v| const_set(k,v) }
+  Call::ClassCodes.to_h.each{|k,v| const_set(k,v) }
   Call::TransferTypes.to_h.each{|k,v| const_set(k,v) }
   Call::RequestTypes.to_h.each{|k,v| const_set(k,v) }
   Call::DescriptorTypes.to_h.each{|k,v| const_set(k,v) }
+
+  class Error < RuntimeError
+  end
+  ErrorClassForResult = {}
+
+  # define an exception class for each error code
+  Call::Errors.to_h.each do |k,v|
+    klass = Class.new(Error)
+    klass.send(:define_method, :code){ v }
+    const_set(k, klass)
+    ErrorClassForResult[v] = klass
+  end
+
+  def self.raise_error(res, text)
+    klass = ErrorClassForResult[res]
+    raise klass, "#{klass} #{text}"
+  end
+
   CONTROL_SETUP_SIZE = 8
-
-
   
   # :stopdoc:
   # http://www.usb.org/developers/defined_class
@@ -339,13 +355,22 @@ module LIBUSB
 #       puts "submit transfer #{@transfer.inspect} buffer: #{@transfer[:buffer].inspect} length: #{@transfer[:length].inspect} status: #{@transfer[:status].inspect} callback: #{@transfer[:callback].inspect} dev_handle: #{@transfer[:dev_handle].inspect}"
 
       res = Call.libusb_submit_transfer( @transfer )
-      raise "error #{res.inspect} in libusb_submit_transfer" if res!=:SUCCESS
+      raise_error res, "in libusb_submit_transfer" if res!=0
     end
 
     def cancel!
       res = Call.libusb_cancel_transfer( @transfer )
-      raise "error #{res.inspect} in libusb_cancel_transfer" if res!=:SUCCESS
+      raise_error res, "in libusb_cancel_transfer" if res!=0
     end
+
+    TransferStatusToError = {
+      :TRANSFER_ERROR => LIBUSB::ERROR_IO,
+      :TRANSFER_TIMED_OUT => LIBUSB::ERROR_TIMEOUT,
+      :TRANSFER_CANCELLED => LIBUSB::ERROR_INTERRUPTED,
+      :TRANSFER_STALL => LIBUSB::ERROR_PIPE,
+      :TRANSFER_NO_DEVICE => LIBUSB::ERROR_NO_DEVICE,
+      :TRANSFER_OVERFLOW => LIBUSB::ERROR_OVERFLOW,
+    }
 
     def submit_and_wait!
       stop = false
@@ -355,7 +380,8 @@ module LIBUSB
       until stop
         @dev_handle.device.context.handle_events
       end
-      raise "error in transfer #{status}" unless status==:TRANSFER_COMPLETED
+      
+      raise( TransferStatusToError[status] || ERROR_OTHER, "error #{status}") unless status==:TRANSFER_COMPLETED
     end
   end
 
@@ -713,13 +739,13 @@ module LIBUSB
 
       @pDevDesc = DeviceDescriptor.new
       res = Call.libusb_get_device_descriptor(@pDev, @pDevDesc)
-      raise "error #{res} in libusb_get_device_descriptor" if res!=:SUCCESS
+      raise_error res, "in libusb_get_device_descriptor" if res!=0
     end
 
     def open
       ppHandle = FFI::MemoryPointer.new :pointer
       res = Call.libusb_open(@pDev, ppHandle)
-      raise "error #{res.inspect} in libusb_open" if res!=:SUCCESS
+      raise_error res, "in libusb_open" if res!=0
       handle = DevHandle.new self, ppHandle.read_pointer
       return yield handle if block_given?
       handle
@@ -848,65 +874,65 @@ module LIBUSB
     def string_descriptor_ascii(index)
       pString = FFI::MemoryPointer.new 0x100
       res = Call.libusb_get_string_descriptor_ascii(@pHandle, index, pString, pString.size)
-      raise "error #{res} in libusb_get_string_descriptor_ascii" unless res.kind_of?(Fixnum) && res>=0
+      raise_error res, "in libusb_get_string_descriptor_ascii" unless res>=0
       pString.read_string(res)
     end
 
     def claim_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_claim_interface(@pHandle, interface)
-      raise "error #{res} in libusb_claim_interface" if res!=:SUCCESS
+      raise_error res, "in libusb_claim_interface" if res!=0
     end
 
     def release_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_release_interface(@pHandle, interface)
-      raise "error #{res} in libusb_release_interface" if res!=:SUCCESS
+      raise_error res, "in libusb_release_interface" if res!=0
     end
     
     def set_configuration(configuration)
       configuration = configuration.bConfigurationValue if configuration.respond_to? :bConfigurationValue
       res = Call.libusb_set_configuration(@pHandle, interface)
-      raise "error #{res} in libusb_set_configuration" if res!=:SUCCESS
+      raise_error res, "in libusb_set_configuration" if res!=0
     end
     
     def set_interface_alt_setting(interface_number_or_setting, alternate_setting=nil)
       alternate_setting ||= interface_number_or_setting.bAlternateSetting if interface_number_or_setting.respond_to? :bAlternateSetting
       interface_number_or_setting = interface_number_or_setting.bInterfaceNumber if interface_number_or_setting.respond_to? :bInterfaceNumber
       res = Call.libusb_set_interface_alt_setting(@pHandle, interface_number_or_setting, alternate_setting)
-      raise "error #{res} in libusb_set_interface_alt_setting" if res!=:SUCCESS
+      raise_error res, "in libusb_set_interface_alt_setting" if res!=0
     end
 
     def clear_halt(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_clear_halt(@pHandle, endpoint)
-      raise "error #{res} in libusb_clear_halt" if res!=:SUCCESS
+      raise_error res, "in libusb_clear_halt" if res!=0
     end
     
     def reset_device
       res = Call.libusb_reset_device(@pHandle)
-      raise "error #{res} in libusb_reset_device" if res!=:SUCCESS
+      raise_error res, "in libusb_reset_device" if res!=0
     end
 
     def kernel_driver_active?(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_kernel_driver_active(@pHandle, interface)
-      raise "error #{res} in libusb_kernel_driver_active" unless res==:SUCCESS || res==1
+      raise_error res, "in libusb_kernel_driver_active" unless res>=0
       return res==1
     end
 
     def detach_kernel_driver(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_detach_kernel_driver(@pHandle, interface)
-      raise "error #{res} in libusb_detach_kernel_driver" if res!=:SUCCESS
+      raise_error res, "in libusb_detach_kernel_driver" if res!=0
     end
 
     def bulk_transfer(args={})
       timeout = args.delete(:timeout) || 1000
-      endpoint = args.delete(:endpoint) || raise("no endpoint given")
+      endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
       dataOut = args.delete(:dataOut)
       dataIn = args.delete(:dataIn)
-      raise "invalid params #{args.inspect}" unless args.empty?
+      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
       @bulk_transfer ||= begin
@@ -933,14 +959,14 @@ module LIBUSB
     end
     
     def control_transfer(args={})
-      bmRequestType = args.delete(:bmRequestType) || raise("param :bmRequestType not given")
-      bRequest = args.delete(:bRequest) || raise("param :bRequest not given")
-      wValue = args.delete(:wValue) || raise("param :wValue not given")
-      wIndex = args.delete(:wIndex) || raise("param :wIndex not given")
+      bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
+      bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")
+      wValue = args.delete(:wValue) || raise(ArgumentError, "param :wValue not given")
+      wIndex = args.delete(:wIndex) || raise(ArgumentError, "param :wIndex not given")
       timeout = args.delete(:timeout) || 1000
       dataOut = args.delete(:dataOut) || ''
       dataIn = args.delete(:dataIn)
-      raise "invalid params #{args.inspect}" unless args.empty?
+      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
       @control_transfer ||= begin
