@@ -187,20 +187,11 @@ class TestRibusbMassStorage < Test::Unit::TestCase
   end
 
   def read_max_lun
-    lun = " "
-    res = control_transfer(
-      :bmRequestType=>LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
-      :bRequest=>BOMS_GET_MAX_LUN,
-      :wValue=>0, :wIndex=>0, :dataIn=>lun)
-    assert_equal 1, res, "BOMS_GET_MAX_LUN response should be 1 byte"
-#     puts "   Max LUN = #{lun.unpack("C")[0]}"
-
     res = control_transfer(
       :bmRequestType=>LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
       :bRequest=>BOMS_GET_MAX_LUN,
       :wValue=>0, :wIndex=>0, :dataIn=>1)
-    assert_equal 1, res.length, "BOMS_GET_MAX_LUN response should be 1 byte"
-    assert_equal lun, res, "Both lun results should be equal"
+    assert_equal [1].pack("C"), res, "BOMS_GET_MAX_LUN response is usually 1"
   end
 
   def test_read_access

@@ -185,6 +185,8 @@ module LIBUSB
   Call::TransferTypes.to_h.each{|k,v| const_set(k,v) }
   Call::RequestTypes.to_h.each{|k,v| const_set(k,v) }
   Call::DescriptorTypes.to_h.each{|k,v| const_set(k,v) }
+  CONTROL_SETUP_SIZE = 8
+
 
   
   # :stopdoc:
@@ -261,15 +263,10 @@ module LIBUSB
   # :startdoc:
   
 
-  class BulkTransfer
-    def initialize
-      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
-      @transfer[:type] = TRANSFER_TYPE_BULK
-      @transfer[:timeout] = 1000
-    end
-
+  class Transfer
     def dev_handle=(dev)
-      @transfer[:dev_handle] = @dev_handle = dev.pHandle
+      @dev_handle = dev
+      @transfer[:dev_handle] = @dev_handle.pHandle
     end
 
     # Timeout in ms
@@ -282,12 +279,14 @@ module LIBUSB
       @transfer[:endpoint] = endpoint
     end
 
-    def buffer=(string)
-      free_buffer
-      @buffer = FFI::MemoryPointer.new(string.bytesize, 1, false)
-      @buffer.write_string(string)
+    def buffer=(data)
+      if !@buffer || data.bytesize>@buffer.size
+        free_buffer
+        @buffer = FFI::MemoryPointer.new(data.bytesize, 1, false)
+      end
+      @buffer.write_bytes(data)
       @transfer[:buffer] = @buffer
-      @transfer[:length] = @buffer.size
+      @transfer[:length] = data.bytesize
     end
 
     def buffer
@@ -303,19 +302,22 @@ module LIBUSB
       end
     end
 
-    def alloc_buffer(len)
-      free_buffer
-      @buffer = FFI::MemoryPointer.new(len, 1, false)
+    def alloc_buffer(len, data=nil)
+      if !@buffer || len>@buffer.size
+        free_buffer
+        @buffer = FFI::MemoryPointer.new(len, 1, false)
+      end
+      @buffer.write_bytes(data) if data
       @transfer[:buffer] = @buffer
-      @transfer[:length] = @buffer.size
+      @transfer[:length] = len
     end
 
     def actual_length
       @transfer[:actual_length]
     end
 
-    def actual_buffer
-      @transfer[:buffer].read_string(@transfer[:actual_length])
+    def actual_buffer(offset=0)
+      @transfer[:buffer].get_bytes(offset, @transfer[:actual_length])
     end
 
     def callback=(proc)
@@ -343,6 +345,49 @@ module LIBUSB
     def cancel!
       res = Call.libusb_cancel_transfer( @transfer )
       raise "error #{res.inspect} in libusb_cancel_transfer" if res!=:SUCCESS
+    end
+
+    def submit_and_wait!
+      stop = false
+      submit! do |tr2|
+        stop = true
+      end
+      until stop
+        @dev_handle.device.context.handle_events
+      end
+      raise "error in transfer #{status}" unless status==:TRANSFER_COMPLETED
+    end
+  end
+
+  class BulkTransfer < Transfer
+    def initialize
+      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
+      @transfer[:type] = TRANSFER_TYPE_BULK
+      @transfer[:timeout] = 1000
+    end
+  end
+
+  class ControlTransfer < Transfer
+    def initialize
+      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
+      @transfer[:type] = TRANSFER_TYPE_CONTROL
+      @transfer[:timeout] = 1000
+    end
+  end
+
+  class InterruptTransfer < Transfer
+    def initialize
+      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
+      @transfer[:type] = TRANSFER_TYPE_INTERRUPT
+      @transfer[:timeout] = 1000
+    end
+  end
+
+  class IsochronousTransfer < Transfer
+    def initialize(num_packets)
+      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(num_packets)
+      @transfer[:type] = TRANSFER_TYPE_ISOCHRONOUS
+      @transfer[:timeout] = 1000
     end
   end
 
@@ -793,6 +838,7 @@ module LIBUSB
     def initialize device, pHandle
       @device = device
       @pHandle = pHandle
+      @bulk_transfer = @control_transfer = @interrupt_transfer = nil
     end
 
     def close
@@ -856,35 +902,67 @@ module LIBUSB
     end
 
     def bulk_transfer(args={})
-      timeout = args.delete(:timeout)
+      timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise("no endpoint given")
       dataOut = args.delete(:dataOut)
       dataIn = args.delete(:dataIn)
       raise "invalid params #{args.inspect}" unless args.empty?
 
-      tr = BulkTransfer.new
-      tr.dev_handle = self
+      # reuse transfer struct to speed up transfer
+      @bulk_transfer ||= begin
+        tr = BulkTransfer.new
+        tr.dev_handle = self
+        tr
+      end
+      tr = @bulk_transfer
       tr.endpoint = endpoint
-      tr.timeout = timeout if timeout
+      tr.timeout = timeout
       if dataOut
         tr.buffer = dataOut
       elsif dataIn
         tr.alloc_buffer(dataIn)
       end
-      
-      stop = false
-      tr.submit! do |tr2|
-        stop = true
-      end
-      until stop
-        device.context.handle_events
-      end
-      raise "error in bulk transfer #{tr.status}" unless tr.status==:TRANSFER_COMPLETED
-      
+
+      tr.submit_and_wait!
+
       if dataOut
         tr.actual_length
       else
         tr.actual_buffer
+      end
+    end
+    
+    def control_transfer(args={})
+      bmRequestType = args.delete(:bmRequestType) || raise("param :bmRequestType not given")
+      bRequest = args.delete(:bRequest) || raise("param :bRequest not given")
+      wValue = args.delete(:wValue) || raise("param :wValue not given")
+      wIndex = args.delete(:wIndex) || raise("param :wIndex not given")
+      timeout = args.delete(:timeout) || 1000
+      dataOut = args.delete(:dataOut) || ''
+      dataIn = args.delete(:dataIn)
+      raise "invalid params #{args.inspect}" unless args.empty?
+
+      # reuse transfer struct to speed up transfer
+      @control_transfer ||= begin
+        tr = ControlTransfer.new
+        tr.dev_handle = self
+        tr
+      end
+      tr = @control_transfer
+      tr.timeout = timeout
+      if dataIn
+        setup_data = [bmRequestType, bRequest, wValue, wIndex, dataIn].pack('CCvvv')
+        tr.alloc_buffer( dataIn + CONTROL_SETUP_SIZE, setup_data )
+      else
+        tr.buffer = [bmRequestType, bRequest, wValue, wIndex, dataOut.bytesize, dataOut].pack('CCvvva*')
+      end
+
+      tr.submit_and_wait!
+
+      if dataIn
+        tr.actual_buffer(CONTROL_SETUP_SIZE)
+      else
+        tr.actual_length
       end
     end
   end
