@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'ffi'
 
+
 module LIBUSB
   module Call
     extend FFI::Library
@@ -339,7 +340,7 @@ module LIBUSB
         free_buffer
         @buffer = FFI::MemoryPointer.new(data.bytesize, 1, false)
       end
-      @buffer.write_bytes(data)
+      @buffer.put_bytes(0, data)
       @transfer[:buffer] = @buffer
       @transfer[:length] = data.bytesize
     end
@@ -362,7 +363,7 @@ module LIBUSB
         free_buffer
         @buffer = FFI::MemoryPointer.new(len, 1, false)
       end
-      @buffer.write_bytes(data) if data
+      @buffer.put_bytes(0, data) if data
       @transfer[:buffer] = @buffer
       @transfer[:length] = len
     end
