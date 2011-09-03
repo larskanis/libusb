@@ -173,7 +173,7 @@ module USB
     end
 
     def open
-      h = DevHandle.new(@dev)
+      h = DevHandle.new(@dev.open)
       if block_given?
         begin
           r = yield h
@@ -188,7 +188,7 @@ module USB
     def bus; DefaultBus; end
     def configurations; @dev.configurations.map{|c| Configuration.new(c) }; end
     def interfaces; @dev.interfaces.map{|c| Interface.new(c) }; end
-    def settings; @dev.interface_descriptors.map{|c| Setting.new(c) }; end
+    def settings; @dev.settings.map{|c| Setting.new(c) }; end
     def endpoints; @dev.endpoints.map{|c| Endpoint.new(c) }; end
   end
 
@@ -279,7 +279,7 @@ module USB
     def device() self.setting.interface.configuration.device end
     def configuration() self.setting.interface.configuration end
     def interface() self.setting.interface end
-    def setting; Setting.new(@ep.interface_descriptor); end
+    def setting; Setting.new(@ep.setting); end
   end
 
   class DevHandle
@@ -343,30 +343,11 @@ module USB
       end
     end
 
-    def set_configuration(configuration)
-      configuration = configuration.bConfigurationValue if configuration.respond_to? :bConfigurationValue
-      self.usb_set_configuration(configuration)
-    end
-
-    def set_altinterface(alternate)
-      alternate = alternate.bAlternateSetting if alternate.respond_to? :bAlternateSetting
-      self.usb_set_altinterface(alternate)
-    end
-
-    def clear_halt(ep)
-      ep = ep.bEndpointAddress if ep.respond_to? :bEndpointAddress
-      self.usb_clear_halt(ep)
-    end
-
-    def claim_interface(interface)
-      interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
-      self.usb_claim_interface(interface)
-    end
-
-    def release_interface(interface)
-      interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
-      self.usb_release_interface(interface)
-    end
+    alias set_configuration usb_set_configuration
+    alias set_altinterface usb_set_altinterface
+    alias clear_halt usb_clear_halt
+    alias claim_interface usb_claim_interface
+    alias release_interface usb_release_interface
 
     def get_string_simple(index)
       @dev.string_descriptor_ascii(index)

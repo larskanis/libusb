@@ -24,29 +24,29 @@ class TestLibusbCompat < Test::Unit::TestCase
     USB.devices.each do |dev|
       assert_match(/Device/, dev.inspect, "Device#inspect should work")
       dev.configurations.each do |config_desc|
-        assert_match(/ConfigDescriptor/, config_desc.inspect, "ConfigDescriptor#inspect should work")
+        assert_match(/Configuration/, config_desc.inspect, "Configuration#inspect should work")
         assert dev.configurations.include?(config_desc), "Device#configurations should include this one"
 
         config_desc.interfaces.each do |interface|
           assert_match(/Interface/, interface.inspect, "Interface#inspect should work")
 
           assert dev.interfaces.include?(interface), "Device#interfaces should include this one"
-          assert config_desc.interfaces.include?(interface), "ConfigDescriptor#interfaces should include this one"
+          assert config_desc.interfaces.include?(interface), "Configuration#interfaces should include this one"
 
           interface.settings.each do |if_desc|
-            assert_match(/InterfaceDescriptor/, if_desc.inspect, "InterfaceDescriptor#inspect should work")
+            assert_match(/Setting/, if_desc.inspect, "Setting#inspect should work")
 
             assert dev.settings.include?(if_desc), "Device#settings should include this one"
-            assert config_desc.settings.include?(if_desc), "ConfigDescriptor#settings should include this one"
-            assert interface.settings.include?(if_desc), "Inteerface#settings should include this one"
+            assert config_desc.settings.include?(if_desc), "Configuration#settings should include this one"
+            assert interface.settings.include?(if_desc), "Interface#settings should include this one"
 
             if_desc.endpoints.each do |ep|
-              assert_match(/EndpointDescriptor/, ep.inspect, "EndpointDescriptor#inspect should work")
+              assert_match(/Endpoint/, ep.inspect, "Endpoint#inspect should work")
 
               assert dev.endpoints.include?(ep), "Device#endpoints should include this one"
-              assert config_desc.endpoints.include?(ep), "ConfigDescriptor#endpoints should include this one"
-              assert interface.endpoints.include?(ep), "Inteerface#endpoints should include this one"
-              assert if_desc.endpoints.include?(ep), "InterfaceDescriptor#endpoints should include this one"
+              assert config_desc.endpoints.include?(ep), "Configuration#endpoints should include this one"
+              assert interface.endpoints.include?(ep), "Interface#endpoints should include this one"
+              assert if_desc.endpoints.include?(ep), "Setting#endpoints should include this one"
 
               assert_equal if_desc, ep.setting, "backref should be correct"
               assert_equal interface, ep.interface, "backref should be correct"
@@ -81,18 +81,19 @@ class TestLibusbCompat < Test::Unit::TestCase
         # second param is needed because of a bug in ruby-usb
         devh.usb_detach_kernel_driver_np 0, 123
       rescue RuntimeError => e
-        assert_match(/entity not found/, e.to_s, "Raise proper exception, if no kernel driver is active")
+        assert_match(/ERROR_NOT_FOUND/, e.to_s, "Raise proper exception, if no kernel driver is active")
       end
     end
 
-    endpoint_in = dev.endpoints.find{|ep| ep.bEndpointAddress&USB_ENDPOINT_IN != 0 }.bEndpointAddress
-    endpoint_out = dev.endpoints.find{|ep| ep.bEndpointAddress&USB_ENDPOINT_IN == 0 }.bEndpointAddress
+    endpoint_in = dev.endpoints.find{|ep| ep.bEndpointAddress&USB_ENDPOINT_IN != 0 }
+    endpoint_out = dev.endpoints.find{|ep| ep.bEndpointAddress&USB_ENDPOINT_IN == 0 }
 
     devh.set_configuration 1
+    devh.set_configuration dev.configurations.first
     devh.claim_interface 0
     devh.clear_halt(endpoint_in)
-    devh.clear_halt(endpoint_out)
-    devh.release_interface 0
+    devh.clear_halt(endpoint_out.bEndpointAddress)
+    devh.release_interface dev.settings.first
     devh.usb_close
   end
 end

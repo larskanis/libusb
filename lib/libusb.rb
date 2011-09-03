@@ -63,6 +63,20 @@ module LIBUSB
       :TRANSFER_TYPE_INTERRUPT, 3,
     ]
 
+    StandardRequests = enum :libusb_standard_request, [
+      :REQUEST_GET_STATUS, 0x00,
+      :REQUEST_CLEAR_FEATURE, 0x01,
+      :REQUEST_SET_FEATURE, 0x03,
+      :REQUEST_SET_ADDRESS, 0x05,
+      :REQUEST_GET_DESCRIPTOR, 0x06,
+      :REQUEST_SET_DESCRIPTOR, 0x07,
+      :REQUEST_GET_CONFIGURATION, 0x08,
+      :REQUEST_SET_CONFIGURATION, 0x09,
+      :REQUEST_GET_INTERFACE, 0x0A,
+      :REQUEST_SET_INTERFACE, 0x0B,
+      :REQUEST_SYNCH_FRAME, 0x0C,
+    ]
+    
     EndpointDirections = enum :libusb_endpoint_direction, [
       :ENDPOINT_IN, 0x80,
       :ENDPOINT_OUT, 0x00,
@@ -191,6 +205,7 @@ module LIBUSB
 
   Call::ClassCodes.to_h.each{|k,v| const_set(k,v) }
   Call::TransferTypes.to_h.each{|k,v| const_set(k,v) }
+  Call::StandardRequests.to_h.each{|k,v| const_set(k,v) }
   Call::RequestTypes.to_h.each{|k,v| const_set(k,v) }
   Call::DescriptorTypes.to_h.each{|k,v| const_set(k,v) }
   Call::EndpointDirections.to_h.each{|k,v| const_set(k,v) }
@@ -215,6 +230,17 @@ module LIBUSB
   end
 
   CONTROL_SETUP_SIZE = 8
+  DT_DEVICE_SIZE = 18
+  DT_CONFIG_SIZE = 9
+  DT_INTERFACE_SIZE = 9
+  DT_ENDPOINT_SIZE = 7
+  DT_ENDPOINT_AUDIO_SIZE = 9 # Audio extension
+  DT_HUB_NONVAR_SIZE = 7
+
+  ENDPOINT_ADDRESS_MASK = 0x0f    # in bEndpointAddress
+  ENDPOINT_DIR_MASK = 0x80
+  TRANSFER_TYPE_MASK = 0x03    # in bmAttributes
+  ISO_SYNC_TYPE_MASK = 0x0C
   ISO_USAGE_TYPE_MASK = 0x30
 
   
@@ -907,9 +933,10 @@ module LIBUSB
     
     def set_configuration(configuration)
       configuration = configuration.bConfigurationValue if configuration.respond_to? :bConfigurationValue
-      res = Call.libusb_set_configuration(@pHandle, interface)
+      res = Call.libusb_set_configuration(@pHandle, configuration)
       LIBUSB.raise_error res, "in libusb_set_configuration" if res!=0
     end
+    alias configuration= set_configuration
     
     def set_interface_alt_setting(interface_number_or_setting, alternate_setting=nil)
       alternate_setting ||= interface_number_or_setting.bAlternateSetting if interface_number_or_setting.respond_to? :bAlternateSetting
