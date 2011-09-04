@@ -320,6 +320,10 @@ module LIBUSB
   
 
   class Transfer
+    def initialize(args={})
+      args.each{|k,v| send("#{k}=", v) }
+    end
+    
     def dev_handle=(dev)
       @dev_handle = dev
       @transfer[:dev_handle] = @dev_handle.pHandle
@@ -426,34 +430,38 @@ module LIBUSB
   end
 
   class BulkTransfer < Transfer
-    def initialize
+    def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
       @transfer[:type] = TRANSFER_TYPE_BULK
       @transfer[:timeout] = 1000
+      super
     end
   end
 
   class ControlTransfer < Transfer
-    def initialize
+    def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
       @transfer[:type] = TRANSFER_TYPE_CONTROL
       @transfer[:timeout] = 1000
+      super
     end
   end
 
   class InterruptTransfer < Transfer
-    def initialize
+    def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
       @transfer[:type] = TRANSFER_TYPE_INTERRUPT
       @transfer[:timeout] = 1000
+      super
     end
   end
 
   class IsochronousTransfer < Transfer
-    def initialize(num_packets)
+    def initialize(num_packets, args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(num_packets)
       @transfer[:type] = TRANSFER_TYPE_ISOCHRONOUS
       @transfer[:timeout] = 1000
+      super
     end
   end
 
@@ -978,11 +986,7 @@ module LIBUSB
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
-      @bulk_transfer ||= begin
-        tr = BulkTransfer.new
-        tr.dev_handle = self
-        tr
-      end
+      @bulk_transfer ||= BulkTransfer.new :dev_handle => self
       tr = @bulk_transfer
       tr.endpoint = endpoint
       tr.timeout = timeout
@@ -1012,11 +1016,7 @@ module LIBUSB
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
-      @control_transfer ||= begin
-        tr = ControlTransfer.new
-        tr.dev_handle = self
-        tr
-      end
+      @control_transfer ||= ControlTransfer.new :dev_handle => self
       tr = @control_transfer
       tr.timeout = timeout
       if dataIn
