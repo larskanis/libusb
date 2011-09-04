@@ -324,6 +324,7 @@ module LIBUSB
   class Transfer
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
+      @buffer = nil
     end
     
     def dev_handle=(dev)
