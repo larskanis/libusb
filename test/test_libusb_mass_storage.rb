@@ -209,36 +209,36 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     data = read_block(0, 2)
     assert_equal 1024, data.length, "Read block should be 1024 bytes"
   end
-  def test_read_access_async
-    @asynchron = true
-    test_read_access
-  end
+#   def test_read_access_async
+#     @asynchron = true
+#     test_read_access
+#   end
 
   def test_read_failed
     assert_raise(CSWError, LIBUSB::ERROR_TIMEOUT) do
       invalid_command
     end
   end
-  def test_read_failed_async
-    @asynchron = true
-    test_read_failed
-  end
+#   def test_read_failed_async
+#     @asynchron = true
+#     test_read_failed
+#   end
 
   def test_max_lun
     read_max_lun
   end
-  def test_max_lun_async
-    @asynchron = true
-    read_max_lun
-  end
+#   def test_max_lun_async
+#     @asynchron = true
+#     read_max_lun
+#   end
 
   def test_mass_storage_reset
     mass_storage_reset
   end
-  def test_mass_storage_reset_async
-    @asynchron = true
-    mass_storage_reset
-  end
+#   def test_mass_storage_reset_async
+#     @asynchron = true
+#     mass_storage_reset
+#   end
 
   def test_read_long
     1000.times do |bl|
