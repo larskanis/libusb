@@ -1,119 +1,68 @@
 # -*- coding: utf-8 -*-
 
-= Access USB devices from Ruby via libusb.
+= Access USB devices from Ruby via libusb-1.0.
 
-* hosted on RubyForge: http://rubyforge.org/projects/ribusb
-* development at Github: http://github.com/larskanis/ribusb
-* API documentation: http://ribusb.rubyforge.org/ribusb
+* http://github.com/larskanis/libusb
+* API documentation: http://libusb.rubyforge.org/libusb
 
 == DESCRIPTION:
 
-RibUSB is a Ruby extension that gives a Ruby programmer access to all functionality of libusb, version 1.0.
+LIBUSB is a Ruby binding that gives a Ruby programmer access to all functionality of libusb, version 1.0.
 
-* libusb is a library that gives full access to devices connected via the USB bus. No kernel driver is thus necessary for accessing USB devices. Linux and OSX support is ready, Windows support is under development, ports to other systems are bound to appear with time.
-* This Ruby extension supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API and is thus not supported.
-* The API is currently work-in-progress. Do not rely on it being stable just yet.
+* libusb is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
+* This Ruby binding supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] . LIBUSB is API compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See ::USB for description of the ruby-usb compatibility layer.
 
-This project is being developed by András G. Major and Lars Kanis, is hosted on RubyForge[http://rubyforge.org/projects/ribusb] and Github[http://github.com/larskanis/ribusb].
 
-RibUSB is covered by the GNU Public License version 2.
+LIBUSB is covered by the GNU Public License version 2.
 
 == FEATURES:
 * Access to descriptors of devices, configurations, interfaces, settings and endpoints
 * Synchronous and asynchronous communication for bulk, control and interrupt transfers
 * Compatibility layer for ruby-usb[http://www.a-k-r.org/ruby-usb/] (API based on libusb-0.1)
-* Download as source or precompiled win32 gems
 
 == SYNOPSIS:
 
-  require "ribusb"
+  require "libusb"
 
-  usb = RibUSB::Context.new
+  usb = LIBUSB::Context.new
   device = usb.find(:idVendor => 0x04b4, :idProduct => 0x8613).first
   device.claim_interface(0)
   device.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
   device.release_interface(0)
 
-RibUSB::Context#find is used to get all or only particular devices. A RibUSB::Device can be used to communicate with the USB device
-by RibUSB::Device#control_transfer, RibUSB::Device#bulk_transfer or RibUSB::Device#interrupt_transfer.
-
-RibUSB is compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See ::USB for description of ruby-usb compatibility layer.
+LIBUSB::Context#find is used to get all or only particular devices. A LIBUSB::Device can be used to communicate with the USB device
+by LIBUSB::Device#control_transfer, LIBUSB::Device#bulk_transfer or LIBUSB::Device#interrupt_transfer.
 
 == REQUIREMENTS:
 
 * libusb version 1.0 or greater
-* Ruby MRI 1.8, 1.9 or Rubinius
+* FFI-gem[http://github.com/ffi/ffi]
 * Linux, MacOSX or Windows system
 
 == INSTALL:
 
-In order to install RibUSB from source code, you need a working Ruby installation, including its
-header files and build utilities (on Debian and Ubuntu systems, part the ruby-dev package). Also,
-you need a C compiler (usually gcc), and make. The libusb-1.0 library along with its header files
-must naturally be present (on Debian and Ubuntu system, install the libusb-1.0-0-dev package).
+  gem install libusb
 
-To install from gem, execute this command to download RibUSB and to build it. On Windows
-a binary gem is installed automatically:
+In order to use LIBUSB, you need the libusb-1.0 library (no need for its header files).
+On Debian and Ubuntu system, install the libusb-1.0-0 package.
 
-  gem install ribusb
+Latest code can be used in this way:
 
-To install from source, execute this command to configure RibUSB and to build it:
-
-  git clone git://github.com/larskanis/ribusb.git
+  git clone git://github.com/larskanis/libusb.git
   rake install_gem
-
-From now on, you can use the RibUSB extension from any instance of Ruby on that computer by
-"requiring" it from within your Ruby program:
-
-  require "ribusb"
-
-Please browse the documentation on the website for example uses of RibUSB. Have fun.
 
 
 == Usage on Windows
 
-In contrast to Linux, any access to an USB device by RibUSB on Windows requires a proper driver
+In contrast to Linux, any access to an USB device by LIBUSB on Windows requires a proper driver
 installed in the system. Fortunately creating such a driver is quite easy with
 Zadig[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page]. Select the interesting USB device
 and press "Install Driver". That's it. You may take the generated output directory
 with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
 systems.
 
-RibUSB can be used as precompiled Windows gem, so there should be no need for a compiler.
+LIBUSB can be used together with precompiled FFI-gem for Windows, so there should be no need for a compiler.
 
-
-== Cross compiling for mswin32
-
-Using rake-compiler a cross compiled ribusb-gem can be build on a linux or darwin host for
-the win32 platform. Libusb is downloaded from source git repo and cross compiled.
-The generated gem is statically linked against libusb-1.0.
-There are no runtime dependencies to any but the standard Windows DLLs.
-
-Install mingw32. On a debian based system this should work:
-
-  apt-get install mingw32
-
-On MacOS X, if you have MacPorts installed:
-
-  port install i386-mingw32-gcc
-
-Install the rake-compiler:
-
-  gem install rake-compiler
-
-Download and cross compile ruby 1.8 and 1.9 for win32:
-
-  rake-compiler cross-ruby VERSION=1.8.7-p352
-  rake-compiler cross-ruby VERSION=1.9.2-p290
-
-Download and cross compile ribusb for win32:
-
-  rake cross native gem
-or with custom versions:
-  rake cross native gem RUBY_CC_VERSION=1.8.7:1.9.2 LIBUSB_VERSION=295c9d1
-
-If everything works, there should be ribusb-VERSION-x86-mswin32.gem in the pkg
-directory.
 
 == Todo
 

@@ -3,24 +3,11 @@
 
 require 'rubygems'
 require 'hoe'
-require 'rake/extensiontask'
-
-hoe = Hoe.spec 'ribusb' do
-  developer('András G. Major', 'andras.g.major@gmail.com')
-  developer('Lars Kanis', 'kanis@comcard.de')
-
-  self.readme_file = 'README.rdoc'
-  spec_extras[:extensions] = 'ext/extconf.rb'
-  spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
-  self.extra_rdoc_files << self.readme_file << 'ext/ribusb.c'
-  self.rubyforge_name = 'ribusb'
-  rdoc_locations << 'larskanis@rubyforge.org:/var/www/gforge-projects/ribusb/ribusb'
-end
-
-ENV['RUBY_CC_VERSION'] ||= '1.8.7:1.9.2'
+require 'pathname'
+require 'uri'
 
 # Cross-compilation constants
-COMPILE_HOME               = Pathname( "~/.rake-compiler" ).expand_path
+COMPILE_HOME               = Pathname( "./tmp" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
 
@@ -45,20 +32,18 @@ LIBUSB_CONFIGURE          = STATIC_LIBUSB_BUILDDIR + 'configure'
 LIBUSB_MAKEFILE           = STATIC_LIBUSB_BUILDDIR + 'Makefile'
 LIBUSB_A                  = STATIC_LIBUSB_BUILDDIR + 'libusb.a'
 
-# clean intermediate files and folders
-CLEAN.include( STATIC_BUILDDIR.to_s )
 
-Rake::ExtensionTask.new('ribusb_ext', hoe.spec) do |ext|
-  ext.ext_dir = 'ext'
-  ext.cross_compile = true                # enable cross compilation (requires cross compile toolchain)
-  ext.cross_platform = ['i386-mswin32', 'i386-mingw32']     # forces the Windows platform instead of the default one
+Hoe.spec 'libusb' do
+  developer('Lars Kanis', 'kanis@comcard.de')
 
-  # configure options only for cross compile
-  ext.cross_config_options += [
-    "--with-libusb-lib=#{STATIC_LIBUSB_BUILDDIR}/libusb/.libs",
-    "--with-libusb-include=#{STATIC_LIBUSB_BUILDDIR}/libusb",
-    "--enable-win32-static-build",
-  ]
+  self.readme_file = 'README.rdoc'
+  spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
+  self.extra_rdoc_files << self.readme_file
+  self.rubyforge_name = 'libusb'
+  rdoc_locations << 'larskanis@rubyforge.org:/var/www/gforge-projects/libusb/libusb'
+
+  # clean intermediate files and folders
+  self.clean_globs << STATIC_BUILDDIR.to_s
 end
 
 

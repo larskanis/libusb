@@ -4,10 +4,9 @@ History.txt
 Manifest.txt
 README.rdoc
 Rakefile
-ext/extconf.rb
-ext/ribusb.c
-lib/ribusb.rb
-lib/ribusb/compat.rb
-test/test_ribusb.rb
-test/test_ribusb_gc.rb
-test/test_ribusb_mass_storage.rb
+lib/libusb.rb
+lib/libusb/compat.rb
+test/test_libusb_compat.rb
+test/test_libusb_descriptors.rb
+test/test_libusb_gc.rb
+test/test_libusb_mass_storage.rb

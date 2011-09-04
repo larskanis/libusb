@@ -3,6 +3,8 @@ require 'ffi'
 
 
 module LIBUSB
+  VERSION = "0.1.0"
+  
   module Call
     extend FFI::Library
     ffi_lib 'libusb-1.0'
