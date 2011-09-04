@@ -166,7 +166,7 @@ module LIBUSB
     attach_function 'libusb_cancel_transfer', [:pointer], :int
     attach_function 'libusb_free_transfer', [:pointer], :void
 
-    attach_function 'libusb_handle_events', [:libusb_context], :void
+    attach_function 'libusb_handle_events', [:libusb_context], :int
 
     
     callback :libusb_transfer_cb_fn, [:pointer], :void
@@ -420,12 +420,23 @@ module LIBUSB
     }
 
     def submit_and_wait!
-      stop = false
+      completed = false
       submit! do |tr2|
-        stop = true
+        completed = true
       end
-      until stop
-        @dev_handle.device.context.handle_events
+      
+      until completed
+        begin
+          @dev_handle.device.context.handle_events
+        rescue ERROR_INTERRUPTED
+          next
+        rescue LIBUSB::Error
+          cancel!
+          until completed
+            @dev_handle.device.context.handle_events
+          end
+          raise
+        end
       end
       
       raise( TransferStatusToError[status] || ERROR_OTHER, "error #{status}") unless status==:TRANSFER_COMPLETED
@@ -740,7 +751,8 @@ module LIBUSB
     end
 
     def handle_events
-      Call.libusb_handle_events(@ctx)
+      res = Call.libusb_handle_events(@ctx)
+      LIBUSB.raise_error res, "in libusb_handle_events" if res<0
     end
 
     def find(hash={})
