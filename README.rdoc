@@ -61,8 +61,29 @@ and press "Install Driver". That's it. You may take the generated output directo
 with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
 systems.
 
-LIBUSB can be used together with precompiled FFI-gem for Windows, so there should be no need for a compiler.
+LIBUSB-gem for Windows comes with a precompiled _libusb.dll_ and can be used together with a precompiled FFI-gem, so there should be no need for a compiler.
 
+
+== Cross compiling for mswin32
+
+Libusb-gem can be build on a linux or darwin host for the win32 platform,
+using the mingw cross compiler collection. Libusb is downloaded from source
+git repo, cross compiled and included in the generated libusb.gem.
+
+Install mingw32. On a debian based system this should work:
+
+  apt-get install mingw32
+
+On MacOS X, if you have MacPorts installed:
+
+  port install i386-mingw32-gcc
+
+Download and cross compile libusb for win32:
+
+  rake cross gem
+
+If everything works, there should be libusb-VERSION-x86-mswin32.gem in the pkg
+directory.
 
 == Todo
 
