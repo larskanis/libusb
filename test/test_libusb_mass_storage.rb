@@ -212,6 +212,8 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     assert_raise(CSWError, LIBUSB::ERROR_TIMEOUT) do
       invalid_command
     end
+    dev.clear_halt(endpoint_in)
+    dev.clear_halt(endpoint_out)
   end
 #   def test_read_failed_async
 #     @asynchron = true
