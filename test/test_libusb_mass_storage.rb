@@ -102,12 +102,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     num_bytes = bulk_transfer(:endpoint=>endpoint_out, :dataOut=>cbw)
     assert_equal 31, num_bytes, "31 bytes CBW should be sent"
 
-    begin
-      recv = bulk_transfer(:endpoint=>endpoint_in, :dataIn=>data_length)
-    rescue LIBUSB::ERROR_PIPE => err
-      assert_match( /pipe error/, err.to_s, "a LIBUSB::ERROR_PIPE should tell about pipe error")
-      dev.clear_halt(endpoint_in)
-    end
+    recv = bulk_transfer(:endpoint=>endpoint_in, :dataIn=>data_length)
 
     get_mass_storage_status(expected_tag)
     return recv
