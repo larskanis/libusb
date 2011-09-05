@@ -7,7 +7,16 @@ module LIBUSB
 
   module Call
     extend FFI::Library
-    ffi_lib 'libusb-1.0'
+    if RUBY_PLATFORM=~/mingw|mswin/i
+      # use bundled libusb.dll for win32
+      begin
+        ffi_lib File.join(File.dirname(__FILE__), 'libusb-1.0.dll')
+      rescue LoadError
+        ffi_lib 'libusb-1.0'
+      end
+    else
+      ffi_lib 'libusb-1.0'
+    end
 
     ClassCodes = enum :libusb_class_code, [
       :CLASS_PER_INTERFACE, 0,
@@ -831,7 +840,8 @@ module LIBUSB
 
     def config_descriptor(index)
       ppConfig = FFI::MemoryPointer.new :pointer
-      Call.libusb_get_config_descriptor(@pDev, index, ppConfig)
+      res = Call.libusb_get_config_descriptor(@pDev, index, ppConfig)
+      LIBUSB.raise_error res, "in libusb_get_config_descriptor" if res!=0
       pConfig = ppConfig.read_pointer
       config = Configuration.new(self, pConfig)
       config
