@@ -30,10 +30,10 @@ LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION
 STATIC_LIBUSB_BUILDDIR    = STATIC_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2")
 LIBUSB_CONFIGURE          = STATIC_LIBUSB_BUILDDIR + 'configure'
 LIBUSB_MAKEFILE           = STATIC_LIBUSB_BUILDDIR + 'Makefile'
-LIBUSB_A                  = STATIC_LIBUSB_BUILDDIR + 'libusb.a'
+LIBUSB_DLL                  = STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb-1.0.dll'
 
 
-Hoe.spec 'libusb' do
+hoe = Hoe.spec 'libusb' do
   developer('Lars Kanis', 'kanis@comcard.de')
 
   extra_deps << ['ffi', '>= 1.0']
@@ -55,7 +55,6 @@ require 'rake/extensioncompiler'
 #####################################################################
 ### C R O S S - C O M P I L A T I O N - T A S K S
 #####################################################################
-
 
 directory STATIC_SOURCESDIR.to_s
 
@@ -102,19 +101,34 @@ file LIBUSB_MAKEFILE => LIBUSB_CONFIGURE do |t|
 end
 
 # make libusb-1.0.a
-task LIBUSB_A => [ LIBUSB_MAKEFILE ] do |t|
+task LIBUSB_DLL => [ LIBUSB_MAKEFILE ] do |t|
   Dir.chdir( STATIC_LIBUSB_BUILDDIR ) do
     sh 'make'
-    # remove libusb.dll to get a static build
-    sh "rm #{STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb*.dll*'} || true"
   end
 end
 
-desc "compile static libusb libraries"
-task :static_libusb => [ LIBUSB_A ]
+# copy binary from temporary location to final lib
+# tmp/extension_name/extension_name.{so,bundle} => lib/
+task "copy:libusb_dll" => ['lib', LIBUSB_DLL] do
+  install LIBUSB_DLL, "lib/#{File.basename(LIBUSB_DLL)}"
+end
 
-desc 'cross compile pg for win32'
-task :cross => [ :mingw32, :static_libusb ]
+desc "compile static libusb libraries"
+task :libusb_dll => [ "copy:libusb_dll" ]
+
+desc 'Cross compile libusb for win32'
+task :cross => [ :mingw32, :libusb_dll ] do |t|
+  spec = hoe.spec.dup
+  spec.instance_variable_set(:"@cache_file", nil) if spec.respond_to?(:cache_file)
+  spec.platform = Gem::Platform.new('i386-mingw32')
+  spec.files << "lib/#{File.basename(LIBUSB_DLL)}"
+
+  # Generate a package for this gem
+  Gem::PackageTask.new(spec) do |pkg|
+    pkg.need_zip = false
+    pkg.need_tar = false
+  end
+end
 
 task :mingw32 do
   # Use Rake::ExtensionCompiler helpers to find the proper host
