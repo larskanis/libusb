@@ -821,8 +821,12 @@ module LIBUSB
       res = Call.libusb_open(@pDev, ppHandle)
       LIBUSB.raise_error res, "in libusb_open" if res!=0
       handle = DevHandle.new self, ppHandle.read_pointer
-      return yield handle if block_given?
-      handle
+      return handle unless block_given?
+      begin
+        yield handle
+      ensure
+        handle.close
+      end
     end
 
     def bus_number
