@@ -36,6 +36,8 @@ LIBUSB_A                  = STATIC_LIBUSB_BUILDDIR + 'libusb.a'
 Hoe.spec 'libusb' do
   developer('Lars Kanis', 'kanis@comcard.de')
 
+  extra_deps << ['ffi', '>= 1.0']
+
   self.readme_file = 'README.rdoc'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
   self.extra_rdoc_files << self.readme_file
