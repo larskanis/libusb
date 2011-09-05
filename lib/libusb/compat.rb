@@ -306,20 +306,35 @@ module USB
     end
 
     def usb_control_msg(requesttype, request, value, index, bytes, timeout)
-      @dev.control_transfer(:bmRequestType=>requesttype, :bRequest=>request, :wValue=>value,
-          :wIndex=>index, :dataIn=>bytes, :timeout=>timeout)
+      if requesttype&LIBUSB::ENDPOINT_IN != 0
+        # transfer direction in
+        res = @dev.control_transfer(:bmRequestType=>requesttype, :bRequest=>request,
+            :wValue=>value, :wIndex=>index, :dataIn=>bytes.bytesize, :timeout=>timeout)
+        bytes[0, res.bytesize] = res
+        res.bytesize
+      else
+        # transfer direction out
+        @dev.control_transfer(:bmRequestType=>requesttype, :bRequest=>request, :wValue=>value,
+            :wIndex=>index, :dataOut=>bytes, :timeout=>timeout)
+      end
     end
+
     def usb_bulk_write(endpoint, bytes, timeout)
       @dev.bulk_transfer(:endpoint=>endpoint, :dataOut=>bytes, :timeout=>timeout)
     end
     def usb_bulk_read(endpoint, bytes, timeout)
-      @dev.bulk_transfer(:endpoint=>endpoint, :dataIn=>bytes, :timeout=>timeout)
+      res = @dev.bulk_transfer(:endpoint=>endpoint, :dataIn=>bytes.bytesize, :timeout=>timeout)
+      bytes[0, res.bytesize] = res
+      res.bytesize
     end
+
     def usb_interrupt_write(endpoint, bytes, timeout)
       @dev.interrupt_transfer(:endpoint=>endpoint, :dataOut=>bytes, :timeout=>timeout)
     end
     def usb_interrupt_read(endpoint, bytes, timeout)
-      @dev.interrupt_transfer(:endpoint=>endpoint, :dataIn=>bytes, :timeout=>timeout)
+      res = @dev.interrupt_transfer(:endpoint=>endpoint, :dataIn=>bytes.bytesize, :timeout=>timeout)
+      bytes[0, res.bytesize] = res
+      res.bytesize
     end
 
 #   rb_define_method(rb_cUSB_DevHandle, "usb_get_descriptor", rusb_get_descriptor, 3);
