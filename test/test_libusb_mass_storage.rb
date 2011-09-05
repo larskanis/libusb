@@ -146,8 +146,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
   def get_capacity
     expected_length = 0x08 # READ_CAPACITY_LENGTH
     cdb = [ 0x25, # Read Capacity
-            "\0"*9,
-            ].pack('Ca*')
+            ].pack('Cx9')
 
     cap = send_mass_storage_command( cdb, expected_length )
 
@@ -191,7 +190,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
       :bmRequestType=>ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
       :bRequest=>BOMS_GET_MAX_LUN,
       :wValue=>0, :wIndex=>0, :dataIn=>1)
-    assert_equal [1].pack("C"), res, "BOMS_GET_MAX_LUN response is usually 1"
+    assert [0].pack("C")==res || [1].pack("C")==res, "BOMS_GET_MAX_LUN response is usually 0 or 1"
   end
 
   def test_read_access
