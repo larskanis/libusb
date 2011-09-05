@@ -9,7 +9,7 @@ class TestLibusbGc < Test::Unit::TestCase
 
   def get_some_endpoint
     Context.new.find do |dev|
-      return dev.endpoints.last
+      return dev.endpoints.last unless dev.endpoints.empty?
     end
   end
 
