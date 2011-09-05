@@ -6,6 +6,9 @@ class TestLibusbCompat < Test::Unit::TestCase
 
   attr_accessor :devh
 
+  BOMS_RESET = 0xFF
+  BOMS_GET_MAX_LUN = 0xFE
+
   def setup
     devs = []
     USB.each_device_by_class(USB_CLASS_MASS_STORAGE, 0x01, 0x50){|dev| devs << dev }
@@ -49,16 +52,16 @@ class TestLibusbCompat < Test::Unit::TestCase
   end
 
   def test_mass_storage_reset
-    res = devh.usb_control_msg(ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-                          BOMS_RESET, 0, 0, "", 2000)
+    res = devh.usb_control_msg(USB_ENDPOINT_OUT|USB_TYPE_CLASS|USB_RECIP_INTERFACE,
+                BOMS_RESET, 0, 0, "", 2000)
     assert_equal 0, res, "BOMS_RESET response should be 0 byte"
   end
 
   def test_read_max_lun
-    bytes = " " * 0x100
-    devh.usb_control_msg(ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-                          BOMS_GET_MAX_LUN, 0, 0, bytes, 100)
-    assert_equal [1, " "*0xff].pack("Ca*"), bytes, "BOMS_GET_MAX_LUN response is usually 1"
+    bytes = [].pack('x1')
+    devh.usb_control_msg(USB_ENDPOINT_IN|USB_TYPE_CLASS|USB_RECIP_INTERFACE,
+                BOMS_GET_MAX_LUN, 0, 0, bytes, 100)
+    assert [0].pack("C")==bytes || [1].pack("C")==bytes, "BOMS_GET_MAX_LUN response is usually 0 or 1"
   end
 
 end
