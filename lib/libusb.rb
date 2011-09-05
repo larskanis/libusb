@@ -4,7 +4,7 @@ require 'ffi'
 
 module LIBUSB
   VERSION = "0.1.0"
-  
+
   module Call
     extend FFI::Library
     ffi_lib 'libusb-1.0'
@@ -79,7 +79,7 @@ module LIBUSB
       :REQUEST_SET_INTERFACE, 0x0B,
       :REQUEST_SYNCH_FRAME, 0x0C,
     ]
-    
+
     EndpointDirections = enum :libusb_endpoint_direction, [
       :ENDPOINT_IN, 0x80,
       :ENDPOINT_OUT, 0x00,
@@ -96,7 +96,7 @@ module LIBUSB
       :DT_PHYSICAL, 0x23,
       :DT_HUB, 0x29,
     ]
-    
+
     RequestTypes = enum :libusb_request_type, [
       :REQUEST_TYPE_STANDARD, (0x00 << 5),
       :REQUEST_TYPE_CLASS, (0x01 << 5),
@@ -121,7 +121,7 @@ module LIBUSB
 
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device_handle
-    
+
     attach_function 'libusb_init', [ :pointer ], :int
     attach_function 'libusb_exit', [ :pointer ], :void
     attach_function 'libusb_set_debug', [:pointer, :int], :void
@@ -148,17 +148,17 @@ module LIBUSB
     attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int
     attach_function 'libusb_claim_interface', [:libusb_device_handle, :int], :int
     attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int
-    
+
     attach_function 'libusb_open_device_with_vid_pid', [:pointer, :int, :int], :pointer
 
     attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int
     attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int
     attach_function 'libusb_reset_device', [:libusb_device_handle], :int
-    
+
     attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
     attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int
     attach_function 'libusb_attach_kernel_driver', [:libusb_device_handle, :int], :int
-    
+
     attach_function 'libusb_get_string_descriptor_ascii', [:pointer, :uint8, :pointer, :int], :int
 
     attach_function 'libusb_alloc_transfer', [:int], :pointer
@@ -168,7 +168,7 @@ module LIBUSB
 
     attach_function 'libusb_handle_events', [:libusb_context], :int
 
-    
+
     callback :libusb_transfer_cb_fn, [:pointer], :void
 
     class IsoPacketDescriptor < FFI::Struct
@@ -246,7 +246,7 @@ module LIBUSB
   ISO_SYNC_TYPE_MASK = 0x0C
   ISO_USAGE_TYPE_MASK = 0x30
 
-  
+
   # :stopdoc:
   # http://www.usb.org/developers/defined_class
   CLASS_CODES = [
@@ -319,14 +319,14 @@ module LIBUSB
     end
   end
   # :startdoc:
-  
+
 
   class Transfer
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
       @buffer = nil
     end
-    
+
     def dev_handle=(dev)
       @dev_handle = dev
       @transfer[:dev_handle] = @dev_handle.pHandle
@@ -395,10 +395,10 @@ module LIBUSB
     def status
       @transfer[:status]
     end
-    
+
     def submit!(&block)
       self.callback = block if block_given?
-      
+
 #       puts "submit transfer #{@transfer.inspect} buffer: #{@transfer[:buffer].inspect} length: #{@transfer[:length].inspect} status: #{@transfer[:status].inspect} callback: #{@transfer[:callback].inspect} dev_handle: #{@transfer[:dev_handle].inspect}"
 
       res = Call.libusb_submit_transfer( @transfer )
@@ -424,7 +424,7 @@ module LIBUSB
       submit! do |tr2|
         completed = true
       end
-      
+
       until completed
         begin
           @dev_handle.device.context.handle_events
@@ -438,7 +438,7 @@ module LIBUSB
           raise
         end
       end
-      
+
       raise( TransferStatusToError[status] || ERROR_OTHER, "error #{status}") unless status==:TRANSFER_COMPLETED
     end
   end
@@ -588,7 +588,7 @@ module LIBUSB
       return ifs
     end
     alias settings alt_settings
-    
+
     # The Device the Interface belongs to.
     def device() self.configuration.device end
     # Return all endpoints of all alternative settings as Array of EndpointDescriptor s.
@@ -721,7 +721,7 @@ module LIBUSB
     end
   end
 
-  
+
   class Context
     def initialize
       m = FFI::MemoryPointer.new :pointer
@@ -769,7 +769,7 @@ module LIBUSB
         end
       end
     end
-    
+
     def find_with_interfaces(hash={}, &block)
       devs = find(hash, &block)
       devs += find(:bDeviceClass=>CLASS_PER_INTERFACE) do |dev|
@@ -925,7 +925,7 @@ module LIBUSB
   class DevHandle
     attr_reader :pHandle
     attr_reader :device
-    
+
     def initialize device, pHandle
       @device = device
       @pHandle = pHandle
@@ -954,14 +954,14 @@ module LIBUSB
       res = Call.libusb_release_interface(@pHandle, interface)
       LIBUSB.raise_error res, "in libusb_release_interface" if res!=0
     end
-    
+
     def set_configuration(configuration)
       configuration = configuration.bConfigurationValue if configuration.respond_to? :bConfigurationValue
       res = Call.libusb_set_configuration(@pHandle, configuration)
       LIBUSB.raise_error res, "in libusb_set_configuration" if res!=0
     end
     alias configuration= set_configuration
-    
+
     def set_interface_alt_setting(interface_number_or_setting, alternate_setting=nil)
       alternate_setting ||= interface_number_or_setting.bAlternateSetting if interface_number_or_setting.respond_to? :bAlternateSetting
       interface_number_or_setting = interface_number_or_setting.bInterfaceNumber if interface_number_or_setting.respond_to? :bInterfaceNumber
@@ -974,7 +974,7 @@ module LIBUSB
       res = Call.libusb_clear_halt(@pHandle, endpoint)
       LIBUSB.raise_error res, "in libusb_clear_halt" if res!=0
     end
-    
+
     def reset_device
       res = Call.libusb_reset_device(@pHandle)
       LIBUSB.raise_error res, "in libusb_reset_device" if res!=0
@@ -1019,7 +1019,7 @@ module LIBUSB
         tr.actual_buffer
       end
     end
-    
+
     def control_transfer(args={})
       bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
       bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")
