@@ -1034,6 +1034,33 @@ module LIBUSB
       end
     end
 
+    def interrupt_transfer(args={})
+      timeout = args.delete(:timeout) || 1000
+      endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
+      dataOut = args.delete(:dataOut)
+      dataIn = args.delete(:dataIn)
+      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
+
+      # reuse transfer struct to speed up transfer
+      @interrupt_transfer ||= InterruptTransfer.new :dev_handle => self
+      tr = @interrupt_transfer
+      tr.endpoint = endpoint
+      tr.timeout = timeout
+      if dataOut
+        tr.buffer = dataOut
+      elsif dataIn
+        tr.alloc_buffer(dataIn)
+      end
+
+      tr.submit_and_wait!
+
+      if dataOut
+        tr.actual_length
+      else
+        tr.actual_buffer
+      end
+    end
+
     def control_transfer(args={})
       bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
       bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")
