@@ -209,9 +209,19 @@ class TestLibusbMassStorage < Test::Unit::TestCase
 #   end
 
   def test_read_failed
+    count = 0
+    th = Thread.new do
+      loop do
+        count+=1
+        sleep 0.01
+      end
+    end
     assert_raise(CSWError, LIBUSB::ERROR_TIMEOUT) do
       invalid_command
     end
+    th.kill
+    assert_operator 20, :<=, count, "libusb_handle_events should not block a parallel Thread"
+
     dev.clear_halt(endpoint_in)
     dev.clear_halt(endpoint_out)
   end
