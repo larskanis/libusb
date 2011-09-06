@@ -5,6 +5,9 @@ require 'rubygems'
 require 'hoe'
 require 'pathname'
 require 'uri'
+require 'rake/extensiontask'
+require 'rake/extensioncompiler'
+
 
 # Cross-compilation constants
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path
@@ -37,6 +40,7 @@ hoe = Hoe.spec 'libusb' do
   developer('Lars Kanis', 'kanis@comcard.de')
 
   extra_deps << ['ffi', '>= 1.0']
+  extra_dev_deps << ['rake-compiler', '>= 0.6']
 
   self.readme_file = 'README.rdoc'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
@@ -48,9 +52,6 @@ hoe = Hoe.spec 'libusb' do
   self.clean_globs << STATIC_BUILDDIR.to_s
 end
 
-
-require 'rake/extensiontask'
-require 'rake/extensioncompiler'
 
 #####################################################################
 ### C R O S S - C O M P I L A T I O N - T A S K S
@@ -108,7 +109,6 @@ task LIBUSB_DLL => [ LIBUSB_MAKEFILE ] do |t|
 end
 
 # copy binary from temporary location to final lib
-# tmp/extension_name/extension_name.{so,bundle} => lib/
 task "copy:libusb_dll" => ['lib', LIBUSB_DLL] do
   install LIBUSB_DLL, "lib/#{File.basename(LIBUSB_DLL)}"
 end
