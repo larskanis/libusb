@@ -8,12 +8,8 @@ module LIBUSB
   module Call
     extend FFI::Library
     if RUBY_PLATFORM=~/mingw|mswin/i
-      # use bundled libusb.dll for win32
-      begin
-        ffi_lib File.join(File.dirname(__FILE__), 'libusb-1.0.dll')
-      rescue LoadError
-        ffi_lib 'libusb-1.0'
-      end
+      bundled_dll = File.join(File.dirname(__FILE__), 'libusb-1.0.dll')
+      ffi_lib(['libusb-1.0', bundled_dll])
     else
       ffi_lib 'libusb-1.0'
     end
