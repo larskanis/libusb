@@ -36,7 +36,7 @@ require 'forwardable'
 #   p USB.devices => [#<USB::Device ...>]
 #
 # Known issues:
-# * Exceptions are different between ruby-usb and libusb and are not converted
+# * Exceptions are different between ruby-usb and libusb and don't get converted
 # * libusb-1.0 doesn't explicitly manage USB-buses, so only one Bus is used currently
 module USB
   DefaultContext = LIBUSB::Context.new
@@ -102,11 +102,12 @@ module USB
   HAS_GET_DRIVER_NP = RUBY_PLATFORM=~/mswin|mingw/ ? false : true
   HAS_DETACH_KERNEL_DRIVER_NP = RUBY_PLATFORM=~/mswin|mingw/ ? false : true
 
-# not defined by libusb-1.0:
-#   USB_MAXENDPOINTS
-#   USB_MAXINTERFACES
-#   USB_MAXALTSETTING
-#   USB_MAXCONFIG
+  # not defined by libusb-1.0, but typical values are:
+  USB_MAXENDPOINTS = 32
+  USB_MAXINTERFACES = 32
+  USB_MAXALTSETTING = 128
+  USB_MAXCONFIG = 8
+
 
   def USB.busses
     [DefaultBus]
