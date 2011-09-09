@@ -1,4 +1,5 @@
 .autotest
+.gemtest
 COPYING
 History.txt
 Manifest.txt
@@ -7,6 +8,7 @@ Rakefile
 lib/libusb.rb
 lib/libusb/compat.rb
 test/test_libusb_compat.rb
+test/test_libusb_compat_mass_storage.rb
 test/test_libusb_descriptors.rb
 test/test_libusb_gc.rb
 test/test_libusb_mass_storage.rb
