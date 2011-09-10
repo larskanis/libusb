@@ -11,18 +11,8 @@ class TestLibusb < Test::Unit::TestCase
     @usb.debug = 0
   end
 
-  def test_find
-    devlist = usb.find
-    assert_kind_of Array, devlist, "Bus#find should return an Array"
-    assert_kind_of Device, devlist.first, "Bus#find should return Devices"
-
-    usb.find do |dev|
-      assert_equal devlist.shift.device_address, dev.device_address, "Bus#find with block should give same devices"
-    end
-  end
-
   def test_descriptors
-    usb.find do |dev|
+    usb.devices.each do |dev|
       assert_match(/Device/, dev.inspect, "Device#inspect should work")
       dev.configurations.each do |config_desc|
         assert_match(/Configuration/, config_desc.inspect, "ConfigDescriptor#inspect should work")

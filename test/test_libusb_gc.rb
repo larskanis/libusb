@@ -8,7 +8,7 @@ class TestLibusbGc < Test::Unit::TestCase
   include LIBUSB
 
   def get_some_endpoint
-    Context.new.find do |dev|
+    Context.new.devices.each do |dev|
       return dev.endpoints.last unless dev.endpoints.empty?
     end
   end

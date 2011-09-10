@@ -754,40 +754,30 @@ module LIBUSB
       Call.libusb_free_device_list(ppDevs, 1)
       pDevs
     end
+    private :device_list
 
     def handle_events
       res = Call.libusb_handle_events(@ctx)
       LIBUSB.raise_error res, "in libusb_handle_events" if res<0
     end
 
-    def find(hash={})
+    def devices(hash={})
       device_list.select do |dev|
-        if ( !hash[:bDeviceClass] || dev.bDeviceClass == hash[:bDeviceClass] ) &&
-           ( !hash[:bDeviceSubClass] || dev.bDeviceSubClass == hash[:bDeviceSubClass] ) &&
-           ( !hash[:bDeviceProtocol] || dev.bDeviceProtocol == hash[:bDeviceProtocol] ) &&
-           ( !hash[:bMaxPacketSize0] || dev.bMaxPacketSize0 == hash[:bMaxPacketSize0] ) &&
-           ( !hash[:bcdUSB] || dev.bcdUSB == hash[:bcdUSB] ) &&
-           ( !hash[:devVendor] || dev.devVendor == hash[:devVendor] ) &&
-           ( !hash[:devProduct] || dev.devProduct == hash[:devProduct] ) &&
-           ( !hash[:bcdDevice] || dev.bcdDevice == hash[:bcdDevice] )
-          block_given? ? (yield(dev)!=false) : true
-        end
+        ( !hash[:bClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
+                             dev.settings.any?{|id| id.bInterfaceClass == hash[:bClass] } :
+                             dev.bDeviceClass==hash[:bClass] )) &&
+        ( !hash[:bSubClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
+                             dev.settings.any?{|id| id.bInterfaceSubClass == hash[:bSubClass] } :
+                             dev.bDeviceSubClass==hash[:bSubClass] )) &&
+        ( !hash[:bProtocol] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
+                             dev.settings.any?{|id| id.bInterfaceProtocol == hash[:bProtocol] } :
+                             dev.bDeviceProtocol==hash[:bProtocol] )) &&
+        ( !hash[:bMaxPacketSize0] || dev.bMaxPacketSize0 == hash[:bMaxPacketSize0] ) &&
+        ( !hash[:bcdUSB] || dev.bcdUSB == hash[:bcdUSB] ) &&
+        ( !hash[:devVendor] || dev.devVendor == hash[:devVendor] ) &&
+        ( !hash[:devProduct] || dev.devProduct == hash[:devProduct] ) &&
+        ( !hash[:bcdDevice] || dev.bcdDevice == hash[:bcdDevice] )
       end
-    end
-
-    def find_with_interfaces(hash={}, &block)
-      devs = find(hash, &block)
-      devs += find(:bDeviceClass=>CLASS_PER_INTERFACE) do |dev|
-        if dev.settings.any?{|id|
-              ( !hash[:bDeviceClass] || id.bInterfaceClass == hash[:bDeviceClass] ) &&
-              ( !hash[:bDeviceSubClass] || id.bInterfaceSubClass == hash[:bDeviceSubClass] ) &&
-              ( !hash[:bDeviceProtocol] || id.bInterfaceProtocol == hash[:bDeviceProtocol] ) }
-          yield dev if block_given?
-        else
-          false
-        end
-      end
-      return devs
     end
   end
 

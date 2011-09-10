@@ -25,7 +25,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     @usb.debug = 3
     @asynchron = false
 
-    usb.find do |dev|
+    usb.devices.each do |dev|
       dev.settings.each do |if_desc|
         if if_desc.bInterfaceClass == CLASS_MASS_STORAGE &&
               ( #if_desc.bInterfaceSubClass == 0x01 ||
@@ -40,9 +40,9 @@ class TestLibusbMassStorage < Test::Unit::TestCase
 
     abort "no mass storage device found" unless @device
 
-#     devs = usb.find_with_interfaces( :bDeviceClass=>CLASS_MASS_STORAGE, :bDeviceSubClass=>0x01, :bDeviceProtocol=>0x50 )
-    devs = usb.find_with_interfaces( :bDeviceClass=>CLASS_MASS_STORAGE, :bDeviceSubClass=>0x06, :bDeviceProtocol=>0x50 )
-    assert_equal @device, devs.last, "find and find_with_interfaces should deliver the same device"
+#     devs = usb.find_with_interfaces( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x01, :bProtocol=>0x50 )
+    devs = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 )
+    assert_equal @device, devs.last, "devices and devices with filter should deliver the same device"
 
     @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }.bEndpointAddress
     @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN == 0 }.bEndpointAddress

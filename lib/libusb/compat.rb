@@ -113,7 +113,7 @@ module USB
     [DefaultBus]
   end
 
-  def USB.devices; DefaultContext.find.map{|c| Device.new(c) }; end
+  def USB.devices; DefaultContext.devices.map{|c| Device.new(c) }; end
   def USB.configurations() USB.devices.map {|d| d.configurations }.flatten end
   def USB.interfaces() USB.configurations.map {|d| d.interfaces }.flatten end
   def USB.settings() USB.interfaces.map {|d| d.settings }.flatten end
@@ -124,7 +124,7 @@ module USB
   end
 
   def USB.each_device_by_class(devclass, subclass=nil, protocol=nil)
-    devs = DefaultContext.find_with_interfaces :bDeviceClass=>devclass, :bDeviceSubClass=>subclass, :bDeviceProtocol=>protocol
+    devs = DefaultContext.devices :bClass=>devclass, :bSubClass=>subclass, :bProtocol=>protocol
     devs.each do |dev|
       yield Device.new(dev)
     end
@@ -136,7 +136,7 @@ module USB
       @ct = context
     end
     def devices
-      @ct.find.map{|d| Device.new(d) }
+      @ct.devices.map{|d| Device.new(d) }
     end
 
     def configurations() self.devices.map{|d| d.configurations }.flatten end
