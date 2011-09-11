@@ -727,17 +727,49 @@ module LIBUSB
   end
 
 
+  # Class representing a libusb session.
   class Context
+    # Initialize libusb context.
     def initialize
       m = FFI::MemoryPointer.new :pointer
       Call.libusb_init(m)
       @ctx = m.read_pointer
     end
 
+    # Deinitialize libusb.
+    #
+    # Should be called after closing all open devices and before your application terminates.
     def exit
       Call.libusb_exit(@ctx)
     end
 
+    # Set message verbosity.
+    #
+    # * Level 0: no messages ever printed by the library (default)
+    # * Level 1: error messages are printed to stderr
+    # * Level 2: warning and error messages are printed to stderr
+    # * Level 3: informational messages are printed to stdout, warning and
+    #   error messages are printed to stderr
+    #
+    # The default level is 0, which means no messages are ever printed. If you
+    # choose to increase the message verbosity level, ensure that your
+    # application does not close the stdout/stderr file descriptors.
+    #
+    # You are advised to set level 3. libusb is conservative with its message
+    # logging and most of the time, will only log messages that explain error
+    # conditions and other oddities. This will help you debug your software.
+    #
+    # If the LIBUSB_DEBUG environment variable was set when libusb was
+    # initialized, this method does nothing: the message verbosity is
+    # fixed to the value in the environment variable.
+    #
+    # If libusb was compiled without any message logging, this method
+    # does nothing: you'll never get any messages.
+    #
+    # If libusb was compiled with verbose debug message logging, this
+    # method does nothing: you'll always get messages from all levels.
+    #
+    # @param [Fixnum] level  debug level to set
     def debug=(level)
       Call.libusb_set_debug(@ctx, level)
     end
@@ -756,31 +788,52 @@ module LIBUSB
     end
     private :device_list
 
+    # Handle any pending events in blocking mode.
+    #
+    # This method must be called when libusb is running asynchronous transfers.
+    # This gives libusb the opportunity to reap pending transfers,
+    # invoke callbacks, etc.
     def handle_events
       res = Call.libusb_handle_events(@ctx)
       LIBUSB.raise_error res, "in libusb_handle_events" if res<0
     end
 
-    def devices(hash={})
+    # Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
+    #
+    # @param [Hash] filter_hash  A number of criteria can be defined in key-value pairs.
+    #   Only devices that equal the given criterion will be returned. If a criterion is
+    #   not specified or its value is +nil+, any device will match that criterion.
+    #   The following criteria can be filtered:
+    #   * <tt>:idVendor</tt>, <tt>:idProduct</tt> (+FixNum+) for matching vendor/product ID,
+    #   * <tt>:bClass</tt>, <tt>:bSubClass</tt>, <tt>:bProtocol</tt> (+FixNum+) for the device type -
+    #     Devices using CLASS_PER_INTERFACE will match, if any of the interfaces match.
+    #   * <tt>:bcdUSB</tt>, <tt>:bcdDevice</tt>, <tt>:bMaxPacketSize0</tt> (+FixNum+) for the
+    #     USB and device release numbers.
+    #
+    # @return [Array<LIBUSB::Device>]
+    def devices(filter_hash={})
       device_list.select do |dev|
-        ( !hash[:bClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
-                             dev.settings.any?{|id| id.bInterfaceClass == hash[:bClass] } :
-                             dev.bDeviceClass==hash[:bClass] )) &&
-        ( !hash[:bSubClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
-                             dev.settings.any?{|id| id.bInterfaceSubClass == hash[:bSubClass] } :
-                             dev.bDeviceSubClass==hash[:bSubClass] )) &&
-        ( !hash[:bProtocol] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
-                             dev.settings.any?{|id| id.bInterfaceProtocol == hash[:bProtocol] } :
-                             dev.bDeviceProtocol==hash[:bProtocol] )) &&
-        ( !hash[:bMaxPacketSize0] || dev.bMaxPacketSize0 == hash[:bMaxPacketSize0] ) &&
-        ( !hash[:bcdUSB] || dev.bcdUSB == hash[:bcdUSB] ) &&
-        ( !hash[:devVendor] || dev.devVendor == hash[:devVendor] ) &&
-        ( !hash[:devProduct] || dev.devProduct == hash[:devProduct] ) &&
-        ( !hash[:bcdDevice] || dev.bcdDevice == hash[:bcdDevice] )
+        ( !filter_hash[:bClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
+                             dev.settings.any?{|id| id.bInterfaceClass == filter_hash[:bClass] } :
+                             dev.bDeviceClass==filter_hash[:bClass] )) &&
+        ( !filter_hash[:bSubClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
+                             dev.settings.any?{|id| id.bInterfaceSubClass == filter_hash[:bSubClass] } :
+                             dev.bDeviceSubClass==filter_hash[:bSubClass] )) &&
+        ( !filter_hash[:bProtocol] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
+                             dev.settings.any?{|id| id.bInterfaceProtocol == filter_hash[:bProtocol] } :
+                             dev.bDeviceProtocol==filter_hash[:bProtocol] )) &&
+        ( !filter_hash[:bMaxPacketSize0] || dev.bMaxPacketSize0 == filter_hash[:bMaxPacketSize0] ) &&
+        ( !filter_hash[:idVendor] || dev.idVendor == filter_hash[:idVendor] ) &&
+        ( !filter_hash[:idProduct] || dev.idProduct == filter_hash[:idProduct] ) &&
+        ( !filter_hash[:bcdUSB] || dev.bcdUSB == filter_hash[:bcdUSB] ) &&
+        ( !filter_hash[:bcdDevice] || dev.bcdDevice == filter_hash[:bcdDevice] )
       end
     end
   end
 
+  # Class representing a USB device detected on the system.
+  #
+  # Devices of the system can be obtained with {Context#devices} .
   class Device
     include Comparable
 
@@ -802,6 +855,18 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_get_device_descriptor" if res!=0
     end
 
+    # Open a device and obtain a device handle.
+    #
+    # A handle allows you to perform I/O on the device in question.
+    # This is a non-blocking function; no requests are sent over the bus.
+    #
+    # If called with a block, the handle is passed to the block
+    # and is closed when the block has finished.
+    #
+    # You need proper access permissions on:
+    # * Linux: <tt>/dev/bus/usb/<bus>/<dev></tt>
+    #
+    # @return [DevHandle] Handle to the device.
     def open
       ppHandle = FFI::MemoryPointer.new :pointer
       res = Call.libusb_open(@pDev, ppHandle)
@@ -815,19 +880,58 @@ module LIBUSB
       end
     end
 
+    # Get the number of the bus that a device is connected to.
     def bus_number
       Call.libusb_get_bus_number(@pDev)
     end
+
+    # Get the address of the device on the bus it is connected to.
     def device_address
       Call.libusb_get_device_address(@pDev)
     end
+
+    # Convenience function to retrieve the wMaxPacketSize value for a
+    # particular endpoint in the active device configuration.
+    #
+    # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
+    # @return [Fixnum]  the wMaxPacketSize value
     def max_packet_size(endpoint)
-      Call.libusb_get_max_packet_size(@pDev, endpoint)
-    end
-    def max_iso_packet_size(endpoint)
-      Call.libusb_get_max_iso_packet_size(@pDev, endpoint)
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      res = Call.libusb_get_max_packet_size(@pDev, endpoint)
+      LIBUSB.raise_error res, "in libusb_get_max_packet_size" unless res>=0
+      res
     end
 
+    # Calculate the maximum packet size which a specific endpoint is capable is
+    # sending or receiving in the duration of 1 microframe.
+    #
+    # Only the active configution is examined. The calculation is based on the
+    # wMaxPacketSize field in the endpoint descriptor as described in section 9.6.6
+    # in the USB 2.0 specifications.
+    #
+    # If acting on an isochronous or interrupt endpoint, this function will
+    # multiply the value found in bits 0:10 by the number of transactions per
+    # microframe (determined by bits 11:12). Otherwise, this function just returns
+    # the numeric value found in bits 0:10.
+    #
+    # This function is useful for setting up isochronous transfers, for example
+    # you might use the return value from this function to call
+    # IsoPacket#alloc_buffer in order to set the length field
+    # of an isochronous packet in a transfer.
+    #
+    # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
+    # @return [Fixnum] the maximum packet size which can be sent/received on this endpoint
+    def max_iso_packet_size(endpoint)
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      res = Call.libusb_get_max_iso_packet_size(@pDev, endpoint)
+      LIBUSB.raise_error res, "in libusb_get_max_iso_packet_size" unless res>=0
+      res
+    end
+
+    # Obtain a config descriptor of the device.
+    #
+    # @param [Fixnum] index  number of the config descriptor
+    # @return Configuration
     def config_descriptor(index)
       ppConfig = FFI::MemoryPointer.new :pointer
       res = Call.libusb_get_config_descriptor(@pDev, index, ppConfig)
@@ -871,7 +975,8 @@ module LIBUSB
       end
     end
 
-    # Return manufacturer of the device as String.
+    # Return manufacturer of the device
+    # @return String
     def manufacturer
       return @manufacturer if defined? @manufacturer
       @manufacturer = try_string_descriptor_ascii(self.iManufacturer)
@@ -879,7 +984,8 @@ module LIBUSB
       @manufacturer
     end
 
-    # Return product name of the device as String.
+    # Return product name of the device.
+    # @return String
     def product
       return @product if defined? @product
       @product = try_string_descriptor_ascii(self.iProduct)
@@ -887,7 +993,8 @@ module LIBUSB
       @product
     end
 
-    # Return serial number of the device as String.
+    # Return serial number of the device.
+    # @return String
     def serial_number
       return @serial_number if defined? @serial_number
       @serial_number = try_string_descriptor_ascii(self.iSerialNumber)
@@ -895,7 +1002,8 @@ module LIBUSB
       @serial_number
     end
 
-    # Return configurations of the device as Array of Configuration s.
+    # Return configurations of the device.
+    # @return [Array<Configuration>]
     def configurations
       configs = []
       bNumConfigurations.times do |config_index|
@@ -908,11 +1016,14 @@ module LIBUSB
       configs
     end
 
-    # Return all interfaces of the device as Array of Interface s.
+    # Return all interfaces of the device.
+    # @return [Array<Interface>]
     def interfaces() self.configurations.map {|d| d.interfaces }.flatten end
-    # Return all interface decriptions of the device as Array of InterfaceDescriptor s.
+    # Return all interface decriptions of the device.
+    # @return [Array<Setting>]
     def settings() self.interfaces.map {|d| d.settings }.flatten end
-    # Return all endpoints of all interfaces of the device as Array of EndpointDescriptor s.
+    # Return all endpoints of all interfaces of the device.
+    # @return [Array<Endpoint>]
     def endpoints() self.settings.map {|d| d.endpoints }.flatten end
 
     def <=>(o)
@@ -922,6 +1033,10 @@ module LIBUSB
     end
   end
 
+  # Class representing a handle on a USB device.
+  #
+  # A device handle is used to perform I/O and other operations. When finished
+  # with a device handle, you should call DevHandle#close .
   class DevHandle
     attr_reader :pHandle
     attr_reader :device
@@ -969,17 +1084,47 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_set_interface_alt_setting" if res!=0
     end
 
+    # Clear the halt/stall condition for an endpoint.
+    #
+    # Endpoints with halt status are unable to receive or transmit
+    # data until the halt condition is stalled.
+    #
+    # You should cancel all pending transfers before attempting to
+    # clear the halt condition.
+    #
+    # This is a blocking function.
+    #
+    # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
     def clear_halt(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_clear_halt(@pHandle, endpoint)
       LIBUSB.raise_error res, "in libusb_clear_halt" if res!=0
     end
 
+    # Perform a USB port reset to reinitialize a device.
+    #
+    # The system will attempt to restore the previous configuration and
+    # alternate settings after the reset has completed.
+    #
+    # If the reset fails, the descriptors change, or the previous
+    # state cannot be restored, the device will appear to be disconnected
+    # and reconnected. This means that the device handle is no longer
+    # valid (you should close it) and rediscover the device. A Exception
+    # of LIBUSB::ERROR_NOT_FOUND indicates when this is the case.
+    #
+    # This is a blocking function which usually incurs a noticeable delay.
     def reset_device
       res = Call.libusb_reset_device(@pHandle)
       LIBUSB.raise_error res, "in libusb_reset_device" if res!=0
     end
 
+    # Determine if a kernel driver is active on an interface.
+    #
+    # If a kernel driver is active, you cannot claim the interface,
+    # and libusb will be unable to perform I/O.
+    #
+    # @param [Interface, Fixnum] interface   the interface to check
+    # @return [Boolean]
     def kernel_driver_active?(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_kernel_driver_active(@pHandle, interface)
@@ -987,11 +1132,27 @@ module LIBUSB
       return res==1
     end
 
+    # Detach a kernel driver from an interface.
+    #
+    # If successful, you will then be able to claim the interface and perform I/O.
+    #
+    # @param [Interface, Fixnum] interface    the interface to detach the driver from
     def detach_kernel_driver(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_detach_kernel_driver(@pHandle, interface)
       LIBUSB.raise_error res, "in libusb_detach_kernel_driver" if res!=0
     end
+
+    # Re-attach an interface's kernel driver, which was previously detached
+    # using {DevHandle#detach_kernel_driver}.
+    #
+    # @param [Interface, Fixnum] interface    the interface to attach the driver to
+    def attach_kernel_driver(interface)
+      interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
+      res = Call.libusb_attach_kernel_driver(@pHandle, interface)
+      LIBUSB.raise_error res, "in libusb_attach_kernel_driver" if res!=0
+    end
+
 
     def bulk_transfer(args={})
       timeout = args.delete(:timeout) || 1000
