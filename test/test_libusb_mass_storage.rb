@@ -25,28 +25,11 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     @usb.debug = 3
     @asynchron = false
 
-    usb.devices.each do |dev|
-      dev.settings.each do |if_desc|
-        if if_desc.bInterfaceClass == CLASS_MASS_STORAGE &&
-              ( #if_desc.bInterfaceSubClass == 0x01 ||
-                if_desc.bInterfaceSubClass == 0x06 ) &&
-              if_desc.bInterfaceProtocol == 0x50
-
-          @device = dev
-          @if_desc = if_desc
-        end
-      end
-    end
-
+    @device = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 ).last
     abort "no mass storage device found" unless @device
 
-#     devs = usb.find_with_interfaces( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x01, :bProtocol=>0x50 )
-    devs = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 )
-    assert_equal @device, devs.last, "devices and devices with filter should deliver the same device"
-
-    @endpoint_in = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }.bEndpointAddress
-    @endpoint_out = @if_desc.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN == 0 }.bEndpointAddress
-
+    @endpoint_in = @device.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }
+    @endpoint_out = @device.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN == 0 }
     @dev = @device.open
 
     if RUBY_PLATFORM=~/linux/i && dev.kernel_driver_active?(0)
@@ -220,10 +203,9 @@ class TestLibusbMassStorage < Test::Unit::TestCase
       invalid_command
     end
     th.kill
-    assert_operator 20, :<=, count, "libusb_handle_events should not block a parallel Thread"
-
     dev.clear_halt(endpoint_in)
     dev.clear_halt(endpoint_out)
+    assert_operator 20, :<=, count, "libusb_handle_events should not block a parallel Thread"
   end
 #   def test_read_failed_async
 #     @asynchron = true
@@ -251,5 +233,15 @@ class TestLibusbMassStorage < Test::Unit::TestCase
       data = read_block(bl, 1)
       assert_equal 512, data.length, "Read block should be 512 bytes"
     end
+  end
+
+  def test_attach_kernel_driver
+    dev.release_interface(0)
+    if RUBY_PLATFORM=~/linux/i
+      dev.attach_kernel_driver(0)
+      assert dev.kernel_driver_active?(0), "kernel driver should be active again"
+    end
+    dev.close
+    @dev = nil
   end
 end

@@ -56,4 +56,47 @@ class TestLibusb < Test::Unit::TestCase
     assert_equal 7, CLASS_PRINTER, "Printer class id should be defined"
     assert_equal 48, ISO_USAGE_TYPE_MASK, "iso usage type should be defined"
   end
+
+  def test_device_filter_mass_storages
+    devs1 = []
+    usb.devices.each do |dev|
+      dev.settings.each do |if_desc|
+        if if_desc.bInterfaceClass == CLASS_MASS_STORAGE &&
+              ( if_desc.bInterfaceSubClass == 0x01 ||
+                if_desc.bInterfaceSubClass == 0x06 ) &&
+              if_desc.bInterfaceProtocol == 0x50
+
+          devs1 << dev
+        end
+      end
+    end
+
+    devs2 =  usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x01, :bProtocol=>0x50 )
+    devs2 += usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 )
+    assert_equal devs1.sort, devs2.sort, "devices and devices with filter should deliver the same device"
+  end
+
+  def test_device_filter_hubs
+    devs1 = []
+    usb.devices.each do |dev|
+      dev.settings.each do |if_desc|
+        if if_desc.bInterfaceClass == CLASS_HUB
+          devs1 << dev
+        end
+      end
+    end
+
+    devs2 = usb.devices( :bClass=>CLASS_HUB )
+    assert_equal devs1.sort, devs2.sort, "devices and devices with filter should deliver the same device"
+  end
+
+  def test_device_methods
+    usb.devices.each do |dev|
+      ep = dev.endpoints.first
+      assert_operator dev.max_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable packet size"
+      assert_operator dev.max_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable packet size"
+      assert_operator dev.max_iso_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+      assert_operator dev.max_iso_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+    end
+  end
 end
