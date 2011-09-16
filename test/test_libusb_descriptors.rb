@@ -1,7 +1,7 @@
 require "test/unit"
 require "libusb"
 
-class TestLibusb < Test::Unit::TestCase
+class TestLibusbDescriptors < Test::Unit::TestCase
   include LIBUSB
 
   attr_accessor :usb

@@ -331,6 +331,7 @@ module LIBUSB
       args.each{|k,v| send("#{k}=", v) }
       @buffer = nil
     end
+    private :initialize
 
     def dev_handle=(dev)
       @dev_handle = dev
@@ -475,13 +476,63 @@ module LIBUSB
     end
   end
 
+  class IsoPacket
+    def initialize(ptr, pkg_nr)
+      @packet = Call::IsoPacketDescriptor.new ptr
+      @pkg_nr = pkg_nr
+    end
+
+    def status
+      @packet[:status]
+    end
+
+    def length
+      @packet[:length]
+    end
+    def length=(len)
+      @packet[:length] = len
+    end
+
+    def actual_length
+      @packet[:actual_length]
+    end
+  end
+
   class IsochronousTransfer < Transfer
     def initialize(num_packets, args={})
-      @transfer = Call::Transfer.new Call.libusb_alloc_transfer(num_packets)
+      @ptr = Call.libusb_alloc_transfer(num_packets)
+      @transfer = Call::Transfer.new @ptr
       @transfer[:type] = TRANSFER_TYPE_ISOCHRONOUS
       @transfer[:timeout] = 1000
-      super
+      @transfer[:num_iso_packets] = num_packets
+      super(args)
     end
+
+    def num_packets
+      @transfer[:num_iso_packets]
+    end
+    def num_packets=(number)
+      @transfer[:num_iso_packets] = number
+    end
+
+    def [](nr)
+      IsoPacket.new( @ptr + Call::Transfer.size + nr*Call::IsoPacketDescriptor.size, nr)
+    end
+
+    # Convenience function to set the length of all packets in an
+    # isochronous transfer, based on {IsochronousTransfer#num_packets}.
+    def packet_lengths=(len)
+      ptr = @ptr + Call::Transfer.size
+      num_packets.times do
+        ptr.write_uint(len)
+        ptr += Call::IsoPacketDescriptor.size
+      end
+    end
+
+    # The actual_length field of the transfer is meaningless and should not
+    # be examined; instead you must refer to the actual_length field of
+    # each individual packet.
+    private :actual_length, :actual_buffer
   end
 
   class DeviceDescriptor < FFI::Struct
