@@ -10,7 +10,7 @@
 LIBUSB is a Ruby binding that gives a Ruby programmer access to all functionality of libusb, version 1.0.
 
 * libusb is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
-* This Ruby binding supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] . LIBUSB is API compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See ::USB for description of the ruby-usb compatibility layer.
+* This Ruby binding supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] . LIBUSB is API compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See {::USB} for description of the ruby-usb compatibility layer.
 
 
 LIBUSB is covered by the GNU Public License version 2.
@@ -25,13 +25,14 @@ LIBUSB is covered by the GNU Public License version 2.
   require "libusb"
 
   usb = LIBUSB::Context.new
-  device = usb.find(:idVendor => 0x04b4, :idProduct => 0x8613).first
-  device.claim_interface(0)
-  device.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
-  device.release_interface(0)
-
-LIBUSB::Context#find is used to get all or only particular devices. A LIBUSB::Device can be used to communicate with the USB device
-by LIBUSB::Device#control_transfer, LIBUSB::Device#bulk_transfer or LIBUSB::Device#interrupt_transfer.
+  device = usb.devices(:idVendor => 0x04b4, :idProduct => 0x8613).first
+  device.open do |handle|
+    handle.claim_interface(0)
+    handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
+    handle.release_interface(0)
+  end
+{LIBUSB::Context#devices} is used to get all or only particular devices. A {LIBUSB::Device}
+can be used to communicate with the USB device by {LIBUSB::DevHandle#control_transfer}, {LIBUSB::DevHandle#bulk_transfer} or {LIBUSB::DevHandle#interrupt_transfer}.
 
 == REQUIREMENTS:
 
