@@ -1098,6 +1098,14 @@ module LIBUSB
       @bulk_transfer = @control_transfer = @interrupt_transfer = nil
     end
 
+    # Close a device handle.
+    #
+    # Should be called on all open handles before your application exits.
+    #
+    # Internally, this function destroys the reference that was added by {Device#open}
+    # on the given device.
+    #
+    # This is a non-blocking function; no requests are sent over the bus.
     def close
       Call.libusb_close(@pHandle)
     end
@@ -1109,29 +1117,99 @@ module LIBUSB
       pString.read_string(res)
     end
 
+    # Claim an interface on a given device handle.
+    #
+    # You must claim the interface you wish to use before you can perform I/O on any
+    # of its endpoints.
+    #
+    # It is legal to attempt to claim an already-claimed interface, in which case
+    # libusb just returns without doing anything.
+    #
+    # Claiming of interfaces is a purely logical operation; it does not cause any
+    # requests to be sent over the bus. Interface claiming is used to instruct the
+    # underlying operating system that your application wishes to take ownership of
+    # the interface.
+    #
+    # This is a non-blocking function.
+    #
+    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
     def claim_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_claim_interface(@pHandle, interface)
       LIBUSB.raise_error res, "in libusb_claim_interface" if res!=0
     end
 
+    # Release an interface previously claimed with {DevHandle#claim_interface}.
+    #
+    # You should release all claimed interfaces before closing a device handle.
+    #
+    # This is a blocking function. A SET_INTERFACE control request will be sent to the
+    # device, resetting interface state to the first alternate setting.
+    #
+    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you
+    #   claimed previously
     def release_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_release_interface(@pHandle, interface)
       LIBUSB.raise_error res, "in libusb_release_interface" if res!=0
     end
 
+    # Set the active configuration for a device.
+    #
+    # The operating system may or may not have already set an active configuration on
+    # the device. It is up to your application to ensure the correct configuration is
+    # selected before you attempt to claim interfaces and perform other operations.
+    #
+    # If you call this function on a device already configured with the selected
+    # configuration, then this function will act as a lightweight device reset: it
+    # will issue a SET_CONFIGURATION request using the current configuration, causing
+    # most USB-related device state to be reset (altsetting reset to zero, endpoint
+    # halts cleared, toggles reset).
+    #
+    # You cannot change/reset configuration if your application has claimed interfaces -
+    # you should free them with {DevHandle#release_interface} first. You cannot
+    # change/reset configuration if other applications or drivers have claimed
+    # interfaces.
+    #
+    # A configuration value of +nil+ will put the device in unconfigured state. The USB
+    # specifications state that a configuration value of 0 does this, however buggy
+    # devices exist which actually have a configuration 0.
+    #
+    # You should always use this function rather than formulating your own
+    # SET_CONFIGURATION control request. This is because the underlying operating
+    # system needs to know when such changes happen.
+    #
+    # This is a blocking function.
+    #
+    # @param [Configuration, Fixnum] configuration   the configuration or it's
+    #   bConfigurationValue you wish to activate, or +nil+ if you wish to put
+    #   the device in unconfigured state
     def set_configuration(configuration)
       configuration = configuration.bConfigurationValue if configuration.respond_to? :bConfigurationValue
-      res = Call.libusb_set_configuration(@pHandle, configuration)
+      res = Call.libusb_set_configuration(@pHandle, configuration || -1)
       LIBUSB.raise_error res, "in libusb_set_configuration" if res!=0
     end
     alias configuration= set_configuration
 
-    def set_interface_alt_setting(interface_number_or_setting, alternate_setting=nil)
-      alternate_setting ||= interface_number_or_setting.bAlternateSetting if interface_number_or_setting.respond_to? :bAlternateSetting
-      interface_number_or_setting = interface_number_or_setting.bInterfaceNumber if interface_number_or_setting.respond_to? :bInterfaceNumber
-      res = Call.libusb_set_interface_alt_setting(@pHandle, interface_number_or_setting, alternate_setting)
+    # Activate an alternate setting for an interface.
+    #
+    # The interface must have been previously claimed with {DevHandle#claim_interface}.
+    #
+    # You should always use this function rather than formulating your own
+    # SET_INTERFACE control request. This is because the underlying operating system
+    # needs to know when such changes happen.
+    #
+    # This is a blocking function.
+    #
+    # @param [Setting, Fixnum] setting_or_interface_number  the alternate setting
+    #   to activate or the bInterfaceNumber of the previously-claimed interface
+    # @param [Fixnum, nil] alternate_setting  the bAlternateSetting of the alternate setting to activate
+    #   (only if first param is a Fixnum)
+    def set_interface_alt_setting(setting_or_interface_number,
+alternate_setting=nil)
+      alternate_setting ||= setting_or_interface_number.bAlternateSetting if setting_or_interface_number.respond_to? :bAlternateSetting
+      setting_or_interface_number = setting_or_interface_number.bInterfaceNumber if setting_or_interface_number.respond_to? :bInterfaceNumber
+      res = Call.libusb_set_interface_alt_setting(@pHandle, setting_or_interface_number, alternate_setting)
       LIBUSB.raise_error res, "in libusb_set_interface_alt_setting" if res!=0
     end
 
@@ -1145,7 +1223,7 @@ module LIBUSB
     #
     # This is a blocking function.
     #
-    # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
+    # @param [Endpoint, Fixnum] endpoint  the endpoint in question or it's bEndpointAddress
     def clear_halt(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_clear_halt(@pHandle, endpoint)
@@ -1174,7 +1252,7 @@ module LIBUSB
     # If a kernel driver is active, you cannot claim the interface,
     # and libusb will be unable to perform I/O.
     #
-    # @param [Interface, Fixnum] interface   the interface to check
+    # @param [Interface, Fixnum] interface   the interface to check or it's bInterfaceNumber
     # @return [Boolean]
     def kernel_driver_active?(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
@@ -1187,7 +1265,8 @@ module LIBUSB
     #
     # If successful, you will then be able to claim the interface and perform I/O.
     #
-    # @param [Interface, Fixnum] interface    the interface to detach the driver from
+    # @param [Interface, Fixnum] interface    the interface to detach the driver
+    #   from or it's bInterfaceNumber
     def detach_kernel_driver(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_detach_kernel_driver(@pHandle, interface)
