@@ -326,6 +326,9 @@ module LIBUSB
   # :startdoc:
 
 
+  # Abstract base class for USB transfers. Use
+  # {ControlTransfer}, {BulkTransfer}, {InterruptTransfer}, {IsochronousTransfer}
+  # to do transfers.
   class Transfer
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
@@ -333,21 +336,26 @@ module LIBUSB
     end
     private :initialize
 
+    # Set the handle for the device to communicate with.
     def dev_handle=(dev)
       @dev_handle = dev
       @transfer[:dev_handle] = @dev_handle.pHandle
     end
 
-    # Timeout in ms
+    # Timeout for this transfer in millseconds.
+    #
+    # A value of 0 indicates no timeout.
     def timeout=(value)
       @transfer[:timeout] = value
     end
 
+    # Set the address of a valid endpoint to communicate with.
     def endpoint=(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       @transfer[:endpoint] = endpoint
     end
 
+    # Set output data that should be sent.
     def buffer=(data)
       if !@buffer || data.bytesize>@buffer.size
         free_buffer
@@ -358,10 +366,12 @@ module LIBUSB
       @transfer[:length] = data.bytesize
     end
 
+    # Retrieve the current data buffer.
     def buffer
       @transfer[:buffer].read_string(@transfer[:length])
     end
 
+    # Clear the current data buffer.
     def free_buffer
       if @buffer
         @buffer.free
@@ -371,6 +381,10 @@ module LIBUSB
       end
     end
 
+    # Allocate +len+ bytes of data buffer for input transfer.
+    #
+    # @param [Fixnum]  len  Number of bytes to allocate
+    # @param [String, nil] data  some data to initialize the buffer with
     def alloc_buffer(len, data=nil)
       if !@buffer || len>@buffer.size
         free_buffer
@@ -381,14 +395,22 @@ module LIBUSB
       @transfer[:length] = len
     end
 
+    # The number of bytes actually transferred.
     def actual_length
       @transfer[:actual_length]
     end
 
+    # Retrieve the data actually transferred.
+    #
+    # @param [Fixnum] offset  optional offset of the retrieved data in the buffer.
     def actual_buffer(offset=0)
       @transfer[:buffer].get_bytes(offset, @transfer[:actual_length])
     end
 
+    # Set the block that will be invoked when the transfer completes,
+    # fails, or is cancelled.
+    #
+    # @param [Proc] proc  The block that should be called
     def callback=(proc)
       # Save proc to instance variable so that GC doesn't free
       # the proc object before the transfer.
@@ -398,10 +420,22 @@ module LIBUSB
       @transfer[:callback] = @callback_proc
     end
 
+    # The status of the transfer.
+    #
+    # Only for use within transfer callback function or after the callback was called.
+    #
+    # If this is an isochronous transfer, this field may read :TRANSFER_COMPLETED even if there
+    # were errors in the frames. Use the status field in each packet to determine if
+    # errors occurred.
     def status
       @transfer[:status]
     end
 
+    # Submit a transfer.
+    #
+    # This function will fire off the USB transfer and then return immediately.
+    # This method can be called with block. It is called when the transfer completes,
+    # fails, or is cancelled.
     def submit!(&block)
       self.callback = block if block_given?
 
@@ -411,6 +445,11 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_submit_transfer" if res!=0
     end
 
+    # Asynchronously cancel a previously submitted transfer.
+    #
+    # This function returns immediately, but this does not indicate cancellation is
+    # complete. Your callback function will be invoked at some later time with a
+    # transfer status of :TRANSFER_CANCELLED.
     def cancel!
       res = Call.libusb_cancel_transfer( @transfer )
       LIBUSB.raise_error res, "in libusb_cancel_transfer" if res!=0
@@ -425,6 +464,9 @@ module LIBUSB
       :TRANSFER_OVERFLOW => LIBUSB::ERROR_OVERFLOW,
     }
 
+    # Submit the transfer and wait until the transfer completes or fails.
+    #
+    # A proper {LIBUSB::Error} is raised, in case the transfer did not complete.
     def submit_and_wait!
       completed = false
       submit! do |tr2|
