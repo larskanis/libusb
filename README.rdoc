@@ -13,7 +13,7 @@ LIBUSB is a Ruby binding that gives a Ruby programmer access to all functionalit
 * This Ruby binding supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] . LIBUSB is API compatible to ruby-usb[http://www.a-k-r.org/ruby-usb/]. See {::USB} for description of the ruby-usb compatibility layer.
 
 
-LIBUSB is covered by the GNU Public License version 2.
+LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
 
 == FEATURES:
 * Access to descriptors of devices, configurations, interfaces, settings and endpoints
