@@ -63,8 +63,10 @@ maximum packet size.
 
   gem install libusb
 
-In order to use LIBUSB, you need the libusb-1.0 library (no need for its header files).
-On Debian and Ubuntu system, install the libusb-1.0-0 package.
+In order to use LIBUSB, you need the libusb-1.0 library (but not its header files).
+* On Debian and Ubuntu system, install the +libusb-1.0-0+ package.
+* The gem for Windows comes with a precompiled +libusb.dll+ and can be used
+  together with a precompiled FFI-gem, so there is no need for a compiler.
 
 Latest code can be used in this way:
 
@@ -80,8 +82,6 @@ Zadig[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page]. S
 and press "Install Driver". That's it. You may take the generated output directory
 with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
 systems.
-
-LIBUSB-gem for Windows comes with a precompiled _libusb.dll_ and can be used together with a precompiled FFI-gem, so there should be no need for a compiler.
 
 
 == Cross compiling for mswin32
