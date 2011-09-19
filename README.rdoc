@@ -31,8 +31,27 @@ LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
     handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
     handle.release_interface(0)
   end
-{LIBUSB::Context#devices} is used to get all or only particular devices. A {LIBUSB::Device}
-can be used to communicate with the USB device by {LIBUSB::DevHandle#control_transfer}, {LIBUSB::DevHandle#bulk_transfer} or {LIBUSB::DevHandle#interrupt_transfer}.
+{LIBUSB::Context#devices} is used to get all or only particular devices.
+After opening the {LIBUSB::Device} the resulting {LIBUSB::DevHandle} can be
+used to communicate with the connected USB device
+by {LIBUSB::DevHandle#control_transfer}, {LIBUSB::DevHandle#bulk_transfer},
+{LIBUSB::DevHandle#interrupt_transfer} or by using the {LIBUSB::Transfer} classes.
+
+A {LIBUSB::Device} can also be used to retrieve information about it,
+by using the device descriptor attributes.
+A {LIBUSB::Device} could have several configurations. You can then decide of which
+configuration to enable. You can only enable one configuration at a time.
+
+Each {LIBUSB::Configuration} has one or more interfaces. This can be seen as functional group
+performing a single feature of the device.
+
+Each {LIBUSB::Interface} has at least one {LIBUSB::Setting}. The first setting is always default.
+An alternate setting can be used independent on each interface.
+
+Each {LIBUSB::Setting} specifies it's own set of communication endpoints.
+Each {LIBUSB::Endpoint} specifies the type of transfer, direction, polling interval and
+maximum packet size.
+
 
 == REQUIREMENTS:
 
