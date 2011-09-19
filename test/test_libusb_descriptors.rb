@@ -108,10 +108,12 @@ class TestLibusbDescriptors < Test::Unit::TestCase
   def test_device_methods
     usb.devices.each do |dev|
       ep = dev.endpoints.first
-      assert_operator dev.max_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable packet size"
-      assert_operator dev.max_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable packet size"
-      assert_operator dev.max_iso_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable iso packet size"
-      assert_operator dev.max_iso_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+      if ep
+        assert_operator dev.max_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable packet size"
+        assert_operator dev.max_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable packet size"
+        assert_operator dev.max_iso_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+        assert_operator dev.max_iso_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+      end
     end
   end
 end
