@@ -909,7 +909,7 @@ module LIBUSB
     # Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
     #
     # @param [Hash] filter_hash  A number of criteria can be defined in key-value pairs.
-    #   Only devices that equal the given criterion will be returned. If a criterion is
+    #   Only devices that equal all given criterions will be returned. If a criterion is
     #   not specified or its value is +nil+, any device will match that criterion.
     #   The following criteria can be filtered:
     #   * <tt>:idVendor</tt>, <tt>:idProduct</tt> (+FixNum+) for matching vendor/product ID,
@@ -917,24 +917,29 @@ module LIBUSB
     #     Devices using CLASS_PER_INTERFACE will match, if any of the interfaces match.
     #   * <tt>:bcdUSB</tt>, <tt>:bcdDevice</tt>, <tt>:bMaxPacketSize0</tt> (+FixNum+) for the
     #     USB and device release numbers.
+    #   Criteria can also specified as Array of several alternative values.
+    #
+    # @example
+    #   # Return all devices of vendor 0x0ab1 where idProduct is 3 or 4:
+    #   context.device :idVendor=>0x0ab1, :idProduct=>[0x0003, 0x0004]
     #
     # @return [Array<LIBUSB::Device>]
     def devices(filter_hash={})
       device_list.select do |dev|
         ( !filter_hash[:bClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
-                             dev.settings.any?{|id| id.bInterfaceClass == filter_hash[:bClass] } :
-                             dev.bDeviceClass==filter_hash[:bClass] )) &&
+                             dev.settings.map(&:bInterfaceClass).&([filter_hash[:bClass]].flatten).any? :
+                             [filter_hash[:bClass]].flatten.include?(dev.bDeviceClass))) &&
         ( !filter_hash[:bSubClass] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
-                             dev.settings.any?{|id| id.bInterfaceSubClass == filter_hash[:bSubClass] } :
-                             dev.bDeviceSubClass==filter_hash[:bSubClass] )) &&
+                             dev.settings.map(&:bInterfaceSubClass).&([filter_hash[:bSubClass]].flatten).any? :
+                             [filter_hash[:bSubClass]].flatten.include?(dev.bDeviceSubClass))) &&
         ( !filter_hash[:bProtocol] || (dev.bDeviceClass==CLASS_PER_INTERFACE ?
-                             dev.settings.any?{|id| id.bInterfaceProtocol == filter_hash[:bProtocol] } :
-                             dev.bDeviceProtocol==filter_hash[:bProtocol] )) &&
-        ( !filter_hash[:bMaxPacketSize0] || dev.bMaxPacketSize0 == filter_hash[:bMaxPacketSize0] ) &&
-        ( !filter_hash[:idVendor] || dev.idVendor == filter_hash[:idVendor] ) &&
-        ( !filter_hash[:idProduct] || dev.idProduct == filter_hash[:idProduct] ) &&
-        ( !filter_hash[:bcdUSB] || dev.bcdUSB == filter_hash[:bcdUSB] ) &&
-        ( !filter_hash[:bcdDevice] || dev.bcdDevice == filter_hash[:bcdDevice] )
+                             dev.settings.map(&:bInterfaceProtocol).&([filter_hash[:bProtocol]].flatten).any? :
+                             [filter_hash[:bProtocol]].flatten.include?(dev.bDeviceProtocol))) &&
+        ( !filter_hash[:bMaxPacketSize0] || [filter_hash[:bMaxPacketSize0]].flatten.include?(dev.bMaxPacketSize0) ) &&
+        ( !filter_hash[:idVendor] || [filter_hash[:idVendor]].flatten.include?(dev.idVendor) ) &&
+        ( !filter_hash[:idProduct] || [filter_hash[:idProduct]].flatten.include?(dev.idProduct) ) &&
+        ( !filter_hash[:bcdUSB] || [filter_hash[:bcdUSB]].flatten.include?(dev.bcdUSB) ) &&
+        ( !filter_hash[:bcdDevice] || [filter_hash[:bcdDevice]].flatten.include?(dev.bcdDevice) )
       end
     end
   end

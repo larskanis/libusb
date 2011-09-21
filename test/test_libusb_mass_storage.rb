@@ -40,7 +40,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     @usb.debug = 3
     @asynchron = false
 
-    @device = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 ).last
+    @device = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>[0x06,0x01], :bProtocol=>0x50 ).last
     abort "no mass storage device found" unless @device
 
     @endpoint_in = @device.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }

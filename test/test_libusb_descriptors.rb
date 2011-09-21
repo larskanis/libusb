@@ -89,6 +89,9 @@ class TestLibusbDescriptors < Test::Unit::TestCase
     devs2 =  usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x01, :bProtocol=>0x50 )
     devs2 += usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 )
     assert_equal devs1.sort, devs2.sort, "devices and devices with filter should deliver the same device"
+
+    devs3 =  usb.devices( :bClass=>[CLASS_MASS_STORAGE], :bSubClass=>[0x01,0x06], :bProtocol=>[0x50] )
+    assert_equal devs1.sort, devs3.sort, "devices and devices with array-filter should deliver the same device"
   end
 
   def test_device_filter_hubs
