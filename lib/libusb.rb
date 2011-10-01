@@ -1346,6 +1346,31 @@ alternate_setting=nil)
     end
 
 
+    # Perform a USB bulk transfer.
+    #
+    # The direction of the transfer is inferred from the direction bits of the
+    # endpoint address.
+    #
+    # For bulk reads, the :dataIn param indicates the maximum length of data you are
+    # expecting to receive. If less data arrives than expected, this function will
+    # return that data.
+    #
+    # You should also check the returned number of bytes for bulk writes. Not all of the
+    # data may have been written.
+    #
+    # Also check transferred bytes when dealing with a timeout error code. libusb may have
+    # to split your transfer into a number of chunks to satisfy underlying O/S
+    # requirements, meaning that the timeout may expire after the first few chunks
+    # have completed. libusb is careful not to lose any data that may have been
+    # transferred; do not assume that timeout conditions indicate a complete lack of
+    # I/O.
+    #
+    # @param [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
+    # @param [String] :dataOut  the data to send with an outgoing transfer
+    # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    #
+    # @return [Fixnum] Number of bytes sent for an outgoing transfer
+    # @return [String] Received data for an ingoing transfer
     def bulk_transfer(args={})
       timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
@@ -1373,6 +1398,33 @@ alternate_setting=nil)
       end
     end
 
+    # Perform a USB interrupt transfer.
+    #
+    # The direction of the transfer is inferred from the direction bits of the
+    # endpoint address.
+    #
+    # For interrupt reads, the :dataIn param indicates the maximum length of data you
+    # are expecting to receive. If less data arrives than expected, this function will
+    # return that data.
+    #
+    # You should also check the returned number of bytes for interrupt writes. Not all of
+    # the data may have been written.
+    #
+    # Also check transferred when dealing with a timeout error code. libusb may have
+    # to split your transfer into a number of chunks to satisfy underlying O/S
+    # requirements, meaning that the timeout may expire after the first few chunks
+    # have completed. libusb is careful not to lose any data that may have been
+    # transferred; do not assume that timeout conditions indicate a complete lack of
+    # I/O.
+    #
+    # The default endpoint bInterval value is used as the polling interval.
+    #
+    # @param [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
+    # @param [String] :dataOut  the data to send with an outgoing transfer
+    # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    #
+    # @return [Fixnum] Number of bytes sent for an outgoing transfer
+    # @return [String] Received data for an ingoing transfer
     def interrupt_transfer(args={})
       timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
@@ -1400,6 +1452,24 @@ alternate_setting=nil)
       end
     end
 
+    # Perform a USB control transfer.
+    #
+    # The direction of the transfer is inferred from the bmRequestType field of the
+    # setup packet.
+    #
+    # @param [Fixnum] :bmRequestType   the request type field for the setup packet
+    # @param [Fixnum] :bRequest  the request field for the setup packet
+    # @param [Fixnum] :wValue  the value field for the setup packet
+    # @param [Fixnum] :wIndex  the index field for the setup packet
+    # @param [String] :dataOut  the data to send with an outgoing transfer, it
+    #   is appended to the setup packet
+    # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    #   (excluding setup packet)
+    # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
+    #   up due to no response being received. For an unlimited timeout, use value 0.
+    #
+    # @return [Fixnum] Number of bytes sent (excluding setup packet) for outgoing transfer
+    # @return [String] Received data (without setup packet) for ingoing transfer
     def control_transfer(args={})
       bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
       bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")

@@ -34,7 +34,7 @@ require 'forwardable'
 #   p USB.devices => [#<USB::Device ...>]
 #
 # Known issues:
-# * Exceptions are different between ruby-usb and libusb and don't get converted
+# * Exceptions are different between ruby-usb and libusb and they don't get converted
 # * libusb-1.0 doesn't explicitly manage USB-buses, so only one Bus is used currently
 module USB
   DefaultContext = LIBUSB::Context.new
