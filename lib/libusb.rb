@@ -641,6 +641,7 @@ module LIBUSB
       Call.libusb_free_config_descriptor(ptr)
     end
 
+    # @return [Device] the device this configuration belongs to.
     attr_reader :device
 
     def interfaces
@@ -691,6 +692,7 @@ module LIBUSB
       super(*args)
     end
 
+    # @return [Configuration] the configuration this interface belongs to.
     attr_reader :configuration
 
     def alt_settings
@@ -739,6 +741,7 @@ module LIBUSB
       super(*args)
     end
 
+    # @return [Interface] the interface this setting belongs to.
     attr_reader :interface
 
     def endpoints
@@ -803,6 +806,7 @@ module LIBUSB
       super(*args)
     end
 
+    # @return [Setting] the setting this endpoint belongs to.
     attr_reader :setting
 
     def inspect
@@ -950,6 +954,7 @@ module LIBUSB
   class Device
     include Comparable
 
+    # @return [Context] the context this device belongs to.
     attr_reader :context
 
     def initialize context, pDev
@@ -1151,7 +1156,9 @@ module LIBUSB
   # A device handle is used to perform I/O and other operations. When finished
   # with a device handle, you should call DevHandle#close .
   class DevHandle
+    # @private
     attr_reader :pHandle
+    # @return [Device] the device this handle belongs to.
     attr_reader :device
 
     def initialize device, pHandle
