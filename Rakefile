@@ -42,11 +42,13 @@ hoe = Hoe.spec 'libusb' do
   extra_deps << ['ffi', '>= 1.0']
   extra_dev_deps << ['rake-compiler', '>= 0.6']
 
+  self.url = 'http://github.com/larskanis/libusb'
+  self.summary = 'Access USB devices from Ruby via libusb-1.0'
+  self.description = 'LIBUSB is a Ruby binding that gives Ruby programmers access to all functionality of libusb, version 1.0'
+
   self.readme_file = 'README.rdoc'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
   self.extra_rdoc_files << self.readme_file
-  self.rubyforge_name = 'libusb'
-  rdoc_locations << 'larskanis@rubyforge.org:/var/www/gforge-projects/libusb/libusb'
 
   # clean intermediate files and folders
   self.clean_globs << STATIC_BUILDDIR.to_s
