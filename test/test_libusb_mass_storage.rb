@@ -259,4 +259,13 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     dev.close
     @dev = nil
   end
+
+  def test_wrong_argument
+    assert_raise(ArgumentError){ dev.bulk_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
+    assert_raise(ArgumentError){ dev.interrupt_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
+    assert_raise(ArgumentError){ dev.control_transfer(
+      :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+      :bRequest=>BOMS_RESET,
+      :wValue=>0, :wIndex=>0, :dataIn=>123) }
+  end
 end

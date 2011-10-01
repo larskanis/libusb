@@ -1374,8 +1374,12 @@ alternate_setting=nil)
     def bulk_transfer(args={})
       timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
-      dataOut = args.delete(:dataOut)
-      dataIn = args.delete(:dataIn)
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      if endpoint&ENDPOINT_IN != 0
+        dataIn = args.delete(:dataIn) || raise(ArgumentError, "no :dataIn given for bulk read")
+      else
+        dataOut = args.delete(:dataOut) || raise(ArgumentError, "no :dataOut given for bulk write")
+      end
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
@@ -1385,7 +1389,7 @@ alternate_setting=nil)
       tr.timeout = timeout
       if dataOut
         tr.buffer = dataOut
-      elsif dataIn
+      else
         tr.alloc_buffer(dataIn)
       end
 
@@ -1428,8 +1432,12 @@ alternate_setting=nil)
     def interrupt_transfer(args={})
       timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
-      dataOut = args.delete(:dataOut)
-      dataIn = args.delete(:dataIn)
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      if endpoint&ENDPOINT_IN != 0
+        dataIn = args.delete(:dataIn) || raise(ArgumentError, "no :dataIn given for interrupt read")
+      else
+        dataOut = args.delete(:dataOut) || raise(ArgumentError, "no :dataOut given for interrupt write")
+      end
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
@@ -1439,7 +1447,7 @@ alternate_setting=nil)
       tr.timeout = timeout
       if dataOut
         tr.buffer = dataOut
-      elsif dataIn
+      else
         tr.alloc_buffer(dataIn)
       end
 
@@ -1476,8 +1484,12 @@ alternate_setting=nil)
       wValue = args.delete(:wValue) || raise(ArgumentError, "param :wValue not given")
       wIndex = args.delete(:wIndex) || raise(ArgumentError, "param :wIndex not given")
       timeout = args.delete(:timeout) || 1000
-      dataOut = args.delete(:dataOut) || ''
-      dataIn = args.delete(:dataIn)
+      if bmRequestType&ENDPOINT_IN != 0
+        dataIn = args.delete(:dataIn) || 0
+        dataOut = ''
+      else
+        dataOut = args.delete(:dataOut) || ''
+      end
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer

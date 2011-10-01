@@ -78,5 +78,4 @@ class TestLibusbCompat < Test::Unit::TestCase
                 BOMS_GET_MAX_LUN, 0, 0, bytes, 100)
     assert [0].pack("C")==bytes || [1].pack("C")==bytes, "BOMS_GET_MAX_LUN response is usually 0 or 1"
   end
-
 end
