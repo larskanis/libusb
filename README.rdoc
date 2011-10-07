@@ -3,7 +3,7 @@
 = Access USB devices from Ruby via libusb-1.0.
 
 * http://github.com/larskanis/libusb
-* API documentation: http://libusb.rubyforge.org/libusb
+* API documentation: http://rubydoc.info/gems/libusb/frames
 
 == DESCRIPTION:
 
