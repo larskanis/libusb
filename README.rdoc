@@ -84,7 +84,7 @@ with it's INI-file and use it for driver installation on other 32 or 64 bit Wind
 systems.
 
 
-== Cross compiling for mswin32
+== Cross compiling for Windows
 
 Libusb-gem can be build on a linux or darwin host for the win32 platform,
 using the mingw cross compiler collection. Libusb is downloaded from source
@@ -102,7 +102,7 @@ Download and cross compile libusb for win32:
 
   rake cross gem
 
-If everything works, there should be libusb-VERSION-x86-mswin32.gem in the pkg
+If everything works, there should be libusb-VERSION-x86-mingw32.gem in the pkg
 directory.
 
 == Todo
