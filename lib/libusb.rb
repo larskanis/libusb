@@ -959,10 +959,8 @@ module LIBUSB
 
     def initialize context, pDev
       @context = context
-      class << pDev
-        def unref_device(id)
-          Call.libusb_unref_device(self)
-        end
+      def pDev.unref_device(id)
+        Call.libusb_unref_device(self)
       end
       ObjectSpace.define_finalizer(self, pDev.method(:unref_device))
       Call.libusb_ref_device(pDev)
