@@ -186,7 +186,7 @@ module LIBUSB
     attach_function 'libusb_cancel_transfer', [:pointer], :int
     attach_function 'libusb_free_transfer', [:pointer], :void
 
-    attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
+    attach_function 'libusb_handle_events', [:libusb_context], :int
 
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
