@@ -93,9 +93,8 @@ file LIBUSB_MAKEFILE => LIBUSB_CONFIGURE do |t|
     options = [
       '--target=i386-mingw32',
       "--host=#{Rake::ExtensionCompiler.mingw_host}",
+      "--build=#{RbConfig::CONFIG["host"]}",
     ]
-    build_host = `sh config.guess`.chomp
-    options << "--build=#{build_host}" unless build_host.to_s.empty?
 
     configure_path = STATIC_LIBUSB_BUILDDIR + 'configure'
     cmd = [ configure_path.to_s, *options ]
