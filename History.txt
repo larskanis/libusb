@@ -1,4 +1,8 @@
-=== 0.1.0 / 2011-04-xx
+=== 0.1.1 / 2011-12-09
+
+* avoid ffi calls with :blocking=>true, als long as it isn't stable on win32
+
+=== 0.1.0 / 2011-10-01
 
 * add test suite based on mass storage devices
 * usable async transfers

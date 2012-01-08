@@ -25,7 +25,7 @@ STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from Pete Batard's git repo
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '52a0e18'
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
 LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
 LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION}.tar.bz2"
 
@@ -93,9 +93,8 @@ file LIBUSB_MAKEFILE => LIBUSB_CONFIGURE do |t|
     options = [
       '--target=i386-mingw32',
       "--host=#{Rake::ExtensionCompiler.mingw_host}",
+      "--build=#{RbConfig::CONFIG["host"]}",
     ]
-    build_host = `sh config.guess`.chomp
-    options << "--build=#{build_host}" unless build_host.to_s.empty?
 
     configure_path = STATIC_LIBUSB_BUILDDIR + 'configure'
     cmd = [ configure_path.to_s, *options ]
