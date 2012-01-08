@@ -1356,7 +1356,7 @@ alternate_setting=nil)
     # The direction of the transfer is inferred from the direction bits of the
     # endpoint address.
     #
-    # For bulk reads, the :dataIn param indicates the maximum length of data you are
+    # For bulk reads, the +:dataIn+ param indicates the maximum length of data you are
     # expecting to receive. If less data arrives than expected, this function will
     # return that data.
     #
@@ -1373,6 +1373,8 @@ alternate_setting=nil)
     # @param [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
     # @param [String] :dataOut  the data to send with an outgoing transfer
     # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
+    #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
     # @return [Fixnum] Number of bytes sent for an outgoing transfer
     # @return [String] Received data for an ingoing transfer
@@ -1412,7 +1414,7 @@ alternate_setting=nil)
     # The direction of the transfer is inferred from the direction bits of the
     # endpoint address.
     #
-    # For interrupt reads, the :dataIn param indicates the maximum length of data you
+    # For interrupt reads, the +:dataIn+ param indicates the maximum length of data you
     # are expecting to receive. If less data arrives than expected, this function will
     # return that data.
     #
@@ -1431,6 +1433,8 @@ alternate_setting=nil)
     # @param [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
     # @param [String] :dataOut  the data to send with an outgoing transfer
     # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
+    #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
     # @return [Fixnum] Number of bytes sent for an outgoing transfer
     # @return [String] Received data for an ingoing transfer
@@ -1467,7 +1471,7 @@ alternate_setting=nil)
 
     # Perform a USB control transfer.
     #
-    # The direction of the transfer is inferred from the bmRequestType field of the
+    # The direction of the transfer is inferred from the +:bmRequestType+ field of the
     # setup packet.
     #
     # @param [Fixnum] :bmRequestType   the request type field for the setup packet
@@ -1479,7 +1483,7 @@ alternate_setting=nil)
     # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
     #   (excluding setup packet)
     # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
-    #   up due to no response being received. For an unlimited timeout, use value 0.
+    #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
     # @return [Fixnum] Number of bytes sent (excluding setup packet) for outgoing transfer
     # @return [String] Received data (without setup packet) for ingoing transfer
