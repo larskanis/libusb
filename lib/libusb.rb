@@ -1199,11 +1199,20 @@ module LIBUSB
     #
     # This is a non-blocking function.
     #
+    # If called with a block, the device handle is passed through to the block
+    # and the interface is released when the block has finished.
+    #
     # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
     def claim_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_claim_interface(@pHandle, interface)
       LIBUSB.raise_error res, "in libusb_claim_interface" if res!=0
+      return self unless block_given?
+      begin
+        yield self
+      ensure
+        release_interface(interface)
+      end
     end
 
     # Release an interface previously claimed with {DevHandle#claim_interface}.
@@ -1272,8 +1281,7 @@ module LIBUSB
     #   to activate or the bInterfaceNumber of the previously-claimed interface
     # @param [Fixnum, nil] alternate_setting  the bAlternateSetting of the alternate setting to activate
     #   (only if first param is a Fixnum)
-    def set_interface_alt_setting(setting_or_interface_number,
-alternate_setting=nil)
+    def set_interface_alt_setting(setting_or_interface_number, alternate_setting=nil)
       alternate_setting ||= setting_or_interface_number.bAlternateSetting if setting_or_interface_number.respond_to? :bAlternateSetting
       setting_or_interface_number = setting_or_interface_number.bInterfaceNumber if setting_or_interface_number.respond_to? :bInterfaceNumber
       res = Call.libusb_set_interface_alt_setting(@pHandle, setting_or_interface_number, alternate_setting)
