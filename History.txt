@@ -1,3 +1,10 @@
+=== 0.1.2 / 2012-03-14
+
+* Mark all blocking functions as blocking in FFI, so that parallel threads are not blocked
+* Add method Device#open_interface
+* Add block variant to #claim_interface
+* update API documentation
+
 === 0.1.1 / 2011-12-09
 
 * avoid ffi calls with :blocking=>true, als long as it isn't stable on win32
