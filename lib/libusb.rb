@@ -165,15 +165,15 @@ module LIBUSB
     attach_function 'libusb_close', [:pointer], :void
     attach_function 'libusb_get_device', [:libusb_device_handle], :pointer
 
-    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int, :blocking=>true
     attach_function 'libusb_claim_interface', [:libusb_device_handle, :int], :int
-    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int, :blocking=>true
 
     attach_function 'libusb_open_device_with_vid_pid', [:pointer, :int, :int], :pointer
 
-    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int
-    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int
-    attach_function 'libusb_reset_device', [:libusb_device_handle], :int
+    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int, :blocking=>true
+    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int, :blocking=>true
+    attach_function 'libusb_reset_device', [:libusb_device_handle], :int, :blocking=>true
 
     attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
     attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int
@@ -186,7 +186,7 @@ module LIBUSB
     attach_function 'libusb_cancel_transfer', [:pointer], :int
     attach_function 'libusb_free_transfer', [:pointer], :void
 
-    attach_function 'libusb_handle_events', [:libusb_context], :int
+    attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
 
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
@@ -998,7 +998,7 @@ module LIBUSB
 
     # Open the device and claim an interface.
     #
-    # This is a convenience method to {Device::open} and {DevHandle#claim_interface}.
+    # This is a convenience method to {Device#open} and {DevHandle#claim_interface}.
     # Must be called with a block. When the block has finished, the interface
     # will be released and the device will be closed.
     #
