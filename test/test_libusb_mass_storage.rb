@@ -215,7 +215,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
       end
     end
     assert_raise(CSWError, LIBUSB::ERROR_TIMEOUT) do
-      invalid_command
+      bulk_transfer(:endpoint=>endpoint_in, :dataIn=>123)
     end
     th.kill
     dev.clear_halt(endpoint_in)
