@@ -13,3 +13,4 @@ test/test_libusb_descriptors.rb
 test/test_libusb_gc.rb
 test/test_libusb_iso_transfer.rb
 test/test_libusb_mass_storage.rb
+test/test_libusb_mass_storage2.rb
