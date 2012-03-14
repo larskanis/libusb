@@ -57,4 +57,13 @@ class TestLibusbMassStorage2 < Test::Unit::TestCase
     end
     assert_equal 12345, res, "Block versions should pass through the result"
   end
+
+  def test_open_interface
+    res = device.open_interface(0) do |dev|
+      assert_kind_of DevHandle, dev
+      assert_kind_of String, dev.string_descriptor_ascii(1)
+      12345
+    end
+    assert_equal 12345, res, "Block versions should pass through the result"
+  end
 end

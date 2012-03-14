@@ -971,7 +971,7 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_get_device_descriptor" if res!=0
     end
 
-    # Open a device and obtain a device handle.
+    # Open the device and obtain a device handle.
     #
     # A handle allows you to perform I/O on the device in question.
     # This is a non-blocking function; no requests are sent over the bus.
@@ -993,6 +993,21 @@ module LIBUSB
         yield handle
       ensure
         handle.close
+      end
+    end
+
+    # Open the device and claim an interface.
+    #
+    # This is a convenience method to {Device::open} and {DevHandle#claim_interface}.
+    # Must be called with a block. When the block has finished, the interface
+    # will be released and the device will be closed.
+    #
+    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
+    def open_interface(interface)
+      open do |dev|
+        dev.claim_interface(interface) do
+          yield dev
+        end
       end
     end
 
