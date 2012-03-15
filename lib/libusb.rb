@@ -786,7 +786,7 @@ module LIBUSB
       self[:bLength]
     end
 
-    # Descriptor type
+    # Descriptor type (0x04)
     def bDescriptorType
       self[:bDescriptorType]
     end
@@ -893,10 +893,82 @@ module LIBUSB
         :extra, :pointer,
         :extra_length, :int
 
-    members.each do |member|
-      define_method(member) do
-        self[member]
-      end
+    # Size of Descriptor in Bytes (7 bytes)
+    def bLength
+      self[:bLength]
+    end
+
+    # Descriptor type (0x05)
+    def bDescriptorType
+      self[:bDescriptorType]
+    end
+
+    # The address of the endpoint described by this descriptor.
+    #
+    # * Bits 0..3: Endpoint Number.
+    # * Bits 4..6: Reserved. Set to Zero
+    # * Bits 7: Direction 0 = Out, 1 = In (Ignored for Control Endpoints)
+    #
+    # @return [Integer]
+    def bEndpointAddress
+      self[:bEndpointAddress]
+    end
+
+    # Attributes which apply to the endpoint when it is configured using the bConfigurationValue.
+    #
+    # * Bits 0..1: Transfer Type
+    #   * 00 = Control
+    #   * 01 = Isochronous
+    #   * 10 = Bulk
+    #   * 11 = Interrupt
+    # * Bits 2..7: are reserved. If Isochronous endpoint,
+    # * Bits 3..2: Synchronisation Type (Iso Mode)
+    #   * 00 = No Synchonisation
+    #   * 01 = Asynchronous
+    #   * 10 = Adaptive
+    #   * 11 = Synchronous
+    # * Bits 5..4: Usage Type (Iso Mode)
+    #   * 00 = Data Endpoint
+    #   * 01 = Feedback Endpoint
+    #   * 10 = Explicit Feedback Data Endpoint
+    #   * 11 = Reserved
+    #
+    # @return [Integer]
+    def bmAttributes
+      self[:bmAttributes]
+    end
+
+    # Maximum Packet Size this endpoint is capable of sending or receiving
+    def wMaxPacketSize
+      self[:wMaxPacketSize]
+    end
+
+    # Interval for polling endpoint data transfers. Value in frame counts.
+    # Ignored for Bulk & Control Endpoints. Isochronous must equal 1 and field
+    # may range from 1 to 255 for interrupt endpoints.
+    #
+    # The interval is respected by the kernel driver, so user mode processes
+    # using libusb don't need to care about it.
+    def bInterval
+      self[:bInterval]
+    end
+
+    # For audio devices only: the rate at which synchronization feedback is provided.
+    def bRefresh
+      self[:bRefresh]
+    end
+
+    # For audio devices only: the address if the synch endpoint.
+    def bSynchAddress
+      self[:bSynchAddress]
+    end
+
+    # Extra descriptors.
+    #
+    # @return [String]
+    def extra
+      return if self[:extra].null?
+      self[:extra].read_string(self[:extra_length])
     end
 
     def initialize(setting, *args)

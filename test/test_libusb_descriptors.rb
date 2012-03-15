@@ -65,6 +65,7 @@ class TestLibusbDescriptors < Test::Unit::TestCase
             assert_kind_of Integer, if_desc.bInterfaceSubClass
             assert_kind_of Integer, if_desc.bInterfaceProtocol
             assert_kind_of Integer, if_desc.iInterface
+            assert_kind_of String, if_desc.extra if if_desc.extra
 
             if_desc.endpoints.each do |ep|
               assert_match(/Endpoint/, ep.inspect, "EndpointDescriptor#inspect should work")
@@ -79,7 +80,15 @@ class TestLibusbDescriptors < Test::Unit::TestCase
               assert_equal config_desc, ep.configuration, "backref should be correct"
               assert_equal dev, ep.device, "backref should be correct"
 
+              assert_kind_of Integer, ep.bLength
+              assert_equal 5, ep.bDescriptorType
+              assert_kind_of Integer, ep.bEndpointAddress
+              assert_kind_of Integer, ep.bmAttributes
               assert_operator 0, :<, ep.wMaxPacketSize, "packet size should be > 0"
+              assert_kind_of Integer, ep.bInterval
+              assert_kind_of Integer, ep.bRefresh
+              assert_kind_of Integer, ep.bSynchAddress
+              assert_kind_of String, ep.extra if ep.extra
             end
           end
         end
