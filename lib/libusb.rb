@@ -18,7 +18,7 @@ require 'ffi'
 
 
 module LIBUSB
-  VERSION = "0.1.2"
+  VERSION = "0.1.3"
 
   module Call
     extend FFI::Library
