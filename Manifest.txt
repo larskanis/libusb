@@ -1,5 +1,6 @@
 .autotest
 .gemtest
+.yardopts
 COPYING
 History.txt
 Manifest.txt
