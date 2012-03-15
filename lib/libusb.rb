@@ -1242,12 +1242,84 @@ module LIBUSB
       config
     end
 
-    # allow access to Descriptor members on Device
-    DeviceDescriptor.members.each do |member|
-      define_method(member) do
-        @pDevDesc[member]
-      end
+    # Size of the Descriptor in Bytes (18 bytes)
+    def bLength
+      @pDevDesc[:bLength]
     end
+
+    # Device Descriptor (0x01)
+    def bDescriptorType
+      @pDevDesc[:bDescriptorType]
+    end
+
+    # USB specification release number which device complies too
+    #
+    # @return [Integer] in binary-coded decimal
+    def bcdUSB
+      @pDevDesc[:bcdUSB]
+    end
+
+    # USB-IF class code for the device (Assigned by USB Org)
+    #
+    # * If equal to 0x00, each interface specifies it’s own class code
+    # * If equal to 0xFF, the class code is vendor specified
+    # * Otherwise field is valid Class Code
+    def bDeviceClass
+      @pDevDesc[:bDeviceClass]
+    end
+
+    # USB-IF subclass code for the device, qualified by the {bDeviceClass}
+    # value (Assigned by USB Org)
+    def bDeviceSubClass
+      @pDevDesc[:bDeviceSubClass]
+    end
+
+    # USB-IF protocol code for the device, qualified by the {bDeviceClass}
+    # and {bDeviceSubClass} values (Assigned by USB Org)
+    def bDeviceProtocol
+      @pDevDesc[:bDeviceProtocol]
+    end
+
+    # Maximum Packet Size for Endpoint 0. Valid Sizes are 8, 16, 32, 64
+    def bMaxPacketSize0
+      @pDevDesc[:bMaxPacketSize0]
+    end
+
+    # USB-IF vendor ID (Assigned by USB Org)
+    def idVendor
+      @pDevDesc[:idVendor]
+    end
+
+    # USB-IF product ID (Assigned by Manufacturer)
+    def idProduct
+      @pDevDesc[:idProduct]
+    end
+
+    # Device release number in binary-coded decimal.
+    def bcdDevice
+      @pDevDesc[:bcdDevice]
+    end
+
+    # Index of string descriptor describing manufacturer.
+    def iManufacturer
+      @pDevDesc[:iManufacturer]
+    end
+
+    # Index of string descriptor describing product.
+    def iProduct
+      @pDevDesc[:iProduct]
+    end
+
+    # Index of string descriptor containing device serial number.
+    def iSerialNumber
+      @pDevDesc[:iSerialNumber]
+    end
+
+    # Number of Possible Configurations
+    def bNumConfigurations
+      @pDevDesc[:bNumConfigurations]
+    end
+
 
     def inspect
       attrs = []

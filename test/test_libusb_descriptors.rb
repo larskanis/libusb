@@ -29,6 +29,22 @@ class TestLibusbDescriptors < Test::Unit::TestCase
   def test_descriptors
     usb.devices.each do |dev|
       assert_match(/Device/, dev.inspect, "Device#inspect should work")
+
+      assert_kind_of Integer, dev.bLength
+      assert_equal 1, dev.bDescriptorType
+      assert_kind_of Integer, dev.bcdUSB
+      assert_kind_of Integer, dev.bDeviceClass
+      assert_kind_of Integer, dev.bDeviceSubClass
+      assert_kind_of Integer, dev.bDeviceProtocol
+      assert_kind_of Integer, dev.bMaxPacketSize0
+      assert_kind_of Integer, dev.idVendor
+      assert_kind_of Integer, dev.idProduct
+      assert_kind_of Integer, dev.bcdDevice
+      assert_kind_of Integer, dev.iManufacturer
+      assert_kind_of Integer, dev.iProduct
+      assert_kind_of Integer, dev.iSerialNumber
+      assert_kind_of Integer, dev.bNumConfigurations
+
       dev.configurations.each do |config_desc|
         assert_match(/Configuration/, config_desc.inspect, "ConfigDescriptor#inspect should work")
         assert dev.configurations.include?(config_desc), "Device#configurations should include this one"
