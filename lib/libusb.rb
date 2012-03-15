@@ -18,7 +18,7 @@ require 'ffi'
 
 
 module LIBUSB
-  VERSION = "0.1.1"
+  VERSION = "0.1.2"
 
   module Call
     extend FFI::Library
@@ -165,15 +165,15 @@ module LIBUSB
     attach_function 'libusb_close', [:pointer], :void
     attach_function 'libusb_get_device', [:libusb_device_handle], :pointer
 
-    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int, :blocking=>true
     attach_function 'libusb_claim_interface', [:libusb_device_handle, :int], :int
-    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int
+    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int, :blocking=>true
 
     attach_function 'libusb_open_device_with_vid_pid', [:pointer, :int, :int], :pointer
 
-    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int
-    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int
-    attach_function 'libusb_reset_device', [:libusb_device_handle], :int
+    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int, :blocking=>true
+    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int, :blocking=>true
+    attach_function 'libusb_reset_device', [:libusb_device_handle], :int, :blocking=>true
 
     attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
     attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int
@@ -186,7 +186,7 @@ module LIBUSB
     attach_function 'libusb_cancel_transfer', [:pointer], :int
     attach_function 'libusb_free_transfer', [:pointer], :void
 
-    attach_function 'libusb_handle_events', [:libusb_context], :int
+    attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
 
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
@@ -1022,7 +1022,7 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_get_device_descriptor" if res!=0
     end
 
-    # Open a device and obtain a device handle.
+    # Open the device and obtain a device handle.
     #
     # A handle allows you to perform I/O on the device in question.
     # This is a non-blocking function; no requests are sent over the bus.
@@ -1044,6 +1044,21 @@ module LIBUSB
         yield handle
       ensure
         handle.close
+      end
+    end
+
+    # Open the device and claim an interface.
+    #
+    # This is a convenience method to {Device#open} and {DevHandle#claim_interface}.
+    # Must be called with a block. When the block has finished, the interface
+    # will be released and the device will be closed.
+    #
+    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
+    def open_interface(interface)
+      open do |dev|
+        dev.claim_interface(interface) do
+          yield dev
+        end
       end
     end
 
@@ -1250,11 +1265,20 @@ module LIBUSB
     #
     # This is a non-blocking function.
     #
+    # If called with a block, the device handle is passed through to the block
+    # and the interface is released when the block has finished.
+    #
     # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
     def claim_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_claim_interface(@pHandle, interface)
       LIBUSB.raise_error res, "in libusb_claim_interface" if res!=0
+      return self unless block_given?
+      begin
+        yield self
+      ensure
+        release_interface(interface)
+      end
     end
 
     # Release an interface previously claimed with {DevHandle#claim_interface}.
@@ -1323,8 +1347,7 @@ module LIBUSB
     #   to activate or the bInterfaceNumber of the previously-claimed interface
     # @param [Fixnum, nil] alternate_setting  the bAlternateSetting of the alternate setting to activate
     #   (only if first param is a Fixnum)
-    def set_interface_alt_setting(setting_or_interface_number,
-alternate_setting=nil)
+    def set_interface_alt_setting(setting_or_interface_number, alternate_setting=nil)
       alternate_setting ||= setting_or_interface_number.bAlternateSetting if setting_or_interface_number.respond_to? :bAlternateSetting
       setting_or_interface_number = setting_or_interface_number.bInterfaceNumber if setting_or_interface_number.respond_to? :bInterfaceNumber
       res = Call.libusb_set_interface_alt_setting(@pHandle, setting_or_interface_number, alternate_setting)
