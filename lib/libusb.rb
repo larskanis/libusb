@@ -235,6 +235,7 @@ module LIBUSB
   Call::RequestRecipients.to_h.each{|k,v| const_set(k,v) }
   Call::IsoSyncTypes.to_h.each{|k,v| const_set(k,v) }
 
+  # Base class of libusb errors
   class Error < RuntimeError
   end
   ErrorClassForResult = {}
@@ -592,6 +593,7 @@ module LIBUSB
     private :actual_length, :actual_buffer
   end
 
+  # @private
   class DeviceDescriptor < FFI::Struct
     include Comparable
 
@@ -714,15 +716,15 @@ module LIBUSB
       "\#<#{self.class} #{attrs.join(' ')}>"
     end
 
-    # Return name of the configuration as String.
+    # Return name of this configuration as String.
     def description
       return @description if defined? @description
       @description = device.try_string_descriptor_ascii(self.iConfiguration)
     end
 
-    # Return all interface decriptions of the configuration as Array of InterfaceDescriptor s.
+    # Return all interface decriptions of the configuration as Array of {Setting}s.
     def settings() self.interfaces.map {|d| d.settings }.flatten end
-    # Return all endpoints of all interfaces of the configuration as Array of EndpointDescriptor s.
+    # Return all endpoints of all interfaces of the configuration as Array of {Endpoint}s.
     def endpoints() self.settings.map {|d| d.endpoints }.flatten end
 
     def <=>(o)
@@ -755,9 +757,9 @@ module LIBUSB
     end
     alias settings alt_settings
 
-    # The Device the Interface belongs to.
+    # The {Device} this Interface belongs to.
     def device() self.configuration.device end
-    # Return all endpoints of all alternative settings as Array of EndpointDescriptor s.
+    # Return all endpoints of all alternative settings as Array of {Endpoint}s.
     def endpoints() self.alt_settings.map {|d| d.endpoints }.flatten end
 
     def <=>(o)
@@ -811,12 +813,12 @@ module LIBUSB
       self[:bInterfaceClass]
     end
 
-    # USB-IF subclass code for this interface, qualified by the bInterfaceClass value.
+    # USB-IF subclass code for this interface, qualified by the {bInterfaceClass} value.
     def bInterfaceSubClass
       self[:bInterfaceSubClass]
     end
 
-    # USB-IF protocol code for this interface, qualified by the bInterfaceClass and bInterfaceSubClass values.
+    # USB-IF protocol code for this interface, qualified by the {bInterfaceClass} and {bInterfaceSubClass} values.
     def bInterfaceProtocol
       self[:bInterfaceProtocol]
     end
@@ -860,15 +862,15 @@ module LIBUSB
       "\#<#{self.class} #{attrs.join(' ')}>"
     end
 
-    # Return name of the Interface as String.
+    # Return name of this interface as String.
     def description
       return @description if defined? @description
       @description = device.try_string_descriptor_ascii(self.iInterface)
     end
 
-    # The Device the InterfaceDescriptor belongs to.
+    # The {Device} this Setting belongs to.
     def device() self.interface.configuration.device end
-    # The ConfigDescriptor the InterfaceDescriptor belongs to.
+    # The {Configuration} this Setting belongs to.
     def configuration() self.interface.configuration end
 
     def <=>(o)
@@ -914,7 +916,7 @@ module LIBUSB
       self[:bEndpointAddress]
     end
 
-    # Attributes which apply to the endpoint when it is configured using the bConfigurationValue.
+    # Attributes which apply to the endpoint when it is configured using the {Configuration#bConfigurationValue}.
     #
     # * Bits 0..1: Transfer Type
     #   * 00 = Control
@@ -994,11 +996,11 @@ module LIBUSB
       "\#<#{self.class} #{num} #{inout} #{type.join(" ")}>"
     end
 
-    # The Device the EndpointDescriptor belongs to.
+    # The {Device} this Endpoint belongs to.
     def device() self.setting.interface.configuration.device end
-    # The ConfigDescriptor the EndpointDescriptor belongs to.
+    # The {Configuration} this Endpoint belongs to.
     def configuration() self.setting.interface.configuration end
-    # The Interface the EndpointDescriptor belongs to.
+    # The {Interface} this Endpoint belongs to.
     def interface() self.setting.interface end
 
     def <=>(o)
@@ -1261,7 +1263,7 @@ module LIBUSB
 
     # USB-IF class code for the device (Assigned by USB Org)
     #
-    # * If equal to 0x00, each interface specifies it’s own class code
+    # * If equal to 0x00, each interface specifies it's own class code
     # * If equal to 0xFF, the class code is vendor specified
     # * Otherwise field is valid Class Code
     def bDeviceClass
@@ -1389,13 +1391,13 @@ module LIBUSB
       configs
     end
 
-    # Return all interfaces of the device.
+    # Return all interfaces of this device.
     # @return [Array<Interface>]
     def interfaces() self.configurations.map {|d| d.interfaces }.flatten end
-    # Return all interface decriptions of the device.
+    # Return all interface decriptions of this device.
     # @return [Array<Setting>]
     def settings() self.interfaces.map {|d| d.settings }.flatten end
-    # Return all endpoints of all interfaces of the device.
+    # Return all endpoints of all interfaces of this device.
     # @return [Array<Endpoint>]
     def endpoints() self.settings.map {|d| d.endpoints }.flatten end
 

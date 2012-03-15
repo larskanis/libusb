@@ -1,0 +1,1 @@
+--title "libusb-1.0 Ruby Interface" --no-private lib/**/*.rb
