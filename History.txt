@@ -1,3 +1,8 @@
+=== 0.1.3 / 2012-03-15
+
+* Add documentation of descriptor accessors
+* Fix #extra accessor of Configuration, Setting and Endpoint
+
 === 0.1.2 / 2012-03-14
 
 * Mark all blocking functions as blocking in FFI, so that parallel threads are not blocked
