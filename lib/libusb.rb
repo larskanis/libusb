@@ -781,10 +781,57 @@ module LIBUSB
         :extra, :pointer,
         :extra_length, :int
 
-    members.each do |member|
-      define_method(member) do
-        self[member]
-      end
+    # Size of this descriptor (in bytes).
+    def bLength
+      self[:bLength]
+    end
+
+    # Descriptor type
+    def bDescriptorType
+      self[:bDescriptorType]
+    end
+
+    # Number of this interface.
+    def bInterfaceNumber
+      self[:bInterfaceNumber]
+    end
+
+    # Value used to select this alternate setting for this interface.
+    def bAlternateSetting
+      self[:bAlternateSetting]
+    end
+
+    # Number of endpoints used by this interface (excluding the control endpoint).
+    def bNumEndpoints
+      self[:bNumEndpoints]
+    end
+
+    # USB-IF class code for this interface.
+    def bInterfaceClass
+      self[:bInterfaceClass]
+    end
+
+    # USB-IF subclass code for this interface, qualified by the bInterfaceClass value.
+    def bInterfaceSubClass
+      self[:bInterfaceSubClass]
+    end
+
+    # USB-IF protocol code for this interface, qualified by the bInterfaceClass and bInterfaceSubClass values.
+    def bInterfaceProtocol
+      self[:bInterfaceProtocol]
+    end
+
+    # Index of string descriptor describing this interface.
+    def iInterface
+      self[:iInterface]
+    end
+
+    # Extra descriptors.
+    #
+    # @return [String]
+    def extra
+      return if self[:extra].null?
+      self[:extra].read_string(self[:extra_length])
     end
 
     def initialize(interface, *args)

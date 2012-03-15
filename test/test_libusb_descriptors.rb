@@ -33,6 +33,12 @@ class TestLibusbDescriptors < Test::Unit::TestCase
         assert_match(/Configuration/, config_desc.inspect, "ConfigDescriptor#inspect should work")
         assert dev.configurations.include?(config_desc), "Device#configurations should include this one"
 
+        assert_kind_of Integer, config_desc.bLength
+        assert_equal 2, config_desc.bDescriptorType
+        assert_kind_of Integer, config_desc.wTotalLength
+        assert_equal config_desc.interfaces.length, config_desc.bNumInterfaces
+        assert_kind_of Integer, config_desc.bConfigurationValue
+        assert_kind_of Integer, config_desc.iConfiguration
         assert_kind_of Integer, config_desc.bmAttributes
         assert_kind_of Integer, config_desc.maxPower
         assert_kind_of String, config_desc.extra if config_desc.extra
@@ -49,6 +55,16 @@ class TestLibusbDescriptors < Test::Unit::TestCase
             assert dev.settings.include?(if_desc), "Device#settings should include this one"
             assert config_desc.settings.include?(if_desc), "ConfigDescriptor#settings should include this one"
             assert interface.alt_settings.include?(if_desc), "Inteerface#alt_settings should include this one"
+
+            assert_kind_of Integer, if_desc.bLength
+            assert_equal 4, if_desc.bDescriptorType
+            assert_kind_of Integer, if_desc.bInterfaceNumber
+            assert_kind_of Integer, if_desc.bAlternateSetting
+            assert_equal if_desc.endpoints.length, if_desc.bNumEndpoints
+            assert_kind_of Integer, if_desc.bInterfaceClass
+            assert_kind_of Integer, if_desc.bInterfaceSubClass
+            assert_kind_of Integer, if_desc.bInterfaceProtocol
+            assert_kind_of Integer, if_desc.iInterface
 
             if_desc.endpoints.each do |ep|
               assert_match(/Endpoint/, ep.inspect, "EndpointDescriptor#inspect should work")
