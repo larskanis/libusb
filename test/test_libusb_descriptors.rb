@@ -33,6 +33,10 @@ class TestLibusbDescriptors < Test::Unit::TestCase
         assert_match(/Configuration/, config_desc.inspect, "ConfigDescriptor#inspect should work")
         assert dev.configurations.include?(config_desc), "Device#configurations should include this one"
 
+        assert_kind_of Integer, config_desc.bmAttributes
+        assert_kind_of Integer, config_desc.maxPower
+        assert_kind_of String, config_desc.extra if config_desc.extra
+
         config_desc.interfaces.each do |interface|
           assert_match(/Interface/, interface.inspect, "Interface#inspect should work")
 

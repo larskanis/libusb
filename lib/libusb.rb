@@ -626,10 +626,61 @@ module LIBUSB
         :extra, :pointer,
         :extra_length, :int
 
-    members.each do |member|
-      define_method(member) do
-        self[member]
-      end
+    # Size of this descriptor (in bytes).
+    def bLength
+      self[:bLength]
+    end
+
+    # Descriptor type (0x02)
+    def bDescriptorType
+      self[:bDescriptorType]
+    end
+
+    # Total length of data returned for this configuration.
+    def wTotalLength
+      self[:wTotalLength]
+    end
+
+    # Number of interfaces supported by this configuration.
+    def bNumInterfaces
+      self[:bNumInterfaces]
+    end
+
+    # Identifier value for this configuration.
+    def bConfigurationValue
+      self[:bConfigurationValue]
+    end
+
+    # Index of string descriptor describing this configuration.
+    def iConfiguration
+      self[:iConfiguration]
+    end
+
+    # Configuration characteristics.
+    #
+    # * Bit 7: Reserved, set to 1. (USB 1.0 Bus Powered)
+    # * Bit 6: Self Powered
+    # * Bit 5: Remote Wakeup
+    # * Bit 4..0: Reserved, set to 0.
+    #
+    # @return [Integer]
+    def bmAttributes
+      self[:bmAttributes]
+    end
+
+    # Maximum power consumption of the USB device from this bus in this configuration when the device is fully opreation.
+    #
+    # @result [Integer] Maximum Power Consumption in 2mA units
+    def maxPower
+      self[:maxPower]
+    end
+
+    # Extra descriptors.
+    #
+    # @return [String]
+    def extra
+      return if self[:extra].null?
+      self[:extra].read_string(self[:extra_length])
     end
 
     def initialize(device, *args)
