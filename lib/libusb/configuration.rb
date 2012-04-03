@@ -75,7 +75,7 @@ module LIBUSB
 
     # Maximum power consumption of the USB device from this bus in this configuration when the device is fully opreation.
     #
-    # @result [Integer] Maximum Power Consumption in 2mA units
+    # @return [Integer] Maximum Power Consumption in 2mA units
     def maxPower
       self[:maxPower]
     end

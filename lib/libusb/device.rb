@@ -166,14 +166,14 @@ module LIBUSB
       @pDevDesc[:bDeviceClass]
     end
 
-    # USB-IF subclass code for the device, qualified by the {bDeviceClass}
+    # USB-IF subclass code for the device, qualified by the {Device#bDeviceClass}
     # value (Assigned by USB Org)
     def bDeviceSubClass
       @pDevDesc[:bDeviceSubClass]
     end
 
-    # USB-IF protocol code for the device, qualified by the {bDeviceClass}
-    # and {bDeviceSubClass} values (Assigned by USB Org)
+    # USB-IF protocol code for the device, qualified by the {Device#bDeviceClass}
+    # and {Device#bDeviceSubClass} values (Assigned by USB Org)
     def bDeviceProtocol
       @pDevDesc[:bDeviceProtocol]
     end

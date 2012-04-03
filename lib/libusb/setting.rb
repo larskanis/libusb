@@ -62,12 +62,12 @@ module LIBUSB
       self[:bInterfaceClass]
     end
 
-    # USB-IF subclass code for this interface, qualified by the {bInterfaceClass} value.
+    # USB-IF subclass code for this interface, qualified by the {Setting#bInterfaceClass} value.
     def bInterfaceSubClass
       self[:bInterfaceSubClass]
     end
 
-    # USB-IF protocol code for this interface, qualified by the {bInterfaceClass} and {bInterfaceSubClass} values.
+    # USB-IF protocol code for this interface, qualified by the {Setting#bInterfaceClass} and {Setting#bInterfaceSubClass} values.
     def bInterfaceProtocol
       self[:bInterfaceProtocol]
     end
