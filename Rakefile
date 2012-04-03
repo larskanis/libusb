@@ -48,6 +48,7 @@ hoe = Hoe.spec 'libusb' do
 
   self.readme_file = 'README.rdoc'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
+  spec_extras[:files] = `git ls-files`.split
   self.extra_rdoc_files << self.readme_file
 
   # clean intermediate files and folders
