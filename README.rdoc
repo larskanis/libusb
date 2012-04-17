@@ -77,8 +77,8 @@ Latest code can be used in this way:
 
 In contrast to Linux, any access to an USB device by LIBUSB on Windows requires a proper driver
 installed in the system. Fortunately creating such a driver is quite easy with
-Zadig[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page]. Select the interesting USB device
-and press "Install Driver". That's it. You may take the generated output directory
+Zadig[http://sourceforge.net/apps/mediawiki/libwdi/index.php?title=Main_Page]. Select the interesting USB device,
+choose WinUSB driver and press "Install Driver". That's it. You may take the generated output directory
 with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
 systems.
 

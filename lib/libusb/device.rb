@@ -49,6 +49,7 @@ module LIBUSB
     #
     # You need proper access permissions on:
     # * Linux: <tt>/dev/bus/usb/<bus>/<dev></tt>
+    # * Windows: by installing a WinUSB-driver for the device (see {file:README.rdoc#Usage_on_Windows} )
     #
     # @return [DevHandle] Handle to the device.
     def open
