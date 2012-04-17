@@ -63,9 +63,10 @@ maximum packet size.
 
   gem install libusb
 
-In order to use LIBUSB, you need the libusb-1.0 library (but not its header files).
-* On Debian and Ubuntu system, install the +libusb-1.0-0+ package.
+In order to use LIBUSB, you need the libusb-1.0 library (but not necessarily its header files).
+* On a Debian or Ubuntu system, install the +libusb-1.0-0+ package.
 * The gem for Windows comes with a precompiled +libusb.dll+, so there is no need for a compiler.
+* On OS-X: One easy way to do this is with homebrew: +brew install libusb+
 
 Latest code can be used in this way:
 
