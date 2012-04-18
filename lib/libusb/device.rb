@@ -47,8 +47,8 @@ module LIBUSB
     # If called with a block, the handle is passed to the block
     # and is closed when the block has finished.
     #
-    # You need proper access permissions on:
-    # * Linux: <tt>/dev/bus/usb/<bus>/<dev></tt>
+    # You need proper device access:
+    # * Linux: read+write permissions to <tt>/dev/bus/usb/<bus>/<dev></tt>
     # * Windows: by installing a WinUSB-driver for the device (see {file:README.rdoc#Usage_on_Windows} )
     #
     # @return [DevHandle] Handle to the device.
