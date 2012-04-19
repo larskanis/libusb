@@ -26,13 +26,11 @@ LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
 
   usb = LIBUSB::Context.new
   device = usb.devices(:idVendor => 0x04b4, :idProduct => 0x8613).first
-  device.open do |handle|
-    handle.claim_interface(0) do
-      handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
-    end
+  device.open_interface(0) do |handle|
+    handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
   end
 {LIBUSB::Context#devices} is used to get all or only particular devices.
-After opening the {LIBUSB::Device} the resulting {LIBUSB::DevHandle} can be
+After {LIBUSB::Device#open_interface opening and claiming} the {LIBUSB::Device} the resulting {LIBUSB::DevHandle} can be
 used to communicate with the connected USB device
 by {LIBUSB::DevHandle#control_transfer}, {LIBUSB::DevHandle#bulk_transfer},
 {LIBUSB::DevHandle#interrupt_transfer} or by using the {LIBUSB::Transfer} classes.
