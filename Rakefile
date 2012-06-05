@@ -24,6 +24,11 @@ LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI
 # LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
+# Fetch tarball from libusbx
+# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.11'
+# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
+# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+
 # Fetch tarball from Pete Batard's git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
 # LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
