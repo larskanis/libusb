@@ -3,14 +3,13 @@
 = Access USB devices from Ruby via libusb-1.0.
 
 * http://github.com/larskanis/libusb
-* API documentation: http://rubydoc.info/gems/libusb/frames
 
 == DESCRIPTION:
 
 LIBUSB is a Ruby binding that gives a Ruby programmer access to all functionality of libusb[http://www.libusb.org], version 1.0.
 
-* libusb is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
-* This Ruby binding supports the API version 1.0 of libusb. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] . LIBUSB has a compatibility API to ruby-usb[http://www.a-k-r.org/ruby-usb/].
+* libusb[http://www.libusb.org] is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
+* This Ruby binding supports the API version 1.0 of libusb[http://www.libusb.org/wiki/libusb-1.0]. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] .
 
 
 LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
@@ -53,7 +52,7 @@ maximum packet size.
 
 == REQUIREMENTS:
 
-* libusb version 1.0 or greater (bundled with Windows binary gem)
+* libusb[http://www.libusb.org] version 1.0 or greater (bundled with Windows binary gem)
 * FFI-gem[http://github.com/ffi/ffi]
 * Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x or JRuby
 
@@ -61,10 +60,14 @@ maximum packet size.
 
   gem install libusb
 
-In order to use LIBUSB, you need the libusb-1.0 library (but not necessarily its header files).
-* On a Debian or Ubuntu system, install the +libusb-1.0-0+ package.
-* The gem for Windows comes with a precompiled +libusb.dll+, so there is no need for a compiler.
-* On OS-X: One easy way to do this is with homebrew: +brew install libusb+
+In order to use LIBUSB, you also need the libusb-1.0[http://www.libusb.org] library (but not necessarily its header files).
+* Debian or Ubuntu:
+    sudo apt-get install libusb-1.0-0
+* OS-X: install with homebrew:
+    brew install libusb
+  or macports:
+    port install libusb
+* Windows: libusb.gem comes with a precompiled +libusb.dll+, but you need to install a device driver (see below)
 
 Latest code can be used in this way:
 
@@ -102,6 +105,12 @@ Download and cross compile libusb for win32:
 
 If everything works, there should be libusb-VERSION-x86-mingw32.gem in the pkg
 directory.
+
+== Resources
+
+* API documentation of Libusb for Ruby: http://rubydoc.info/gems/libusb/frames
+* Mailinglist: http://rubyforge.org/mailman/listinfo/libusb-hackers
+* Overall introduction to USB: http://www.usbmadesimple.co.uk
 
 == Todo
 
