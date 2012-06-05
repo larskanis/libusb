@@ -15,9 +15,9 @@ STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
 
 # Fetch tarball from sourceforge
-# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.8'
-# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
-# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.9'
+LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
+LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '295c9d1'
@@ -25,9 +25,9 @@ STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from Pete Batard's git repo
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
-LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
-LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION}.tar.bz2"
+# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
+# LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
+# LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION}.tar.bz2"
 
 # Static libusb build vars
 STATIC_LIBUSB_BUILDDIR    = STATIC_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2")
