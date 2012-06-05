@@ -22,7 +22,7 @@ module LIBUSB
     extend FFI::Library
 
     if RUBY_PLATFORM=~/mingw|mswin/i
-      bundled_dll = File.join(File.dirname(__FILE__), 'libusb-1.0.dll')
+      bundled_dll = File.join(File.dirname(__FILE__), '..', 'libusb-1.0.dll')
       ffi_lib(['libusb-1.0', bundled_dll])
     else
       ffi_lib 'libusb-1.0'
