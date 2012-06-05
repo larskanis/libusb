@@ -15,15 +15,17 @@
 
 module LIBUSB
   VERSION = "0.1.4"
-end
 
-require 'libusb/call'
-require 'libusb/configuration'
-require 'libusb/constants'
-require 'libusb/context'
-require 'libusb/dev_handle'
-require 'libusb/device'
-require 'libusb/endpoint'
-require 'libusb/interface'
-require 'libusb/setting'
-require 'libusb/transfer'
+  require 'libusb/call'
+  require 'libusb/constants'
+  require 'libusb/context'
+  autoload :Configuration, 'libusb/configuration'
+  autoload :DevHandle, 'libusb/dev_handle'
+  autoload :Device, 'libusb/device'
+  autoload :Endpoint, 'libusb/endpoint'
+  autoload :Interface, 'libusb/interface'
+  autoload :Setting, 'libusb/setting'
+  %w[ Transfer BulkTransfer ControlTransfer InterruptTransfer IsoPacket IsochronousTransfer ].each do |klass|
+    autoload klass, 'libusb/transfer'
+  end
+end
