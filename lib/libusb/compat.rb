@@ -97,8 +97,8 @@ module USB
   USB_RECIP_ENDPOINT = LIBUSB::RECIPIENT_ENDPOINT
   USB_RECIP_OTHER = LIBUSB::RECIPIENT_OTHER
 
-  HAS_GET_DRIVER_NP = RUBY_PLATFORM=~/mswin|mingw/ ? false : true
-  HAS_DETACH_KERNEL_DRIVER_NP = RUBY_PLATFORM=~/mswin|mingw/ ? false : true
+  HAS_GET_DRIVER_NP = !FFI::Platform.windows?
+  HAS_DETACH_KERNEL_DRIVER_NP = !FFI::Platform.windows?
 
   # not defined by libusb-1.0, but typical values are:
   USB_MAXENDPOINTS = 32
