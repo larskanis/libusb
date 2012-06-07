@@ -101,6 +101,7 @@ file LIBUSB_CONFIGURE => STATIC_LIBUSB_BUILDDIR do |t|
 end
 
 LIBUSB_ENV = [
+  "CFLAGS='-fno-omit-frame-pointer'",
 ]
 
 # generate the makefile in a clean build location
