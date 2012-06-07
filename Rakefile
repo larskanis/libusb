@@ -13,6 +13,13 @@ require 'rake/extensioncompiler'
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 STATIC_BUILDDIR            = COMPILE_HOME + 'builds'
+RUBY_BUILD                 = RbConfig::CONFIG["host"]
+CROSS_PREFIX = begin
+  Rake::ExtensionCompiler.mingw_host
+rescue => err
+  $stderr.puts "Cross-compilation disabled -- %s" % [ err.message ]
+  'unknown'
+end
 
 # Fetch tarball from sourceforge
 LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.9'
@@ -93,18 +100,20 @@ file LIBUSB_CONFIGURE => STATIC_LIBUSB_BUILDDIR do |t|
   end
 end
 
+LIBUSB_ENV = [
+]
+
 # generate the makefile in a clean build location
 file LIBUSB_MAKEFILE => LIBUSB_CONFIGURE do |t|
   Dir.chdir( STATIC_LIBUSB_BUILDDIR ) do
     options = [
-      '--target=i386-mingw32',
-      "--host=#{Rake::ExtensionCompiler.mingw_host}",
-      "--build=#{RbConfig::CONFIG["host"]}",
+      "--target=#{CROSS_PREFIX}",
+      "--host=#{CROSS_PREFIX}",
+      "--build=#{RUBY_BUILD}",
     ]
 
     configure_path = STATIC_LIBUSB_BUILDDIR + 'configure'
-    cmd = [ configure_path.to_s, *options ]
-    sh *cmd
+    sh "env #{[LIBUSB_ENV, configure_path.to_s, *options].join(" ")}"
   end
 end
 
