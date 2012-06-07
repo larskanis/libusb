@@ -52,8 +52,6 @@ maximum packet size.
 
 == REQUIREMENTS:
 
-* libusb[http://libusbx.org] version 1.0 or greater (bundled with Windows binary gem)
-* FFI-gem[http://github.com/ffi/ffi]
 * Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x or JRuby
 
 == INSTALL:
