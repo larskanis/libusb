@@ -6,7 +6,7 @@
 
 == DESCRIPTION:
 
-LIBUSB is a Ruby binding that gives a Ruby programmer access to all functionality of libusb[http://www.libusb.org], version 1.0.
+LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices.
 
 * libusb[http://www.libusb.org] is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
 * This Ruby binding supports the API version 1.0 of libusb[http://www.libusb.org/wiki/libusb-1.0]. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] .

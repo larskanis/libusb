@@ -49,7 +49,7 @@ hoe = Hoe.spec 'libusb' do
 
   self.url = 'http://github.com/larskanis/libusb'
   self.summary = 'Access USB devices from Ruby via libusb-1.0'
-  self.description = 'LIBUSB is a Ruby binding that gives Ruby programmers access to all functionality of libusb, version 1.0'
+  self.description = 'LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices'
 
   self.readme_file = 'README.rdoc'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
