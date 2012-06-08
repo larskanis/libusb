@@ -6,10 +6,10 @@
 
 == DESCRIPTION:
 
-LIBUSB is a Ruby binding that gives a Ruby programmer access to all functionality of libusb[http://www.libusb.org], version 1.0.
+LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices.
 
-* libusb[http://www.libusb.org] is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
-* This Ruby binding supports the API version 1.0 of libusb[http://www.libusb.org/wiki/libusb-1.0]. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] .
+* libusb[http://libusbx.org] is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
+* This Ruby binding supports the API version 1.0 of libusb[http://libusbx.org]. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] .
 
 
 LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
@@ -52,15 +52,13 @@ maximum packet size.
 
 == REQUIREMENTS:
 
-* libusb[http://www.libusb.org] version 1.0 or greater (bundled with Windows binary gem)
-* FFI-gem[http://github.com/ffi/ffi]
 * Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x or JRuby
 
 == INSTALL:
 
   gem install libusb
 
-In order to use LIBUSB, you also need the libusb-1.0[http://www.libusb.org] library (but not necessarily its header files).
+In order to use LIBUSB, you also need the libusb-1.0[http://libusbx.org] library (but not necessarily its header files).
 * Debian or Ubuntu:
     sudo apt-get install libusb-1.0-0
 * OS-X: install with homebrew:
