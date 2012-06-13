@@ -90,6 +90,58 @@ module LIBUSB
       Call.libusb_get_device_address(@pDev)
     end
 
+    if Call.respond_to?(:libusb_get_port_number)
+      # Get the number of the port that a device is connected to.
+      # Available since libusb-1.0.12.
+      #
+      # @return [Fixnum, nil]  the port number (+nil+ if not available)
+      # @see #port_path
+      def port_number
+        r = Call.libusb_get_port_number(@pDev)
+        r==0 ? nil : r
+      end
+
+      # Get the the parent from the specified device [EXPERIMENTAL].
+      # Available since libusb-1.0.12.
+      #
+      # @return [Device, nil]  the device parent or +nil+ if not available
+      # @see #port_path
+      def parent
+        pppDevs = FFI::MemoryPointer.new :pointer
+        size = Call.libusb_get_device_list(@ctx, pppDevs)
+        ppDevs = pppDevs.read_pointer
+        pParent = Call.libusb_get_parent(@pDev)
+        parent = pParent.null? ? nil : Device.new(@context, pParent)
+        Call.libusb_free_device_list(ppDevs, 1)
+        parent
+      end
+
+      # Get the list of all port numbers from root for the specified device.
+      # Available since libusb-1.0.12.
+      #
+      # @return [Array<Fixnum>]
+      # @see #parent
+      # @see #port_number
+      def port_path
+        # As per the USB 3.0 specs, the current maximum limit for the depth is 7.
+        path_len = 7
+        pPath = FFI::MemoryPointer.new :pointer, path_len
+        l = Call.libusb_get_port_path(@context.instance_variable_get(:@ctx), @pDev, pPath, path_len)
+        pPath.read_array_of_uint8(l)
+      end
+    end
+
+    if Call.respond_to?(:libusb_get_device_speed)
+      # Get the negotiated connection speed for a device.
+      # Available since libusb-1.0.9.
+      #
+      # @return [Symbol]  a {Call::Speeds Speeds} symbol, where +:SPEED_UNKNOWN+ means that
+      #   the OS doesn't know or doesn't support returning the negotiated speed.
+      def device_speed
+        Call.libusb_get_device_speed(@pDev)
+      end
+    end
+
     # Convenience function to retrieve the wMaxPacketSize value for a
     # particular endpoint in the active device configuration.
     #

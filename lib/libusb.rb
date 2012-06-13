@@ -19,6 +19,7 @@ module LIBUSB
   require 'libusb/call'
   require 'libusb/constants'
   require 'libusb/context'
+  autoload :Version, 'libusb/version'
   autoload :Configuration, 'libusb/configuration'
   autoload :DevHandle, 'libusb/dev_handle'
   autoload :Device, 'libusb/device'
@@ -27,5 +28,25 @@ module LIBUSB
   autoload :Setting, 'libusb/setting'
   %w[ Transfer BulkTransfer ControlTransfer InterruptTransfer IsoPacket IsochronousTransfer ].each do |klass|
     autoload klass, 'libusb/transfer'
+  end
+
+  if Call.respond_to?(:libusb_get_version)
+    # Get version of the underlying libusb library.
+    # Available since libusb-1.0.10.
+    # @return [Version]  version object
+    def self.version
+      Version.new(Call.libusb_get_version)
+    end
+  end
+
+  if Call.respond_to?(:libusb_has_capability)
+    # Check at runtime if the loaded library has a given capability.
+    # Available since libusb-1.0.9.
+    # @param [Symbol] capability  the {Call::Capabilities Capabilities} symbol to check for
+    # @return [Boolean]  +true+ if the running library has the capability, +false+ otherwise
+    def self.has_capability?(capability)
+      r = Call.libusb_has_capability(capability)
+      return r != 0
+    end
   end
 end

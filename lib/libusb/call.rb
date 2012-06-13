@@ -137,13 +137,33 @@ module LIBUSB
       :ISO_SYNC_TYPE_SYNC, 3,
     ]
 
+    Speeds = enum :libusb_speed, [
+      :SPEED_UNKNOWN, 0,
+      :SPEED_LOW, 1,
+      :SPEED_FULL, 2,
+      :SPEED_HIGH, 3,
+      :SPEED_SUPER, 4,
+    ]
+
+    Capabilities = enum :libusb_capability, [
+      :CAP_HAS_CAPABILITY, 0,
+    ]
 
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device_handle
 
+    def self.try_attach_function(method, *args)
+      if ffi_libraries.find{|lib| lib.find_function(method) }
+        attach_function method, *args
+      end
+    end
+
+    try_attach_function 'libusb_get_version', [], :pointer
+
     attach_function 'libusb_init', [ :pointer ], :int
     attach_function 'libusb_exit', [ :pointer ], :void
     attach_function 'libusb_set_debug', [:pointer, :int], :void
+    try_attach_function 'libusb_has_capability', [:libusb_capability], :int
 
     attach_function 'libusb_get_device_list', [:pointer, :pointer], :size_t
     attach_function 'libusb_free_device_list', [:pointer, :int], :void
@@ -156,7 +176,11 @@ module LIBUSB
     attach_function 'libusb_get_config_descriptor_by_value', [:pointer, :uint8, :pointer], :int
     attach_function 'libusb_free_config_descriptor', [:pointer], :void
     attach_function 'libusb_get_bus_number', [:pointer], :uint8
+    try_attach_function 'libusb_get_port_number', [:pointer], :uint8
+    try_attach_function 'libusb_get_parent', [:pointer], :pointer
+    try_attach_function 'libusb_get_port_path', [:pointer, :pointer, :pointer, :uint8], :uint8
     attach_function 'libusb_get_device_address', [:pointer], :uint8
+    try_attach_function 'libusb_get_device_speed', [:pointer], :libusb_speed
     attach_function 'libusb_get_max_packet_size', [:pointer, :uint8], :int
     attach_function 'libusb_get_max_iso_packet_size', [:pointer, :uint8], :int
 

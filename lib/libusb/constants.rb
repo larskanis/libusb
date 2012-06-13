@@ -24,6 +24,8 @@ module LIBUSB
   Call::EndpointDirections.to_h.each{|k,v| const_set(k,v) }
   Call::RequestRecipients.to_h.each{|k,v| const_set(k,v) }
   Call::IsoSyncTypes.to_h.each{|k,v| const_set(k,v) }
+  Call::Speeds.to_h.each{|k,v| const_set(k,v) }
+  Call::Capabilities.to_h.each{|k,v| const_set(k,v) }
 
   # Base class of libusb errors
   class Error < RuntimeError

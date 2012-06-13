@@ -161,6 +161,19 @@ class TestLibusbDescriptors < Test::Unit::TestCase
         assert_operator dev.max_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable packet size"
         assert_operator dev.max_iso_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable iso packet size"
         assert_operator dev.max_iso_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+        assert_operator dev.bus_number, :>=, 0, "#{dev.inspect} should have a bus_number"
+        assert_operator dev.device_address, :>=, 0, "#{dev.inspect} should have a device_address"
+        assert_operator([:SPEED_UNKNOWN, :SPEED_LOW, :SPEED_FULL, :SPEED_HIGH, :SPEED_SUPER], :include?, dev.device_speed, "#{dev.inspect} should have a device_speed")
+        path = dev.port_path
+        assert_kind_of Array, path, "#{dev.inspect} should have a port_path"
+        path.each do |port|
+          assert_operator port, :>, 0, "#{dev.inspect} should have proper port_path entries"
+        end
+        assert_equal path[-1], dev.port_number, "#{dev.inspect} should have a port number out of the port_path"
+        if parent=dev.parent
+          assert_kind_of Device, parent, "#{dev.inspect} should have a parent"
+          assert_equal path[-2], parent.port_number, "#{dev.inspect} should have a parent port number out of the port_path"
+        end
       end
     end
   end
