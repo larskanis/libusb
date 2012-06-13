@@ -76,6 +76,7 @@ module LIBUSB
       :TRANSFER_SHORT_NOT_OK, 1 << 0,
       :TRANSFER_FREE_BUFFER, 1 << 1,
       :TRANSFER_FREE_TRANSFER, 1 << 2,
+      :TRANSFER_ADD_ZERO_PACKET, 1 << 3,
     ]
 
     TransferTypes = enum :libusb_transfer_type, [
