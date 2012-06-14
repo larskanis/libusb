@@ -22,9 +22,9 @@ rescue => err
 end
 
 # Fetch tarball from sourceforge
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.9'
-LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
-LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.9'
+# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
+# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '295c9d1'
@@ -32,9 +32,9 @@ LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from libusbx
-# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.11'
-# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
-# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.12-rc1'
+LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION[/^\d+\.\d+\.\d+/]}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
+LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from Pete Batard's git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
