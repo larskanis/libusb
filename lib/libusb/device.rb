@@ -108,7 +108,7 @@ module LIBUSB
       # @see #port_path
       def parent
         pppDevs = FFI::MemoryPointer.new :pointer
-        size = Call.libusb_get_device_list(@ctx, pppDevs)
+        Call.libusb_get_device_list(@context.instance_variable_get(:@ctx), pppDevs)
         ppDevs = pppDevs.read_pointer
         pParent = Call.libusb_get_parent(@pDev)
         parent = pParent.null? ? nil : Device.new(@context, pParent)
