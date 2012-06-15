@@ -1,6 +1,10 @@
-=== 0.1.4 / HEAD
+=== 0.2.0 / 2012-06-15
 
-* Divide up the libusb library across multiple files
+* Divide up the libusb library across multiple files, required with autoload
+* add methods: LIBUSB.has_capability?, Device#device_speed (libusb-1.0.9+)
+* add possibility to read out libusb version: LIBUSB.version (libusbx-1.0.10+)
+* add methods: Device#parent, Device#port_number, Device#port_path (libusbx-1.0.12+)
+* switch to libusbx-1.0.12 for windows build
 
 === 0.1.3 / 2012-03-15
 
