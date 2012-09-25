@@ -175,7 +175,7 @@ module USB
       h = DevHandle.new(@dev.open)
       if block_given?
         begin
-          r = yield h
+          yield h
         ensure
           h.usb_close
         end

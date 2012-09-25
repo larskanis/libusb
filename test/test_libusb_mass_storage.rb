@@ -110,7 +110,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     retries = 5
     buffer = begin
       bulk_transfer(:endpoint=>endpoint_in, :dataIn=>13)
-    rescue LIBUSB::ERROR_PIPE => err
+    rescue LIBUSB::ERROR_PIPE
       if (retries-=1)>=0
         dev.clear_halt(endpoint_in)
         retry
@@ -122,6 +122,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     dCSWSignature, dCSWTag, dCSWDataResidue, bCSWStatus = buffer.unpack('a4VVC')
 
     assert_equal 'USBS', dCSWSignature, "CSW should start with USBS"
+    assert_kind_of Integer, dCSWDataResidue
     assert_equal expected_tag, dCSWTag, "CSW-tag should be like CBW-tag"
     raise CSWError, "CSW returned error #{bCSWStatus}" unless bCSWStatus==0
     buffer
@@ -154,14 +155,14 @@ class TestLibusbMassStorage < Test::Unit::TestCase
             start, 0,
             nr_blocks, 0,
             ].pack('CCNCnC')
-    data = send_mass_storage_command( cdb, expected_length )
+    send_mass_storage_command( cdb, expected_length )
   end
 
   def invalid_command
     expected_length = 0x100
     cdb = [ 0x26, 0, # invalid command
             ].pack('CC')
-    data = send_mass_storage_command( cdb, expected_length )
+    send_mass_storage_command( cdb, expected_length )
   end
 
   def mass_storage_reset
