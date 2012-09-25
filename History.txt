@@ -1,3 +1,8 @@
+=== 0.2.1 / 2012-09-25
+
+* Rename Configuration#maxPower to #bMaxPower as done in libusbx-1.0.13 and in ruby-usb.gem
+* update to libusbx-1.0.13 for windows build (with support for libusbK and libusb0)
+
 === 0.2.0 / 2012-06-15
 
 * Divide up the libusb library across multiple files, required with autoload
