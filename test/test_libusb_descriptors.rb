@@ -56,7 +56,8 @@ class TestLibusbDescriptors < Test::Unit::TestCase
         assert_kind_of Integer, config_desc.bConfigurationValue
         assert_kind_of Integer, config_desc.iConfiguration
         assert_kind_of Integer, config_desc.bmAttributes
-        assert_kind_of Integer, config_desc.maxPower
+        assert_kind_of Integer, config_desc.bMaxPower
+        assert_kind_of Integer, config_desc.maxPower # deprecated
         assert_kind_of String, config_desc.extra if config_desc.extra
 
         config_desc.interfaces.each do |interface|

@@ -200,7 +200,7 @@ module USB
     end
 
     def_delegators :@cd, :bLength, :bDescriptorType, :wTotalLength, :bNumInterfaces,
-        :bConfigurationValue, :iConfiguration, :bmAttributes, :maxPower,
+        :bConfigurationValue, :iConfiguration, :bmAttributes, :bMaxPower,
         :inspect
 
     def <=>(o)

@@ -26,7 +26,7 @@ module LIBUSB
         :bConfigurationValue, :uint8,
         :iConfiguration, :uint8,
         :bmAttributes, :uint8,
-        :maxPower, :uint8,
+        :bMaxPower, :uint8,
         :interface, :pointer,
         :extra, :pointer,
         :extra_length, :int
@@ -76,9 +76,13 @@ module LIBUSB
     # Maximum power consumption of the USB device from this bus in this configuration when the device is fully opreation.
     #
     # @return [Integer] Maximum Power Consumption in 2mA units
-    def maxPower
-      self[:maxPower]
+    def bMaxPower
+      self[:bMaxPower]
     end
+
+    # @deprecated Use {#bMaxPower} instead.
+    alias maxPower bMaxPower
+
 
     # Extra descriptors.
     #
