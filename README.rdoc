@@ -39,7 +39,7 @@ by using the device descriptor attributes.
 A {LIBUSB::Device} could have several configurations. You can then decide of which
 configuration to enable. You can only enable one configuration at a time.
 
-Each {LIBUSB::Configuration} has one or more interfaces. This can be seen as functional group
+Each {LIBUSB::Configuration} has one or more interfaces. These can be seen as functional group
 performing a single feature of the device.
 
 Each {LIBUSB::Interface} has at least one {LIBUSB::Setting}. The first setting is always default.
