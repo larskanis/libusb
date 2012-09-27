@@ -22,6 +22,11 @@ module LIBUSB
     layout :altsetting, :pointer,
         :num_altsetting, :int
 
+    # Number of this interface.
+    def bInterfaceNumber
+      settings.first.bInterfaceNumber
+    end
+
     def initialize(configuration, *args)
       @configuration = configuration
       super(*args)
@@ -38,6 +43,10 @@ module LIBUSB
       return ifs
     end
     alias settings alt_settings
+
+    def inspect
+      "\#<#{self.class} #{bInterfaceNumber}>"
+    end
 
     # The {Device} this Interface belongs to.
     def device() self.configuration.device end

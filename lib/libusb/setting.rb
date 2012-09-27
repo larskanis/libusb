@@ -42,7 +42,7 @@ module LIBUSB
       self[:bDescriptorType]
     end
 
-    # Number of this interface.
+    # Number of the interface this setting belongs to.
     def bInterfaceNumber
       self[:bInterfaceNumber]
     end
