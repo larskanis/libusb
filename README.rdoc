@@ -60,7 +60,7 @@ maximum packet size.
 
 In order to use LIBUSB, you also need the libusb-1.0[http://libusbx.org] library (but not necessarily its header files).
 * Debian or Ubuntu:
-    sudo apt-get install libusb-1.0-0
+    sudo apt-get install libusb-1.0-0-dev
 * OS-X: install with homebrew:
     brew install libusb
   or macports:
