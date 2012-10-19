@@ -14,7 +14,7 @@
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
 module LIBUSB
-  VERSION = "0.2.1"
+  VERSION = "0.2.2"
 
   require 'libusb/call'
   require 'libusb/constants'
