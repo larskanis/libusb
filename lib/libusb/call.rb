@@ -212,6 +212,8 @@ module LIBUSB
 
     attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
 
+    attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, :blocking=>false
+    attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, :blocking=>false
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
 
