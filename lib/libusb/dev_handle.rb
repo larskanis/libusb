@@ -245,10 +245,11 @@ module LIBUSB
     # transferred; do not assume that timeout conditions indicate a complete lack of
     # I/O.
     #
-    # @param [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
-    # @param [String] :dataOut  the data to send with an outgoing transfer
-    # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
-    # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
+    # @param [Hash] args
+    # @option args [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
+    # @option args [String] :dataOut  the data to send with an outgoing transfer
+    # @option args [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @option args [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
     #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
     # @return [Fixnum] Number of bytes sent for an outgoing transfer
@@ -305,10 +306,11 @@ module LIBUSB
     #
     # The default endpoint bInterval value is used as the polling interval.
     #
-    # @param [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
-    # @param [String] :dataOut  the data to send with an outgoing transfer
-    # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
-    # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
+    # @param [Hash] args
+    # @option args [Endpoint, Fixnum] :endpoint  the (address of a) valid endpoint to communicate with
+    # @option args [String] :dataOut  the data to send with an outgoing transfer
+    # @option args [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @option args [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
     #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
     # @return [Fixnum] Number of bytes sent for an outgoing transfer
@@ -349,15 +351,16 @@ module LIBUSB
     # The direction of the transfer is inferred from the +:bmRequestType+ field of the
     # setup packet.
     #
-    # @param [Fixnum] :bmRequestType   the request type field for the setup packet
-    # @param [Fixnum] :bRequest  the request field for the setup packet
-    # @param [Fixnum] :wValue  the value field for the setup packet
-    # @param [Fixnum] :wIndex  the index field for the setup packet
-    # @param [String] :dataOut  the data to send with an outgoing transfer, it
+    # @param [Hash] args
+    # @option args [Fixnum] :bmRequestType   the request type field for the setup packet
+    # @option args [Fixnum] :bRequest  the request field for the setup packet
+    # @option args [Fixnum] :wValue  the value field for the setup packet
+    # @option args [Fixnum] :wIndex  the index field for the setup packet
+    # @option args [String] :dataOut  the data to send with an outgoing transfer, it
     #   is appended to the setup packet
-    # @param [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @option args [Fixnum] :dataIn   the number of bytes expected to receive with an ingoing transfer
     #   (excluding setup packet)
-    # @param [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
+    # @option args [Fixnum] :timeout   timeout (in millseconds) that this function should wait before giving
     #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
     # @return [Fixnum] Number of bytes sent (excluding setup packet) for outgoing transfer
