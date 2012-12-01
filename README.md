@@ -58,23 +58,12 @@ Each `LIBUSB::Setting` specifies it's own set of communication endpoints.
 Each `LIBUSB::Endpoint` specifies the type of transfer, direction, polling interval and
 maximum packet size.
 
-
 Prerequisites
 -------------
 
 * GNU/Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x or JRuby.
 
 * [libusbx](http://libusbx.org/)
-
-In order to use LIBUSB, you also need the libusb-1.0[http://libusbx.org] library (but not necessarily its header files).
-* Debian or Ubuntu:
-    sudo apt-get install libusb-1.0-0-dev
-* OS-X: install with homebrew:
-    brew install libusb
-  or macports:
-    port install libusb
-* Windows: libusb.gem comes with a precompiled +libusb.dll+, but you need to install a device driver (see below)
-
 
 Installation
 ------------
