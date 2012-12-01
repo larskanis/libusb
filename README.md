@@ -1,8 +1,6 @@
 Access USB devices from Ruby
 ============================
 
-* http://github.com/larskanis/libusb
-
 LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices.
 
 * [libusbx](http://libusbx.org) is a library that gives full access to devices connected via the USB
@@ -11,6 +9,12 @@ LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB dev
 * This Ruby binding supports the API version 1.0 of [libusbx](http://libusbx.org). Note that the old
   "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby
   extension [ruby-usb](http://www.a-k-r.org/ruby-usb/).
+
+Get the code and contribute:
+
+* [Fork the repository](http://github.com/larskanis/libusb).
+
+* [Open an issue](https://github.com/larskanis/libusb/issues).
 
 Features
 --------
