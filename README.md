@@ -20,14 +20,16 @@ Features
 
 Synopsis
 --------
-```ruby
-  require "libusb"
+See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API description.
 
-  usb = LIBUSB::Context.new
-  device = usb.devices(:idVendor => 0x04b4, :idProduct => 0x8613).first
-  device.open_interface(0) do |handle|
-    handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
-  end
+```ruby
+require "libusb"
+
+usb = LIBUSB::Context.new
+device = usb.devices(:idVendor => 0x04b4, :idProduct => 0x8613).first
+device.open_interface(0) do |handle|
+  handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
+end
 ```
 {LIBUSB::Context#devices} is used to get all or only particular devices.
 After {LIBUSB::Device#open_interface opening and claiming} the {LIBUSB::Device} the resulting {LIBUSB::DevHandle} can be
@@ -59,7 +61,7 @@ Prerequisites
   * Debian or Ubuntu:
 
       ```
-        $ sudo apt-get install libusb-1.0-0-dev
+      $ sudo apt-get install libusb-1.0-0-dev
       ```
   * OS-X: install with homebrew:
 
