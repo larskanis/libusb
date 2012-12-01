@@ -284,6 +284,35 @@ module LIBUSB
       end
     end
 
+    # Perform a USB bulk transfer (non-blocking).
+    # TODO: Document as soon as stable
+    def bulk_transfer!(args={}, &block)
+      # TODO: args processing should be factorized between bulk_transfer(!) methods
+      timeout = args.delete(:timeout) || 1000
+      endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      if endpoint&ENDPOINT_IN != 0
+        dataIn = args.delete(:dataIn) || raise(ArgumentError, "no :dataIn given for bulk read")
+      else
+        dataOut = args.delete(:dataOut) || raise(ArgumentError, "no :dataOut given for bulk write")
+      end
+      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
+
+      # reuse transfer struct to speed up transfer
+      @bulk_transfer ||= BulkTransfer.new :dev_handle => self
+      tr = @bulk_transfer
+      tr.endpoint = endpoint
+      tr.timeout = timeout
+      if dataOut
+        tr.buffer = dataOut
+      else
+        tr.alloc_buffer(dataIn)
+      end
+
+      tr.submit!(&block)
+
+    end
+
     # Perform a USB interrupt transfer.
     #
     # The direction of the transfer is inferred from the direction bits of the
@@ -344,6 +373,35 @@ module LIBUSB
       end
     end
 
+    # Perform a USB interrupt transfer.
+    # TODO: Document as soon as stable
+    def interrupt_transfer!(args={}, &block)
+      # TODO: args processing should be factorized between interrupt_transfer(!) methods
+      timeout = args.delete(:timeout) || 1000
+      endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
+      endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+      if endpoint&ENDPOINT_IN != 0
+        dataIn = args.delete(:dataIn) || raise(ArgumentError, "no :dataIn given for interrupt read")
+      else
+        dataOut = args.delete(:dataOut) || raise(ArgumentError, "no :dataOut given for interrupt write")
+      end
+      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
+
+      # reuse transfer struct to speed up transfer
+      @interrupt_transfer ||= InterruptTransfer.new :dev_handle => self
+      tr = @interrupt_transfer
+      tr.endpoint = endpoint
+      tr.timeout = timeout
+      if dataOut
+        tr.buffer = dataOut
+      else
+        tr.alloc_buffer(dataIn)
+      end
+
+      tr.submit!(&block)
+
+    end
+
     # Perform a USB control transfer.
     #
     # The direction of the transfer is inferred from the +:bmRequestType+ field of the
@@ -394,6 +452,38 @@ module LIBUSB
       else
         tr.actual_length
       end
+    end
+
+    # Perform a USB control transfer (non-blocking).
+    # TODO: Document as soon as stable
+    def control_transfer!(args={}, &block)
+      # TODO: args processing should be factorized between control_transfer(!) methods
+      bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
+      bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")
+      wValue = args.delete(:wValue) || raise(ArgumentError, "param :wValue not given")
+      wIndex = args.delete(:wIndex) || raise(ArgumentError, "param :wIndex not given")
+      timeout = args.delete(:timeout) || 1000
+      if bmRequestType&ENDPOINT_IN != 0
+        dataIn = args.delete(:dataIn) || 0
+        dataOut = ''
+      else
+        dataOut = args.delete(:dataOut) || ''
+      end
+      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
+
+      # reuse transfer struct to speed up transfer
+      @control_transfer ||= ControlTransfer.new :dev_handle => self
+      tr = @control_transfer
+      tr.timeout = timeout
+      if dataIn
+        setup_data = [bmRequestType, bRequest, wValue, wIndex, dataIn].pack('CCvvv')
+        tr.alloc_buffer( dataIn + CONTROL_SETUP_SIZE, setup_data )
+      else
+        tr.buffer = [bmRequestType, bRequest, wValue, wIndex, dataOut.bytesize, dataOut].pack('CCvvva*')
+      end
+
+      tr.submit!(&block)
+
     end
   end
 end
