@@ -212,6 +212,8 @@ module LIBUSB
 
     attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
 
+    attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, :blocking=>false
+    attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, :blocking=>false
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
 
@@ -267,5 +269,15 @@ module LIBUSB
           :iSerialNumber, :uint8,
           :bNumConfigurations, :uint8
     end
+
+    class Timeval < FFI::Struct
+      rb_maj, rb_min, rb_micro = RUBY_VERSION.split('.')
+      if rb_maj.to_i >= 1 && rb_min.to_i >= 9 || RUBY_PLATFORM =~ /java/
+        layout :tv_sec => :ulong, :tv_usec => :ulong
+      else
+        layout :tv_sec, :ulong, 0, :tv_usec, :ulong, 4
+      end
+    end
+
   end
 end

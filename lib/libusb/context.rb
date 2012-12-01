@@ -87,6 +87,18 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_handle_events" if res<0
     end
 
+    def handle_events_timeout_completed
+      t = Call::Timeval.new # FFI::MemoryPointer.new(Timeval)
+      res = Call.libusb_handle_events_timeout_completed(@ctx, t.pointer, nil)
+      LIBUSB.raise_error res, "in libusb_handle_events_timeout_completed" if res<0
+    end
+
+    def handle_events_timeout
+      t = Call::Timeval.new # FFI::MemoryPointer.new(Timeval)
+      res = Call.libusb_handle_events_timeout(@ctx, t.pointer)
+      LIBUSB.raise_error res, "in libusb_handle_events_timeout" if res<0
+    end
+
     # Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
     #
     # @param [Hash] filter_hash  A number of criteria can be defined in key-value pairs.
