@@ -1,26 +1,26 @@
-# -*- coding: utf-8 -*-
+<!-- -*- coding: utf-8 -*- -->
 
-= Access USB devices from Ruby via libusb-1.0.
-
-* http://github.com/larskanis/libusb
-
-== DESCRIPTION:
+Access USB devices from Ruby
+============================
 
 LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices.
 
-* libusb[http://libusbx.org] is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
-* This Ruby binding supports the API version 1.0 of libusb[http://libusbx.org]. Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension ruby-usb[http://www.a-k-r.org/ruby-usb/] .
+* [libusb](http://libusbx.org) is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
+* This Ruby binding supports the API version 1.0 of [libusb](http://libusbx.org). Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension [ruby-usb](http://www.a-k-r.org/ruby-usb/) .
 
 
 LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
 
-== FEATURES:
+Features
+--------
+
 * Access to descriptors of devices, configurations, interfaces, settings and endpoints
 * Synchronous and asynchronous communication for bulk, control, interrupt and isochronous transfers
-* Compatibility layer for ruby-usb[http://www.a-k-r.org/ruby-usb/] (API based on libusb-0.1). See {::USB} for description.
+* Compatibility layer for [ruby-usb](http://www.a-k-r.org/ruby-usb/) (API based on libusb-0.1). See {::USB} for description.
 
-== SYNOPSIS:
-
+Synopsis
+--------
+```ruby
   require "libusb"
 
   usb = LIBUSB::Context.new
@@ -28,6 +28,7 @@ LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
   device.open_interface(0) do |handle|
     handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
   end
+```
 {LIBUSB::Context#devices} is used to get all or only particular devices.
 After {LIBUSB::Device#open_interface opening and claiming} the {LIBUSB::Device} the resulting {LIBUSB::DevHandle} can be
 used to communicate with the connected USB device
@@ -50,40 +51,53 @@ Each {LIBUSB::Endpoint} specifies the type of transfer, direction, polling inter
 maximum packet size.
 
 
-== REQUIREMENTS:
+Prerequisites
+-------------
 
 * Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x or JRuby
+* [libusb-1.0](http://libusbx.org) library version 1.0.8+ :
+  * Debian or Ubuntu:
 
-== INSTALL:
+      ```
+        $ sudo apt-get install libusb-1.0-0-dev
+      ```
+  * OS-X: install with homebrew:
 
-  gem install libusb
+      ```
+      $ brew install libusb
+      ```
+    or macports:
 
-In order to use LIBUSB, you also need the libusb-1.0[http://libusbx.org] library (but not necessarily its header files).
-* Debian or Ubuntu:
-    sudo apt-get install libusb-1.0-0-dev
-* OS-X: install with homebrew:
-    brew install libusb
-  or macports:
-    port install libusb
-* Windows: libusb.gem comes with a precompiled +libusb.dll+, but you need to install a device driver (see below)
+      ```
+      $ port install libusb
+      ```
+  * Windows: libusb.gem comes with a precompiled +libusb.dll+, but you need to install a device driver (see below)
+
+
+Install
+-------
+
+    $ gem install libusb
 
 Latest code can be used in this way:
 
-  git clone git://github.com/larskanis/libusb.git
-  rake install_gem
+    $ git clone git://github.com/larskanis/libusb.git
+    $ rake install_gem
 
 
-== Usage on Windows
+Usage on Windows
+----------------
 
 In contrast to Linux, any access to an USB device by LIBUSB on Windows requires a proper driver
 installed in the system. Fortunately creating such a driver is quite easy with
-Zadig[http://sourceforge.net/projects/libwdi/files/zadig/]. Select the interesting USB device,
+[Zadig](http://sourceforge.net/projects/libwdi/files/zadig/). Select the interesting USB device,
 choose WinUSB driver and press "Install Driver". That's it. You may take the generated output directory
 with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
 systems.
 
 
-== Cross compiling for Windows
+Cross compiling for Windows
+---------------------------
 
 Libusb-gem can be build on a linux or darwin host for the win32 platform,
 using the mingw cross compiler collection. Libusb is downloaded from source
@@ -91,25 +105,28 @@ git repo, cross compiled and included in the generated libusb.gem.
 
 Install mingw32. On a debian based system this should work:
 
-  apt-get install mingw32
+    $ apt-get install mingw32
 
 On MacOS X, if you have MacPorts installed:
 
-  port install i386-mingw32-gcc
+    $ port install i386-mingw32-gcc
 
 Download and cross compile libusb for win32:
 
-  rake cross gem
+    $ rake cross gem
 
-If everything works, there should be libusb-VERSION-x86-mingw32.gem in the pkg
+If everything works, there should be `libusb-VERSION-x86-mingw32.gem` in the pkg
 directory.
 
-== Resources
+Resources
+---------
 
-* API documentation of Libusb for Ruby: http://rubydoc.info/gems/libusb/frames
+* Project's home page: http://github.com/larskanis/libusb
+* API documentation: http://rubydoc.info/gems/libusb/frames
 * Mailinglist: http://rubyforge.org/mailman/listinfo/libusb-hackers
 * Overall introduction to USB: http://www.usbmadesimple.co.uk
 
-== Todo
+Todo
+----
 
 * add proper handling for polling and timing: http://libusb.sourceforge.net/api-1.0/group__poll.html

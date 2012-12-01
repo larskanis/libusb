@@ -54,11 +54,12 @@ hoe = Hoe.spec 'libusb' do
   extra_deps << ['ffi', '>= 1.0']
   extra_dev_deps << ['rake-compiler', '>= 0.6']
 
-  self.url = 'http://github.com/larskanis/libusb'
+  self.urls = ['http://github.com/larskanis/libusb']
   self.summary = 'Access USB devices from Ruby via libusb-1.0'
   self.description = 'LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices'
 
-  self.readme_file = 'README.rdoc'
+  self.readme_file = 'README.md'
+  self.history_file = 'History.md'
   spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
   spec_extras[:files] = `git ls-files`.split
   self.extra_rdoc_files << self.readme_file

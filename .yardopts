@@ -1,1 +1,6 @@
---title "libusb-1.0 Ruby Interface" --no-private lib/**/*.rb
+--title "libusb-1.0 Ruby Interface"
+--no-private
+lib/**/*.rb
+-
+README.md
+History.md
