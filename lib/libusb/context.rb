@@ -98,6 +98,9 @@ module LIBUSB
     #                                events, or 0 for non-blocking mode
     # @param [Call::CompletionFlag, nil] completion_flag  CompletionFlag to check
     def handle_events(timeout=nil, completion_flag=nil)
+      if completion_flag && !completion_flag.is_a?(Call::CompletionFlag)
+        raise ArgumentError, "completion_flag is not a CompletionFlag"
+      end
       if timeout
         timeval = Call::Timeval.new
         timeval.in_ms = timeout
