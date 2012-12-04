@@ -23,6 +23,7 @@ module LIBUSB
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
       @buffer = nil
+      @completion_flag = Call::CompletionFlag.new
     end
     private :initialize
 
@@ -158,20 +159,20 @@ module LIBUSB
     #
     # A proper {LIBUSB::Error} is raised, in case the transfer did not complete.
     def submit_and_wait!
-      completed = false
+      @completion_flag.completed = false
       submit! do |tr2|
-        completed = true
+        @completion_flag.completed = true
       end
 
-      until completed
+      until @completion_flag.completed?
         begin
-          @dev_handle.device.context.handle_events
+          @dev_handle.device.context.handle_events nil, @completion_flag
         rescue ERROR_INTERRUPTED
           next
         rescue LIBUSB::Error
           cancel!
-          until completed
-            @dev_handle.device.context.handle_events
+          until @completion_flag.completed?
+            @dev_handle.device.context.handle_events nil, @completion_flag
           end
           raise
         end

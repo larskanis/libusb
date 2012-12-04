@@ -82,8 +82,22 @@ module LIBUSB
     # This method must be called when libusb is running asynchronous transfers.
     # This gives libusb the opportunity to reap pending transfers,
     # invoke callbacks, etc.
-    def handle_events
-      res = Call.libusb_handle_events(@ctx)
+    def handle_events(timeout=nil, completion_flag=nil)
+      if timeout
+        timeval = Call::Timeval.new
+        timeval.in_ms = timeout
+        res = if Call.respond_to?(:libusb_handle_events_timeout_completed)
+          Call.libusb_handle_events_timeout_completed(@ctx, timeval, completion_flag)
+        else
+          Call.libusb_handle_events_timeout(@ctx, timeval)
+        end
+      else
+        res = if Call.respond_to?(:libusb_handle_events_completed)
+          Call.libusb_handle_events_completed(@ctx, completion_flag )
+        else
+          Call.libusb_handle_events(@ctx)
+        end
+      end
       LIBUSB.raise_error res, "in libusb_handle_events" if res<0
     end
 

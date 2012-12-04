@@ -211,6 +211,9 @@ module LIBUSB
     attach_function 'libusb_free_transfer', [:pointer], :void
 
     attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
+    try_attach_function 'libusb_handle_events_completed', [:libusb_context, :pointer], :int, :blocking=>true
+    attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, :blocking=>true
+    try_attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, :blocking=>true
 
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
@@ -266,6 +269,31 @@ module LIBUSB
           :iProduct, :uint8,
           :iSerialNumber, :uint8,
           :bNumConfigurations, :uint8
+    end
+
+    class Timeval < FFI::Struct
+      layout :tv_sec,  :long,
+        :tv_usec, :long
+
+      def in_ms=(value)
+        self[:tv_sec], self[:tv_usec] = (value*1000).divmod(1000000)
+      end
+
+      def in_ms
+        self[:tv_sec]*1000 + self[:tv_usec]/1000
+      end
+    end
+
+    class CompletionFlag < FFI::Struct
+      layout :completed,  :int
+
+      def completed?
+        self[:completed] != 0
+      end
+
+      def completed=(flag)
+        self[:completed] = flag ? 1 : 0
+      end
     end
   end
 end
