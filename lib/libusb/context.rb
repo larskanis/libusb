@@ -82,6 +82,21 @@ module LIBUSB
     # This method must be called when libusb is running asynchronous transfers.
     # This gives libusb the opportunity to reap pending transfers,
     # invoke callbacks, etc.
+    #
+    # If a zero timeout is passed, this function will handle any already-pending
+    # events and then immediately return in non-blocking style.
+    #
+    # If a non-zero timeout is passed and no events are currently pending, this
+    # method will block waiting for events to handle up until the specified timeout.
+    # If an event arrives or a signal is raised, this method will return early.
+    #
+    # If the parameter completion_flag is used, then after obtaining the event
+    # handling lock this function will return immediately if the flag is set to completed.
+    # This allows for race free waiting for the completion of a specific transfer.
+    #
+    # @param [Integer, nil] timeout  the maximum time (in millseconds) to block waiting for
+    #                                events, or 0 for non-blocking mode
+    # @param [Call::CompletionFlag, nil] completion_flag  CompletionFlag to check
     def handle_events(timeout=nil, completion_flag=nil)
       if timeout
         timeval = Call::Timeval.new
