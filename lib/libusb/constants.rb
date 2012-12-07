@@ -71,12 +71,12 @@ module LIBUSB
     [0x06, 0x01, 0x01, "StillImaging"],
     [0x06, nil, nil, "Image"],
     [0x07, nil, nil, "Printer"],
-    [0x08, 0x01, nil, "MassStorage RBC Bluk-Only"],
-    [0x08, 0x02, 0x50, "MassStorage ATAPI Bluk-Only"],
-    [0x08, 0x03, 0x50, "MassStorage QIC-157 Bluk-Only"],
+    [0x08, 0x01, nil, "MassStorage RBC Bulk-Only"],
+    [0x08, 0x02, 0x50, "MassStorage ATAPI Bulk-Only"],
+    [0x08, 0x03, 0x50, "MassStorage QIC-157 Bulk-Only"],
     [0x08, 0x04, nil, "MassStorage UFI"],
-    [0x08, 0x05, 0x50, "MassStorage SFF-8070i Bluk-Only"],
-    [0x08, 0x06, 0x50, "MassStorage SCSI Bluk-Only"],
+    [0x08, 0x05, 0x50, "MassStorage SFF-8070i Bulk-Only"],
+    [0x08, 0x06, 0x50, "MassStorage SCSI Bulk-Only"],
     [0x08, nil, nil, "MassStorage"],
     [0x09, 0x00, 0x00, "Full speed Hub"],
     [0x09, 0x00, 0x01, "Hi-speed Hub with single TT"],
@@ -132,7 +132,7 @@ module LIBUSB
     elsif desc = CLASS_CODES_HASH1[base_class]
       desc + " (%02x,%02x)" % [sub_class, protocol]
     else
-      "Unkonwn(%02x,%02x,%02x)" % [base_class, sub_class, protocol]
+      "Unknown(%02x,%02x,%02x)" % [base_class, sub_class, protocol]
     end
   end
 end
