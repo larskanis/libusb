@@ -157,8 +157,8 @@ module LIBUSB
 
     # Submit the transfer and wait until the transfer completes or fails.
     #
-    # A proper {LIBUSB::Error} is raised, in case the transfer did not complete.
-    def submit_and_wait!
+    # Inspect {#status} to check for transfer errors.
+    def submit_and_wait
       @completion_flag.completed = false
       submit! do |tr2|
         @completion_flag.completed = true
@@ -177,6 +177,13 @@ module LIBUSB
           raise
         end
       end
+    end
+
+    # Submit the transfer and wait until the transfer completes or fails.
+    #
+    # A proper {LIBUSB::Error} is raised, in case the transfer did not complete.
+    def submit_and_wait!
+      submit_and_wait
 
       raise( TransferStatusToError[status] || ERROR_OTHER, "error #{status}") unless status==:TRANSFER_COMPLETED
     end

@@ -215,9 +215,15 @@ class TestLibusbMassStorage < Test::Unit::TestCase
         sleep 0.01
       end
     end
-    assert_raise(CSWError, LIBUSB::ERROR_TIMEOUT) do
-      bulk_transfer(:endpoint=>endpoint_in, :dataIn=>123)
+    assert_raise(LIBUSB::ERROR_TIMEOUT) do
+      begin
+        bulk_transfer(:endpoint=>endpoint_in, :dataIn=>123)
+      rescue LIBUSB::ERROR_TIMEOUT => err
+        assert_kind_of String, err.transferred
+        raise
+      end
     end
+
     th.kill
     dev.clear_halt(endpoint_in)
     dev.clear_halt(endpoint_out)

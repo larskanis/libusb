@@ -228,6 +228,14 @@ module LIBUSB
 
     # Perform a USB bulk transfer.
     #
+    # When called without a block, the transfer is done synchronously - so all events are handled
+    # internally and the sent/received data will be returned after completion or an exception will be raised.
+    #
+    # When called with a block, the method returns immediately after submitting the transfer.
+    # You then have to ensure, that {Context#handle_events} is called properly. As soon as the
+    # transfer is completed, the block is called with the sent/received data in case of success
+    # or the exception instance in case of failure.
+    #
     # The direction of the transfer is inferred from the direction bits of the
     # endpoint address.
     #
@@ -235,10 +243,10 @@ module LIBUSB
     # expecting to receive. If less data arrives than expected, this function will
     # return that data.
     #
-    # You should also check the returned number of bytes for bulk writes. Not all of the
+    # You should check the returned number of bytes for bulk writes. Not all of the
     # data may have been written.
     #
-    # Also check transferred bytes when dealing with a timeout error code. libusb may have
+    # Also check {Error#transferred} when dealing with a timeout exception. libusb may have
     # to split your transfer into a number of chunks to satisfy underlying O/S
     # requirements, meaning that the timeout may expire after the first few chunks
     # have completed. libusb is careful not to lose any data that may have been
@@ -254,7 +262,8 @@ module LIBUSB
     #
     # @return [Fixnum] Number of bytes sent for an outgoing transfer
     # @return [String] Received data for an ingoing transfer
-    def bulk_transfer(args={})
+    # @return [self]  When called with a block
+    def bulk_transfer(args={}, &block)
       timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
@@ -276,16 +285,18 @@ module LIBUSB
         tr.alloc_buffer(dataIn)
       end
 
-      tr.submit_and_wait!
-
-      if dataOut
-        tr.actual_length
-      else
-        tr.actual_buffer
-      end
+      submit_transfer(tr, dataIn, 0, &block)
     end
 
     # Perform a USB interrupt transfer.
+    #
+    # When called without a block, the transfer is done synchronously - so all events are handled
+    # internally and the sent/received data will be returned after completion or an exception will be raised.
+    #
+    # When called with a block, the method returns immediately after submitting the transfer.
+    # You then have to ensure, that {Context#handle_events} is called properly. As soon as the
+    # transfer is completed, the block is called with the sent/received data in case of success
+    # or the exception instance in case of failure.
     #
     # The direction of the transfer is inferred from the direction bits of the
     # endpoint address.
@@ -294,10 +305,10 @@ module LIBUSB
     # are expecting to receive. If less data arrives than expected, this function will
     # return that data.
     #
-    # You should also check the returned number of bytes for interrupt writes. Not all of
+    # You should check the returned number of bytes for interrupt writes. Not all of
     # the data may have been written.
     #
-    # Also check transferred when dealing with a timeout error code. libusb may have
+    # Also check {Error#transferred} when dealing with a timeout exception. libusb may have
     # to split your transfer into a number of chunks to satisfy underlying O/S
     # requirements, meaning that the timeout may expire after the first few chunks
     # have completed. libusb is careful not to lose any data that may have been
@@ -315,7 +326,8 @@ module LIBUSB
     #
     # @return [Fixnum] Number of bytes sent for an outgoing transfer
     # @return [String] Received data for an ingoing transfer
-    def interrupt_transfer(args={})
+    # @return [self]  When called with a block
+    def interrupt_transfer(args={}, &block)
       timeout = args.delete(:timeout) || 1000
       endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
@@ -337,16 +349,18 @@ module LIBUSB
         tr.alloc_buffer(dataIn)
       end
 
-      tr.submit_and_wait!
-
-      if dataOut
-        tr.actual_length
-      else
-        tr.actual_buffer
-      end
+      submit_transfer(tr, dataIn, 0, &block)
     end
 
     # Perform a USB control transfer.
+    #
+    # When called without a block, the transfer is done synchronously - so all events are handled
+    # internally and the sent/received data will be returned after completion or an exception will be raised.
+    #
+    # When called with a block, the method returns immediately after submitting the transfer.
+    # You then have to ensure, that {Context#handle_events} is called properly. As soon as the
+    # transfer is completed, the block is called with the sent/received data in case of success
+    # or the exception instance in case of failure.
     #
     # The direction of the transfer is inferred from the +:bmRequestType+ field of the
     # setup packet.
@@ -365,7 +379,8 @@ module LIBUSB
     #
     # @return [Fixnum] Number of bytes sent (excluding setup packet) for outgoing transfer
     # @return [String] Received data (without setup packet) for ingoing transfer
-    def control_transfer(args={})
+    # @return [self]  When called with a block
+    def control_transfer(args={}, &block)
       bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
       bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")
       wValue = args.delete(:wValue) || raise(ArgumentError, "param :wValue not given")
@@ -390,12 +405,33 @@ module LIBUSB
         tr.buffer = [bmRequestType, bRequest, wValue, wIndex, dataOut.bytesize, dataOut].pack('CCvvva*')
       end
 
-      tr.submit_and_wait!
+      submit_transfer(tr, dataIn, CONTROL_SETUP_SIZE, &block)
+    end
 
-      if dataIn
-        tr.actual_buffer(CONTROL_SETUP_SIZE)
+    private
+    def submit_transfer(tr, dataIn, offset)
+      if block_given?
+        tr.submit! do
+          res = dataIn ? tr.actual_buffer(offset) : tr.actual_length
+
+          if tr.status==:TRANSFER_COMPLETED
+            yield res
+          else
+            exception = Transfer::TransferStatusToError[tr.status] || ERROR_OTHER
+
+            yield exception.new("error #{tr.status}", res)
+          end
+        end
+        self
       else
-        tr.actual_length
+        tr.submit_and_wait
+
+        res = dataIn ? tr.actual_buffer(offset) : tr.actual_length
+
+        unless tr.status==:TRANSFER_COMPLETED
+          raise (Transfer::TransferStatusToError[tr.status] || ERROR_OTHER).new("error #{tr.status}", res)
+        end
+        res
       end
     end
   end

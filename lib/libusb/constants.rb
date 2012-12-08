@@ -29,7 +29,17 @@ module LIBUSB
 
   # Base class of libusb errors
   class Error < RuntimeError
+    # The data already transferred before the exception was raised
+    # @return [Fixnum] Number of bytes sent for an outgoing transfer
+    # @return [String] Received data for an ingoing transfer
+    attr_reader :transferred
+
+    def initialize(msg=nil, transferred=nil)
+      super(msg)
+      @transferred = transferred
+    end
   end
+
   # @private
   ErrorClassForResult = {}
 
