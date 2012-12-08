@@ -275,12 +275,28 @@ module LIBUSB
       layout :tv_sec,  :long,
         :tv_usec, :long
 
+      # set timeval to the number of milliseconds
+      # @param [Fixnum] value
       def in_ms=(value)
         self[:tv_sec], self[:tv_usec] = (value*1000).divmod(1000000)
       end
 
+      # get the number of milliseconds in timeval
+      # @return [Fixnum]
       def in_ms
         self[:tv_sec]*1000 + self[:tv_usec]/1000
+      end
+
+      # set timeval to the number of seconds
+      # @param [Numeric] value
+      def in_s=(value)
+        self[:tv_sec], self[:tv_usec] = (value*1000000).divmod(1000000)
+      end
+
+      # get the number of seconds in timeval
+      # @return [Float]
+      def in_s
+        self[:tv_sec] + self[:tv_usec]/1000000.0
       end
     end
 

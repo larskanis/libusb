@@ -24,6 +24,11 @@ class TestLibusbStructs < Test::Unit::TestCase
     assert_equal 12345, s[:tv_sec]
     assert_equal 678000, s[:tv_usec]
     assert_equal 12345678, s.in_ms
+
+    s.in_s = 1234.5678
+    assert_equal 1234, s[:tv_sec]
+    assert_equal 567800, s[:tv_usec]
+    assert_equal 1234.5678, s.in_s
   end
 
   def test_struct_CompletionFlag
