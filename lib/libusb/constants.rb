@@ -70,6 +70,9 @@ module LIBUSB
   ISO_SYNC_TYPE_MASK = 0x0C
   ISO_USAGE_TYPE_MASK = 0x30
 
+  POLLIN = 1
+  POLLOUT = 4
+
 
   # http://www.usb.org/developers/defined_class
   # @private

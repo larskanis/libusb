@@ -215,6 +215,12 @@ module LIBUSB
     attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, :blocking=>true
     try_attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, :blocking=>true
 
+    callback :libusb_pollfd_added_cb, [:int, :short, :pointer], :void
+    callback :libusb_pollfd_removed_cb, [:int, :pointer], :void
+
+    attach_function 'libusb_get_pollfds', [:libusb_context], :pointer
+    attach_function 'libusb_get_next_timeout', [:libusb_context, :pointer], :int
+    attach_function 'libusb_set_pollfd_notifiers', [:libusb_context, :libusb_pollfd_added_cb, :libusb_pollfd_removed_cb, :pointer], :void
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
 
@@ -310,6 +316,11 @@ module LIBUSB
       def completed=(flag)
         self[:completed] = flag ? 1 : 0
       end
+    end
+
+    class Pollfd < FFI::Struct
+      layout :fd,  :int,
+          :events, :short
     end
   end
 end

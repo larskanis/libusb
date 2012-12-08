@@ -18,11 +18,49 @@ require 'libusb/call'
 module LIBUSB
   # Class representing a libusb session.
   class Context
+    class Pollfd
+      include Comparable
+
+      def initialize(fd, events=0)
+        @fd, @events = fd, events
+      end
+
+      def <=>(other)
+        @fd <=> other.fd
+      end
+
+      # @return [IO]  IO object bound to the file descriptor.
+      def io
+        IO.new @fd
+      end
+
+      # @return [Integer]  Numeric file descriptor
+      attr_reader :fd
+
+      # @return [Integer]  Event flags to poll for
+      attr_reader :events
+
+      def pollin?
+        @events & POLLIN != 0
+      end
+
+      def pollout?
+        @events & POLLOUT != 0
+      end
+
+      def inspect
+        "\#<#{self.class} fd:#{@fd}#{' POLLIN' if pollin?}#{' POLLOUT' if pollout?}>"
+      end
+    end
+
+
     # Initialize libusb context.
     def initialize
       m = FFI::MemoryPointer.new :pointer
       Call.libusb_init(m)
       @ctx = m.read_pointer
+      @on_pollfd_added = nil
+      @on_pollfd_removed = nil
     end
 
     # Deinitialize libusb.
@@ -154,6 +192,93 @@ module LIBUSB
         ( !filter_hash[:bcdUSB] || [filter_hash[:bcdUSB]].flatten.include?(dev.bcdUSB) ) &&
         ( !filter_hash[:bcdDevice] || [filter_hash[:bcdDevice]].flatten.include?(dev.bcdDevice) )
       end
+    end
+
+
+    # Retrieve a list of file descriptors that should be polled by your main
+    # loop as libusb event sources.
+    #
+    # As file descriptors are a Unix-specific concept, this function is not
+    # available on Windows and will always return +nil+.
+    #
+    # @return [Array<Pollfd>]  list of Pollfd objects,
+    #   +nil+ on error,
+    #   +nil+ on platforms where the functionality is not available
+    def pollfds
+      ppPollfds = Call.libusb_get_pollfds(@ctx)
+      return nil if ppPollfds.null?
+      offs = 0
+      pollfds = []
+      while !(pPollfd=ppPollfds.get_pointer(offs)).null?
+        pollfd = Call::Pollfd.new pPollfd
+        pollfds << Pollfd.new(pollfd[:fd], pollfd[:events])
+        offs += FFI.type_size :pointer
+      end
+      # ppPollfds has to be released by free() -> give the GC this job
+      ppPollfds.autorelease = true
+      pollfds
+    end
+
+    # Determine the next internal timeout that libusb needs to handle.
+    #
+    # You only need to use this function if you are calling poll() or select() or
+    # similar on libusb's file descriptors yourself - you do not need to use it if
+    # you are calling {#handle_events} directly.
+    #
+    # You should call this function in your main loop in order to determine how long
+    # to wait for select() or poll() to return results. libusb needs to be called
+    # into at this timeout, so you should use it as an upper bound on your select() or
+    # poll() call.
+    #
+    # When the timeout has expired, call into {#handle_events} (perhaps
+    # in non-blocking mode) so that libusb can handle the timeout.
+    #
+    # This function may return zero. If this is the
+    # case, it indicates that libusb has a timeout that has already expired so you
+    # should call {#handle_events} immediately. A return code
+    # of +nil+ indicates that there are no pending timeouts.
+    #
+    # On some platforms, this function will always returns +nil+ (no pending timeouts).
+    # See libusb's notes on time-based events.
+    #
+    # @return [Float, nil]  the timeout in seconds
+    def next_timeout
+      timeval = Call::Timeval.new
+      res = Call.libusb_get_next_timeout @ctx, timeval
+      LIBUSB.raise_error res, "in libusb_get_next_timeout" if res<0
+      res == 1 ? timeval.in_s : nil
+    end
+
+    # Register a notification block for file descriptor additions.
+    #
+    # This block will be invoked for every new file descriptor that
+    # libusb uses as an event source.
+    #
+    # Note that file descriptors may have been added even before you register these
+    # notifiers (e.g. at {Context#initialize} time).
+    def on_pollfd_added &block
+      @on_pollfd_added = proc do |fd, events, _|
+        pollfd = Pollfd.new fd, events
+        block.call pollfd
+      end
+      Call.libusb_set_pollfd_notifiers @ctx, @on_pollfd_added, @on_pollfd_removed, nil
+    end
+
+    # Register a notification block for file descriptor removals.
+    #
+    # This block will be invoked for every removed file descriptor that
+    # libusb uses as an event source.
+    #
+    # Note that the removal notifier may be called during {Context#exit}
+    # (e.g. when it is closing file descriptors that were opened and added to the poll
+    # set at {Context#initialize} time). If you don't want this, overwrite the notifier
+    # immediately before calling {Context#exit}.
+    def on_pollfd_removed &block
+      @on_pollfd_removed = proc do |fd, _|
+        pollfd = Pollfd.new fd
+        block.call pollfd
+      end
+      Call.libusb_set_pollfd_notifiers @ctx, @on_pollfd_added, @on_pollfd_removed, nil
     end
   end
 end
