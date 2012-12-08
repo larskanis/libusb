@@ -120,6 +120,14 @@ Download and cross compile libusb for win32:
 If everything works, there should be `libusb-VERSION-x86-mingw32.gem` in the pkg
 directory.
 
+EventMachine integration
+------------------------
+
+Libusb for Ruby comes with an experimental integration to [EventMachine](http://rubyeventmachine.com/).
+That API is currently proof of concept - see {LIBUSB::Context#eventmachine_register}.
+If you're experienced with EventMachine, please leave a comment.
+
+
 Resources
 ---------
 
@@ -131,4 +139,4 @@ Resources
 Todo
 ----
 
-* add proper handling for polling and timing: http://libusb.sourceforge.net/api-1.0/group__poll.html
+* stabilize EventMachine interface
