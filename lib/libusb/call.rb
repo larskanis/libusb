@@ -17,7 +17,9 @@ require 'rubygems'
 require 'ffi'
 
 module LIBUSB
-  # C level interface
+  # C level interface - for internal use only
+  #
+  # All enum codes are available as constants in {LIBUSB} namespace.
   module Call
     extend FFI::Library
 

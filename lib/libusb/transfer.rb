@@ -19,6 +19,11 @@ module LIBUSB
   # Abstract base class for USB transfers. Use
   # {ControlTransfer}, {BulkTransfer}, {InterruptTransfer}, {IsochronousTransfer}
   # to do transfers.
+  #
+  # There are convenience methods for {DevHandle#bulk_transfer}, {DevHandle#control_transfer}
+  # and {DevHandle#interrupt_transfer}, that fit for most use cases.
+  # Using {Transfer} derived classes directly, however, is needed for isochronous transfers and
+  # allows a more advanced buffer management.
   class Transfer
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
