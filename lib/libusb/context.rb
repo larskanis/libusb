@@ -53,6 +53,18 @@ module LIBUSB
       end
     end
 
+    class CompletionFlag < FFI::Struct
+      layout :completed,  :int
+
+      def completed?
+        self[:completed] != 0
+      end
+
+      def completed=(flag)
+        self[:completed] = flag ? 1 : 0
+      end
+    end
+
 
     # Initialize libusb context.
     def initialize
@@ -131,12 +143,13 @@ module LIBUSB
     # If the parameter completion_flag is used, then after obtaining the event
     # handling lock this function will return immediately if the flag is set to completed.
     # This allows for race free waiting for the completion of a specific transfer.
+    # See source of {Transfer#submit_and_wait} for a use case of completion_flag.
     #
     # @param [Integer, nil] timeout  the maximum time (in millseconds) to block waiting for
     #                                events, or 0 for non-blocking mode
-    # @param [Call::CompletionFlag, nil] completion_flag  CompletionFlag to check
+    # @param [Context::CompletionFlag, nil] completion_flag  CompletionFlag to check
     def handle_events(timeout=nil, completion_flag=nil)
-      if completion_flag && !completion_flag.is_a?(Call::CompletionFlag)
+      if completion_flag && !completion_flag.is_a?(Context::CompletionFlag)
         raise ArgumentError, "completion_flag is not a CompletionFlag"
       end
       if timeout

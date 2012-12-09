@@ -32,7 +32,7 @@ class TestLibusbStructs < Test::Unit::TestCase
   end
 
   def test_struct_CompletionFlag
-    s = LIBUSB::Call::CompletionFlag.new
+    s = LIBUSB::Context::CompletionFlag.new
     assert_equal 0, s[:completed]
     assert_equal false, s.completed?
     s.completed = true

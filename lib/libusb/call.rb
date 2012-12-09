@@ -306,18 +306,6 @@ module LIBUSB
       end
     end
 
-    class CompletionFlag < FFI::Struct
-      layout :completed,  :int
-
-      def completed?
-        self[:completed] != 0
-      end
-
-      def completed=(flag)
-        self[:completed] = flag ? 1 : 0
-      end
-    end
-
     class Pollfd < FFI::Struct
       layout :fd,  :int,
           :events, :short

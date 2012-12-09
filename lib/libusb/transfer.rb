@@ -23,7 +23,7 @@ module LIBUSB
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
       @buffer = nil
-      @completion_flag = Call::CompletionFlag.new
+      @completion_flag = Context::CompletionFlag.new
     end
     private :initialize
 
