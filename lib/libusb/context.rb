@@ -40,10 +40,12 @@ module LIBUSB
       # @return [Integer]  Event flags to poll for
       attr_reader :events
 
+      # @return [Boolean] True if the file descriptor has to be observed for incoming/readable data
       def pollin?
         @events & POLLIN != 0
       end
 
+      # @return [Boolean] True if the file descriptor has to be observed for outgoing/writeable data
       def pollout?
         @events & POLLOUT != 0
       end
@@ -269,6 +271,8 @@ module LIBUSB
     #
     # Note that file descriptors may have been added even before you register these
     # notifiers (e.g. at {Context#initialize} time).
+    #
+    # @yieldparam [Pollfd] pollfd  The added file descriptor is yielded to the block
     def on_pollfd_added &block
       @on_pollfd_added = proc do |fd, events, _|
         pollfd = Pollfd.new fd, events
@@ -286,6 +290,8 @@ module LIBUSB
     # (e.g. when it is closing file descriptors that were opened and added to the poll
     # set at {Context#initialize} time). If you don't want this, overwrite the notifier
     # immediately before calling {Context#exit}.
+    #
+    # @yieldparam [Pollfd] pollfd  The removed file descriptor is yielded to the block
     def on_pollfd_removed &block
       @on_pollfd_removed = proc do |fd, _|
         pollfd = Pollfd.new fd
