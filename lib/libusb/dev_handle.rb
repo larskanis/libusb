@@ -264,7 +264,8 @@ module LIBUSB
     # @return [String] Received data for an ingoing transfer
     # @return [self]  When called with a block
     #
-    # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block
+    # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block,
+    #   when the asynchronous transfer has finished
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
     def bulk_transfer(args={}, &block)
       timeout = args.delete(:timeout) || 1000
@@ -331,7 +332,8 @@ module LIBUSB
     # @return [String] Received data for an ingoing transfer
     # @return [self]  When called with a block
     #
-    # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block
+    # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block,
+    #   when the asynchronous transfer has finished
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
     def interrupt_transfer(args={}, &block)
       timeout = args.delete(:timeout) || 1000
@@ -387,7 +389,8 @@ module LIBUSB
     # @return [String] Received data (without setup packet) for ingoing transfer
     # @return [self]  When called with a block
     #
-    # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block
+    # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block,
+    #   when the asynchronous transfer has finished
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
     def control_transfer(args={}, &block)
       bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
