@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 # -*- ruby -*-
 
-require 'rubygems'
-require 'hoe'
+require 'bundler/gem_tasks'
 require 'pathname'
 require 'uri'
 require 'rake/extensiontask'
 require 'rake/extensioncompiler'
+
+task :gem => :build
+task :test do
+  sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\""
+end
 
 
 # Cross-compilation constants
@@ -46,27 +50,6 @@ STATIC_LIBUSB_BUILDDIR    = STATIC_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2"
 LIBUSB_CONFIGURE          = STATIC_LIBUSB_BUILDDIR + 'configure'
 LIBUSB_MAKEFILE           = STATIC_LIBUSB_BUILDDIR + 'Makefile'
 LIBUSB_DLL                  = STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb-1.0.dll'
-
-
-hoe = Hoe.spec 'libusb' do
-  developer('Lars Kanis', 'kanis@comcard.de')
-
-  extra_deps << ['ffi', '>= 1.0']
-  extra_dev_deps << ['rake-compiler', '>= 0.6']
-
-  self.urls = ['http://github.com/larskanis/libusb']
-  self.summary = 'Access USB devices from Ruby via libusb-1.0'
-  self.description = 'LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices'
-
-  self.readme_file = 'README.md'
-  self.history_file = 'History.md'
-  spec_extras[:rdoc_options] = ['--main', readme_file, "--charset=UTF-8"]
-  spec_extras[:files] = `git ls-files`.split
-  self.extra_rdoc_files << self.readme_file
-
-  # clean intermediate files and folders
-  self.clean_globs << STATIC_BUILDDIR.to_s
-end
 
 
 #####################################################################
@@ -136,7 +119,7 @@ task :libusb_dll => [ "copy:libusb_dll" ]
 
 desc 'Cross compile libusb for win32'
 task :cross => [ :mingw32, :libusb_dll ] do |t|
-  spec = hoe.spec.dup
+  spec = Gem::Specification::load("libusb.gemspec")
   spec.instance_variable_set(:"@cache_file", nil) if spec.respond_to?(:cache_file)
   spec.platform = Gem::Platform.new('i386-mingw32')
   spec.files << "lib/#{File.basename(LIBUSB_DLL)}"
