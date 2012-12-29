@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "libusb"
+require "libusb/version_gem"
 
 Gem::Specification.new do |s|
   s.name        = "libusb"

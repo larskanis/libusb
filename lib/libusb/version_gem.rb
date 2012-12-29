@@ -13,28 +13,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
-require "test/unit"
-require "libusb"
-
-class TestLibusbVersion < Test::Unit::TestCase
-  def setup
-    @v = LIBUSB.version
-  end
-
-  def test_version_parts
-    assert_operator @v.major, :>=, 0
-    assert_operator @v.minor, :>=, 0
-    assert_operator @v.micro, :>=, 0
-    assert_operator @v.nano, :>=, 0
-    assert_kind_of String, @v.rc
-  end
-
-  def test_version_string
-    assert_match(/^\d+\.\d+\.\d+/, @v.to_s)
-    assert_match(/^#<LIBUSB::Version \d+\.\d+\.\d+/, @v.inspect)
-  end
-
-  def test_gem_version_string
-    assert_match(/^\d+\.\d+\.\d+/, LIBUSB::VERSION)
-  end
+module LIBUSB
+  # Library version of libusb for Ruby
+  VERSION = "0.3.0"
 end

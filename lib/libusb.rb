@@ -14,12 +14,11 @@
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
 module LIBUSB
-  VERSION = "0.3.0"
-
   require 'libusb/call'
   require 'libusb/constants'
   require 'libusb/context'
-  autoload :Version, 'libusb/version'
+  autoload :VERSION, 'libusb/version_gem'
+  autoload :Version, 'libusb/version_struct'
   autoload :Configuration, 'libusb/configuration'
   autoload :DevHandle, 'libusb/dev_handle'
   autoload :Device, 'libusb/device'
