@@ -47,18 +47,31 @@ module LIBUSB
     # * Bits 7: Direction 0 = Out, 1 = In (Ignored for Control Endpoints)
     #
     # @return [Integer]
+    #
+    # @see #endpoint_number
+    # @see #direction
     def bEndpointAddress
       self[:bEndpointAddress]
     end
 
+    # @return [Integer]
+    def endpoint_number
+      bEndpointAddress & 0b1111
+    end
+
+    # @return [Symbol]  Either +:in+ or +:out+
+    def direction
+      bEndpointAddress & ENDPOINT_IN == 0 ? :out : :in
+    end
+
     # Attributes which apply to the endpoint when it is configured using the {Configuration#bConfigurationValue}.
     #
-    # * Bits 0..1: Transfer Type
+    # * Bits 1..0: Transfer Type
     #   * 00 = Control
     #   * 01 = Isochronous
     #   * 10 = Bulk
     #   * 11 = Interrupt
-    # * Bits 2..7: are reserved. If Isochronous endpoint,
+    # * Bits 7..2: are reserved. If Isochronous endpoint,
     # * Bits 3..2: Synchronisation Type (Iso Mode)
     #   * 00 = No Synchonisation
     #   * 01 = Asynchronous
@@ -71,8 +84,32 @@ module LIBUSB
     #   * 11 = Reserved
     #
     # @return [Integer]
+    #
+    # @see #transfer_type
+    # @see #usage_type
+    # @see #synchronization_type
     def bmAttributes
       self[:bmAttributes]
+    end
+
+    TransferTypes = [:control, :isochronous, :bulk, :interrupt]
+    # @return [Symbol]  One of {TransferTypes}
+    def transfer_type
+      TransferTypes[bmAttributes & 0b11]
+    end
+
+    SynchronizationTypes = [:no_synchronization, :asynchronous, :adaptive, :synchronous]
+    # @return [Symbol]  One of {SynchronizationTypes}
+    def synchronization_type
+      return unless transfer_type == :isochronous
+      SynchronizationTypes[(bmAttributes & 0b1100) >> 2]
+    end
+
+    UsageTypes = [:data, :feedback, :implicit_feedback, :unknown]
+    # @return [Symbol]  One of {UsageTypes}
+    def usage_type
+      return unless transfer_type == :isochronous
+      UsageTypes[(bmAttributes & 0b110000) >> 4]
     end
 
     # Maximum Packet Size this endpoint is capable of sending or receiving
@@ -117,18 +154,8 @@ module LIBUSB
     attr_reader :setting
 
     def inspect
-      endpoint_address = self.bEndpointAddress
-      num = endpoint_address & 0b00001111
-      inout = (endpoint_address & 0b10000000) == 0 ? "OUT" : "IN "
-      bits = self.bmAttributes
-      transfer_type = %w[Control Isochronous Bulk Interrupt][0b11 & bits]
-      type = [transfer_type]
-      if transfer_type == 'Isochronous'
-        synchronization_type = %w[NoSynchronization Asynchronous Adaptive Synchronous][(0b1100 & bits) >> 2]
-        usage_type = %w[Data Feedback ImplicitFeedback ?][(0b110000 & bits) >> 4]
-        type << synchronization_type << usage_type
-      end
-      "\#<#{self.class} #{num} #{inout} #{type.join(" ")}>"
+      type = [transfer_type, synchronization_type, usage_type].compact
+      "\#<#{self.class} #{endpoint_number} #{direction} #{type.join(" ")}>"
     end
 
     # The {Device} this Endpoint belongs to.

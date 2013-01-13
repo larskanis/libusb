@@ -69,8 +69,21 @@ module LIBUSB
     # * Bit 4..0: Reserved, set to 0.
     #
     # @return [Integer]
+    #
+    # @see #self_powered?
+    # @see #remote_wakeup?
     def bmAttributes
       self[:bmAttributes]
+    end
+
+    # @return [Boolean]
+    def self_powered?
+      bmAttributes & 0b1000000 != 0
+    end
+
+    # @return [Boolean]
+    def remote_wakeup?
+      bmAttributes & 0b100000 != 0
     end
 
     # Maximum power consumption of the USB device from this bus in this configuration when the device is fully opreation.
@@ -115,9 +128,8 @@ module LIBUSB
     def inspect
       attrs = []
       attrs << self.bConfigurationValue.to_s
-      bits = self.bmAttributes
-      attrs << "SelfPowered" if (bits & 0b1000000) != 0
-      attrs << "RemoteWakeup" if (bits & 0b100000) != 0
+      attrs << "SelfPowered" if self_powered?
+      attrs << "RemoteWakeup" if remote_wakeup?
       desc = self.description
       attrs << desc if desc != '?'
       "\#<#{self.class} #{attrs.join(' ')}>"
