@@ -101,7 +101,7 @@ class TestLibusbDescriptors < Test::Unit::TestCase
               assert_equal 5, ep.bDescriptorType
               assert_kind_of Integer, ep.bEndpointAddress
               assert_kind_of Integer, ep.bmAttributes
-              assert_operator 0, :<, ep.wMaxPacketSize, "packet size should be > 0"
+              assert_operator 0, :<=, ep.wMaxPacketSize, "packet size should be > 0"
               assert_kind_of Integer, ep.bInterval
               assert_kind_of Integer, ep.bRefresh
               assert_kind_of Integer, ep.bSynchAddress
