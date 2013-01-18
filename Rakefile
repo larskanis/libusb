@@ -11,7 +11,7 @@ task :gem => :build
 task :test do
   sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\""
 end
-
+task :default => :test
 
 # Cross-compilation constants
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path

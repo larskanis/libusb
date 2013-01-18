@@ -21,7 +21,11 @@ class TestLibusbIsoTransfer < Test::Unit::TestCase
 
   def setup
     c = Context.new
-    @dev = c.devices.first.open
+    begin
+      @dev = c.devices.first.open
+    rescue LIBUSB::ERROR_ACCESS
+      skip "error opening device"
+    end
   end
 
   def teardown

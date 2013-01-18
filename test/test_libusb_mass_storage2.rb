@@ -28,7 +28,7 @@ class TestLibusbMassStorage2 < Test::Unit::TestCase
     @usb = Context.new
     @usb.debug = 3
     @device = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>[0x06,0x01], :bProtocol=>0x50 ).last
-    abort "no mass storage device found" unless @device
+    skip "no mass storage device found" unless @device
 
     @interface = device.interfaces.first
 

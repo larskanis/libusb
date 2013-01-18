@@ -30,7 +30,7 @@ class TestLibusbCompat < Test::Unit::TestCase
     USB.each_device_by_class(USB_CLASS_MASS_STORAGE, 0x06, 0x50){|dev| devs << dev }
 
     dev = devs.last
-    abort "no mass storage device found" unless dev
+    skip "no mass storage device found" unless dev
     devh = dev.open
     if RUBY_PLATFORM=~/linux/i
       data = " "*1000
