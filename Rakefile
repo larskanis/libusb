@@ -49,8 +49,10 @@ LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI
 STATIC_LIBUSB_BUILDDIR    = STATIC_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2")
 LIBUSB_CONFIGURE          = STATIC_LIBUSB_BUILDDIR + 'configure'
 LIBUSB_MAKEFILE           = STATIC_LIBUSB_BUILDDIR + 'Makefile'
-LIBUSB_DLL                  = STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb-1.0.dll'
+LIBUSB_DLL                = STATIC_LIBUSB_BUILDDIR + 'libusb/.libs/libusb-1.0.dll'
 
+EXT_BUILDDIR              = Pathname( "./ext" ).expand_path
+EXT_LIBUSB_BUILDDIR       = EXT_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2")
 
 #####################################################################
 ### C R O S S - C O M P I L A T I O N - T A S K S
@@ -138,6 +140,13 @@ task :mingw32 do
     warn "Please refer to your distribution/package manager documentation about installation."
     fail
   end
+end
+
+desc "Download and update bundled libusb(x)"
+task :update_libusb => LIBUSB_TARBALL do
+  sh 'git', 'rm', '-r', '-f', '-q', (EXT_BUILDDIR + "libusbx-*").to_s
+  sh 'tar', '-xjf', LIBUSB_TARBALL.to_s, '-C', EXT_LIBUSB_BUILDDIR.parent.to_s
+  sh 'git', 'add', EXT_LIBUSB_BUILDDIR.to_s
 end
 
 # vim: syntax=ruby
