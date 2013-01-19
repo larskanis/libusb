@@ -132,6 +132,7 @@ task :cross => [ :mingw32, :libusb_dll ] do |t|
   spec.instance_variable_set(:"@cache_file", nil) if spec.respond_to?(:cache_file)
   spec.platform = Gem::Platform.new('i386-mingw32')
   spec.files << "lib/#{File.basename(LIBUSB_DLL)}"
+  spec.files -= `git ls-files ext/libusbx-*`.split("\n")
 
   # Generate a package for this gem
   Gem::PackageTask.new(spec) do |pkg|
