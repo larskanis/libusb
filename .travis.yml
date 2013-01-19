@@ -10,5 +10,4 @@ rvm:
 before_script:
   - gem list
   - ls /usr/lib/postgresql/
-  - gem install ffi
 script: bundle exec rake travis
