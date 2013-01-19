@@ -71,7 +71,8 @@ module LIBUSB
     # Initialize libusb context.
     def initialize
       m = FFI::MemoryPointer.new :pointer
-      Call.libusb_init(m)
+      res = Call.libusb_init(m)
+      LIBUSB.raise_error res, "in libusb_init" if res!=0
       @ctx = m.read_pointer
       @on_pollfd_added = nil
       @on_pollfd_removed = nil
@@ -118,6 +119,7 @@ module LIBUSB
     def device_list
       pppDevs = FFI::MemoryPointer.new :pointer
       size = Call.libusb_get_device_list(@ctx, pppDevs)
+      LIBUSB.raise_error size, "in libusb_get_device_list" if size<0
       ppDevs = pppDevs.read_pointer
       pDevs = []
       size.times do |devi|
