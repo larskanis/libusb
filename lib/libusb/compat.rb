@@ -37,7 +37,15 @@ require 'forwardable'
 # * Exceptions are different between ruby-usb and libusb and they don't get converted
 # * libusb-1.0 doesn't explicitly manage USB-buses, so only one Bus is used currently
 module USB
-  DefaultContext = LIBUSB::Context.new
+  @default_context = nil
+  def self.default_context
+    @default_context ||= LIBUSB::Context.new
+  end
+
+  @default_bus = nil
+  def self.default_bus
+    @default_bus ||= Bus.new(default_context)
+  end
 
   USB_CLASS_PER_INTERFACE = LIBUSB::CLASS_PER_INTERFACE
   USB_CLASS_AUDIO = LIBUSB::CLASS_AUDIO
@@ -108,21 +116,21 @@ module USB
 
 
   def USB.busses
-    [DefaultBus]
+    [default_bus]
   end
 
-  def USB.devices; DefaultContext.devices.map{|c| Device.new(c) }; end
+  def USB.devices; default_context.devices.map{|c| Device.new(c) }; end
   def USB.configurations() USB.devices.map {|d| d.configurations }.flatten end
   def USB.interfaces() USB.configurations.map {|d| d.interfaces }.flatten end
   def USB.settings() USB.interfaces.map {|d| d.settings }.flatten end
   def USB.endpoints() USB.settings.map {|d| d.endpoints }.flatten end
 
   def USB.find_bus(n)
-    DefaultBus
+    default_bus
   end
 
   def USB.each_device_by_class(devclass, subclass=nil, protocol=nil)
-    devs = DefaultContext.devices :bClass=>devclass, :bSubClass=>subclass, :bProtocol=>protocol
+    devs = default_context.devices :bClass=>devclass, :bSubClass=>subclass, :bProtocol=>protocol
     devs.each do |dev|
       yield Device.new(dev)
     end
@@ -146,8 +154,6 @@ module USB
       raise NotImplementedError
     end
   end
-
-  DefaultBus = Bus.new(DefaultContext)
 
   def USB.dev_string(base_class, sub_class, protocol)
     LIBUSB.dev_string(base_class, sub_class, protocol)
@@ -184,7 +190,7 @@ module USB
       end
     end
 
-    def bus; DefaultBus; end
+    def bus; default_bus; end
     def configurations; @dev.configurations.map{|c| Configuration.new(c) }; end
     def interfaces; @dev.interfaces.map{|c| Interface.new(c) }; end
     def settings; @dev.settings.map{|c| Setting.new(c) }; end
@@ -207,7 +213,7 @@ module USB
       @cd<=>o.instance_variable_get(:@cd)
     end
 
-    def bus; DefaultBus; end
+    def bus; default_bus; end
     def device() Device.new(@cd.device) end
     def interfaces; @cd.interfaces.map{|c| Interface.new(c) }; end
     def settings() self.interfaces.map {|d| d.settings }.flatten end
