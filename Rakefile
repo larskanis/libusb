@@ -151,8 +151,11 @@ end
 
 desc "Download and update bundled libusb(x)"
 task :update_libusb => LIBUSB_TARBALL do
-  sh 'git', 'rm', '-r', '-f', '-q', (EXT_BUILDDIR + "libusbx-*").to_s
+  sh 'rm', '-r', (EXT_BUILDDIR + "libusbx-*").to_s do end
+  sh 'git', 'rm', '-rfq', (EXT_BUILDDIR + "libusbx-*").to_s do end
   sh 'tar', '-xjf', LIBUSB_TARBALL.to_s, '-C', EXT_LIBUSB_BUILDDIR.parent.to_s
+  drops = %w[msvc].map{|f| (EXT_LIBUSB_BUILDDIR+f).to_s }
+  sh 'rm', '-r', '-f', *drops
   sh 'git', 'add', EXT_LIBUSB_BUILDDIR.to_s
 end
 

@@ -2,7 +2,6 @@
 .bundle
 Gemfile.lock
 pkg/*
-ext/libusbx-*
 lib/libusb-1.0*
 lib/pkgconfig
 include
