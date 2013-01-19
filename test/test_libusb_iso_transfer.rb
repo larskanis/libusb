@@ -24,6 +24,7 @@ class TestLibusbIsoTransfer < Test::Unit::TestCase
     begin
       @dev = c.devices.first.open
     rescue LIBUSB::ERROR_ACCESS
+      @dev = nil
       skip "error opening device"
     end
   end

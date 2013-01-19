@@ -441,7 +441,7 @@ module LIBUSB
         res = dataIn ? tr.actual_buffer(offset) : tr.actual_length
 
         unless tr.status==:TRANSFER_COMPLETED
-          raise (Transfer::TransferStatusToError[tr.status] || ERROR_OTHER).new("error #{tr.status}", res)
+          raise((Transfer::TransferStatusToError[tr.status] || ERROR_OTHER).new("error #{tr.status}", res))
         end
         res
       end
