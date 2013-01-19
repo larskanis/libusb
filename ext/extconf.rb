@@ -19,7 +19,7 @@ rescue LoadError
 
   old_dir = Dir.pwd
   Dir.chdir libusb_dir
-  cmd = "./configure --prefix=#{root_dir} && make && make install"
+  cmd = "./configure --prefix=#{root_dir} --enable-debug-log && make && make install"
   puts cmd
   system cmd
   raise "libusb build exited with #{$?.exitstatus}" if $?.exitstatus!=0
