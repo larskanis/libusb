@@ -20,7 +20,12 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.extensions    = ['ext/extconf.rb']
 
-  s.add_runtime_dependency 'ffi', '>= 1.0'
+  # travis currently runs a slightly older version of rbx,
+  # that needs a special ffi version.
+  unless ENV['TRAVIS'] && defined?(RUBY_ENGINE) && RUBY_ENGINE=='rbx'
+    s.add_runtime_dependency 'ffi', '>= 1.0'
+  end
+
   s.add_development_dependency 'rake-compiler', '>= 0.6'
   s.add_development_dependency 'bundler'
 end

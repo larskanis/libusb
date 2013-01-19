@@ -1,5 +1,7 @@
 <!-- -*- coding: utf-8 -*- -->
 
+[![Build Status](https://travis-ci.org/larskanis/libusb.png?branch=debug_travis)](https://travis-ci.org/larskanis/libusb)
+
 Access USB devices from Ruby
 ============================
 
@@ -56,7 +58,7 @@ maximum packet size.
 Prerequisites
 -------------
 
-* Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x or JRuby
+* Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x, JRuby or recent version of Rubinius
 * [libusb](http://libusb.org) or [libusbx](http://libusbx.org) library version 1.0.8+ :
   * Debian or Ubuntu:
 
