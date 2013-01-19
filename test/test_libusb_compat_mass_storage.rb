@@ -16,7 +16,7 @@
 require "test/unit"
 require "libusb/compat"
 
-class TestLibusbCompat < Test::Unit::TestCase
+class TestLibusbCompatMassStorage < Test::Unit::TestCase
   include USB
 
   attr_accessor :devh
