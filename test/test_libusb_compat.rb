@@ -68,7 +68,7 @@ class TestLibusbCompat < Test::Unit::TestCase
               assert_equal config_desc, ep.configuration, "backref should be correct"
               assert_equal dev, ep.device, "backref should be correct"
 
-              assert_operator 0, :<, ep.wMaxPacketSize, "packet size should be > 0"
+              assert_operator 0, :<=, ep.wMaxPacketSize, "packet size should be > 0"
             end
           end
         end
