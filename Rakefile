@@ -12,7 +12,7 @@ task :compile do
   sh "ruby ext/extconf.rb"
 end
 task :test=>:compile do
-  sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\""
+  sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
 end
 task :default => :test
 
