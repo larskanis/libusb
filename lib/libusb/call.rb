@@ -24,7 +24,7 @@ module LIBUSB
     extend FFI::Library
 
     ext = FFI::Platform.windows? ? 'dll' : 'so'
-    bundled_dll = File.join(File.dirname(__FILE__), '..', "libusb-1.0.#{ext}")
+    bundled_dll = File.expand_path("../../libusb-1.0.#{ext}", __FILE__)
     ffi_lib(['libusb-1.0', bundled_dll])
 
     ClassCodes = enum :libusb_class_code, [

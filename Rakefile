@@ -8,7 +8,10 @@ require 'rake/extensiontask'
 require 'rake/extensioncompiler'
 
 task :gem => :build
-task :test do
+task :compile do
+  sh "ruby ext/extconf.rb"
+end
+task :test=>:compile do
   sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\""
 end
 task :default => :test

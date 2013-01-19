@@ -5,7 +5,9 @@ require 'ffi'
 begin
   module LibTest
     extend FFI::Library
-    ffi_lib('libusb-1.0')
+    ext = FFI::Platform.windows? ? 'dll' : 'so'
+    bundled_dll = File.expand_path("../../lib/libusb-1.0.#{ext}", __FILE__)
+    ffi_lib(['libusb-1.0', bundled_dll])
   end
 rescue LoadError
   # Unable to load libusb library on this system,
