@@ -1,3 +1,15 @@
+0.3.0 / 2013-01-21
+------------------
+* Build bundled libusbx sources in case libusb-1.0.so can not be loaded from the system
+* Replace Hoe with Bundler
+* Add timeout and completion_flag to Context#handle_events
+* Add asynchronous DevHandle#{control|interrupt|bulk}_transfer method variants
+* Add the ability to retrieve the data already transfered when it comes to an exception
+* Add notification API for libusb's file describtors for event driven USB transfers
+* Add experimental integration to EventMachine
+* Add several convenience methods to descriptors
+* Add missing return code checks to libusb_init() and libusb_get_device_list()
+
 0.2.2 / 2012-10-19
 ------------------
 * Add method Interface#bInterfaceNumber
