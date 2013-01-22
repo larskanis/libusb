@@ -1,3 +1,7 @@
+0.3.1 / 2013-01-22
+------------------
+* Fix loading of compiled libusb library on OSX
+
 0.3.0 / 2013-01-21
 ------------------
 * Build bundled libusbx sources in case libusb-1.0.so can not be loaded from the system
