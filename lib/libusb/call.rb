@@ -23,7 +23,7 @@ module LIBUSB
   module Call
     extend FFI::Library
 
-    ext = FFI::Platform.windows? ? 'dll' : 'so'
+    ext = FFI::Platform::LIBSUFFIX
     bundled_dll = File.expand_path("../../libusb-1.0.#{ext}", __FILE__)
     ffi_lib(['libusb-1.0', bundled_dll])
 
