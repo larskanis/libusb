@@ -25,7 +25,7 @@ module LIBUSB
 
     ext = FFI::Platform::LIBSUFFIX
     bundled_dll = File.expand_path("../../libusb-1.0.#{ext}", __FILE__)
-    ffi_lib(['libusb-1.0', bundled_dll])
+    ffi_lib(['libusb-1.0', bundled_dll, '../bin/cygusb-1.0.dll'])
 
     ClassCodes = enum :libusb_class_code, [
       :CLASS_PER_INTERFACE, 0,
