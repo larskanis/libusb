@@ -152,6 +152,14 @@ module LIBUSB
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device_handle
 
+    if 8 == FFI.type_size(FFI::Type::POINTER)
+      typedef :int64, :ssize_t
+    elsif 4 == FFI.type_size(FFI::Type::POINTER)
+      typedef :int32, :ssize_t
+    else
+      typedef :size_t, :ssize_t
+    end
+
     def self.try_attach_function(method, *args)
       if ffi_libraries.find{|lib| lib.find_function(method) }
         attach_function method, *args
@@ -165,7 +173,7 @@ module LIBUSB
     attach_function 'libusb_set_debug', [:pointer, :int], :void
     try_attach_function 'libusb_has_capability', [:libusb_capability], :int
 
-    attach_function 'libusb_get_device_list', [:pointer, :pointer], :size_t
+    attach_function 'libusb_get_device_list', [:pointer, :pointer], :ssize_t
     attach_function 'libusb_free_device_list', [:pointer, :int], :void
     attach_function 'libusb_ref_device', [:pointer], :pointer
     attach_function 'libusb_unref_device', [:pointer], :void
