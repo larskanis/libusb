@@ -6,9 +6,13 @@ require 'ffi'
 begin
   module LibTest
     extend FFI::Library
+
+    root_path = File.expand_path("../..", __FILE__)
     ext = FFI::Platform::LIBSUFFIX
-    bundled_dll = File.expand_path("../../lib/libusb-1.0.#{ext}", __FILE__)
-    ffi_lib(['libusb-1.0', bundled_dll])
+    prefix = FFI::Platform::LIBPREFIX.empty? ? 'lib' : FFI::Platform::LIBPREFIX
+    bundled_dll = File.join(root_path, "lib/#{prefix}usb-1.0.#{ext}")
+    bundled_dll_cygwin = File.join(root_path, "bin/#{prefix}usb-1.0.#{ext}")
+    ffi_lib(["#{prefix}usb-1.0", bundled_dll, bundled_dll_cygwin])
   end
 rescue LoadError
   # Unable to load libusb library on this system,
