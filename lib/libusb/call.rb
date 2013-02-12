@@ -168,7 +168,7 @@ module LIBUSB
     attach_function 'libusb_set_debug', [:pointer, :int], :void
     try_attach_function 'libusb_has_capability', [:libusb_capability], :int
 
-    attach_function 'libusb_get_device_list', [:pointer, :pointer], :size_t
+    attach_function 'libusb_get_device_list', [:pointer, :pointer], :ssize_t
     attach_function 'libusb_free_device_list', [:pointer, :int], :void
     attach_function 'libusb_ref_device', [:pointer], :pointer
     attach_function 'libusb_unref_device', [:pointer], :void
