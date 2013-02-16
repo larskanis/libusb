@@ -1,3 +1,9 @@
+0.3.2 / 2013-02-16
+------------------
+* Don't enforces DevKit installation on Windows.
+* Fix error check on libusb_get_device_list(). Thanks to Paul Kunysch for the bug report.
+* Add support for Cygwin. Requires ffi-1.4.0.
+
 0.3.1 / 2013-01-22
 ------------------
 * Fix loading of compiled libusb library on OSX
