@@ -31,7 +31,10 @@ module LIBUSB
 
       # @return [IO]  IO object bound to the file descriptor.
       def io
-        IO.new @fd
+        rio = IO.new @fd
+        # autoclose is available in Ruby-1.9+ only
+        rio.autoclose = false if rio.respond_to?( :autoclose= )
+        rio
       end
 
       # @return [Integer]  Numeric file descriptor
