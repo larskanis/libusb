@@ -1,7 +1,7 @@
 0.3.3 / 2013-04-05
 ------------------
 * Build and package binary x64 version of libusb for Windows in addition to x86.
-* Fix build on Windows from source gem.
+* Fix build on Windows from source gem (although may take almost an hour).
 
 0.3.2 / 2013-02-16
 ------------------
