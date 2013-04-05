@@ -1,3 +1,7 @@
+0.3.4 / 2013-04-05
+------------------
+* Avoid closing of pollfds by the Ruby GC when used as IO object.
+
 0.3.3 / 2013-04-05
 ------------------
 * Build and package binary x64 version of libusb for Windows in addition to x86.
