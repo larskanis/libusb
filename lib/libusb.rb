@@ -47,5 +47,9 @@ module LIBUSB
       r = Call.libusb_has_capability(capability)
       return r != 0
     end
+  else
+    def self.has_capability?(capability)
+      false
+    end
   end
 end
