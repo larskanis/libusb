@@ -95,7 +95,7 @@ module LIBUSB
       # Available since libusb-1.0.12.
       #
       # @return [Fixnum, nil]  the port number (+nil+ if not available)
-      # @see #port_path
+      # @see #port_numbers
       def port_number
         r = Call.libusb_get_port_number(@pDev)
         r==0 ? nil : r
@@ -105,7 +105,7 @@ module LIBUSB
       # Available since libusb-1.0.12.
       #
       # @return [Device, nil]  the device parent or +nil+ if not available
-      # @see #port_path
+      # @see #port_numbers
       def parent
         pppDevs = FFI::MemoryPointer.new :pointer
         Call.libusb_get_device_list(@context.instance_variable_get(:@ctx), pppDevs)
@@ -122,13 +122,19 @@ module LIBUSB
       # @return [Array<Fixnum>]
       # @see #parent
       # @see #port_number
-      def port_path
+      def port_numbers
         # As per the USB 3.0 specs, the current maximum limit for the depth is 7.
         path_len = 7
         pPath = FFI::MemoryPointer.new :pointer, path_len
-        l = Call.libusb_get_port_path(@context.instance_variable_get(:@ctx), @pDev, pPath, path_len)
+
+        l = if Call.respond_to?(:libusb_get_port_numbers)
+          Call.libusb_get_port_numbers(@pDev, pPath, path_len)
+        else
+          Call.libusb_get_port_path(@context.instance_variable_get(:@ctx), @pDev, pPath, path_len)
+        end
         pPath.read_array_of_uint8(l)
       end
+      alias port_path port_numbers
     end
 
     if Call.respond_to?(:libusb_get_device_speed)

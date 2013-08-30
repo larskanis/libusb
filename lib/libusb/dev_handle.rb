@@ -225,6 +225,30 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_attach_kernel_driver" if res!=0
     end
 
+    if Call.respond_to?(:libusb_set_auto_detach_kernel_driver)
+      # Enable/disable libusb's automatic kernel driver detachment.
+      #
+      # When this is enabled libusb will automatically detach the kernel driver on an
+      # interface when claiming the interface, and attach it when releasing the
+      # interface.
+      #
+      # Automatic kernel driver detachment is disabled on newly opened device handles by
+      # default.
+      #
+      # On platforms which do not have CAP_SUPPORTS_DETACH_KERNEL_DRIVER this
+      # function will return ERROR_NOT_SUPPORTED, and libusb will continue as if
+      # this function was never called.
+      #
+      # Available since libusb-1.0.16.
+      #
+      # @param [Boolean] enable    whether to enable or disable auto kernel driver detachment
+      #
+      # @see LIBUSB.has_capability?
+      def auto_detach_kernel_driver=(enable)
+        res = Call.libusb_set_auto_detach_kernel_driver(@pHandle, enable ? 1 : 0)
+        LIBUSB.raise_error res, "in libusb_set_auto_detach_kernel_driver" if res!=0
+      end
+    end
 
     # Perform a USB bulk transfer.
     #

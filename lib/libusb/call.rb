@@ -149,7 +149,17 @@ module LIBUSB
     ]
 
     Capabilities = enum :libusb_capability, [
-      :CAP_HAS_CAPABILITY, 0,
+      :CAP_HAS_CAPABILITY, 0x0000,
+      # Hotplug support is available on this platform.
+      :CAP_HAS_HOTPLUG, 0x0001,
+      # The library can access HID devices without requiring user intervention.
+      # Note that before being able to actually access an HID device, you may
+      # still have to call additional libusb functions such as
+      # {DevHandle#detach_kernel_driver}.
+      :CAP_HAS_HID_ACCESS, 0x0100,
+      # The library supports detaching of the default USB driver, using
+      # {DevHandle#detach_kernel_driver}, if one is set by the OS kernel.
+      :CAP_SUPPORTS_DETACH_KERNEL_DRIVER, 0x0101
     ]
 
     typedef :pointer, :libusb_context
@@ -182,6 +192,7 @@ module LIBUSB
     try_attach_function 'libusb_get_port_number', [:pointer], :uint8
     try_attach_function 'libusb_get_parent', [:pointer], :pointer
     try_attach_function 'libusb_get_port_path', [:pointer, :pointer, :pointer, :uint8], :uint8
+    try_attach_function 'libusb_get_port_numbers', [:pointer, :pointer, :uint8], :uint8
     attach_function 'libusb_get_device_address', [:pointer], :uint8
     try_attach_function 'libusb_get_device_speed', [:pointer], :libusb_speed
     attach_function 'libusb_get_max_packet_size', [:pointer, :uint8], :int
@@ -204,6 +215,7 @@ module LIBUSB
     attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
     attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int
     attach_function 'libusb_attach_kernel_driver', [:libusb_device_handle, :int], :int
+    try_attach_function 'libusb_set_auto_detach_kernel_driver', [:libusb_device_handle, :int], :int
 
     attach_function 'libusb_get_string_descriptor_ascii', [:pointer, :uint8, :pointer, :int], :int
 

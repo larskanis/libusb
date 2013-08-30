@@ -165,6 +165,8 @@ class TestLibusbDescriptors < Minitest::Test
         assert_operator dev.bus_number, :>=, 0, "#{dev.inspect} should have a bus_number"
         assert_operator dev.device_address, :>=, 0, "#{dev.inspect} should have a device_address"
         assert_operator([:SPEED_UNKNOWN, :SPEED_LOW, :SPEED_FULL, :SPEED_HIGH, :SPEED_SUPER], :include?, dev.device_speed, "#{dev.inspect} should have a device_speed")
+        path = dev.port_numbers
+        assert_kind_of Array, path, "#{dev.inspect} should have port_numbers"
         path = dev.port_path
         assert_kind_of Array, path, "#{dev.inspect} should have a port_path"
         path.each do |port|

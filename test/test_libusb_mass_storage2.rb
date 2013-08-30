@@ -35,7 +35,6 @@ class TestLibusbMassStorage2 < Minitest::Test
     # Ensure kernel driver is detached
     device.open do |dev|
       if RUBY_PLATFORM=~/linux/i && dev.kernel_driver_active?(interface)
-        assert dev.kernel_driver_active?(0), "DevHandle#kernel_driver_active? may be called with an Interface instance or a Fixnum"
         dev.detach_kernel_driver(interface)
       end
     end
@@ -69,5 +68,29 @@ class TestLibusbMassStorage2 < Minitest::Test
       12345
     end
     assert_equal 12345, res, "Block versions should pass through the result"
+  end
+
+  def test_attach_kernel_driver
+    # Should work with both Fixnum and Interface parameter
+    [0, interface].each do |i|
+      device.open do |dev|
+        dev.attach_kernel_driver(i)
+        assert dev.kernel_driver_active?(i), "kernel driver should be active again"
+        dev.detach_kernel_driver(i)
+        refute dev.kernel_driver_active?(i), "kernel driver should be detached"
+      end
+    end
+  end
+
+  def test_auto_detach_kernel_driver
+    assert LIBUSB.has_capability?(:CAP_SUPPORTS_DETACH_KERNEL_DRIVER), "libusb should have CAP_SUPPORTS_DETACH_KERNEL_DRIVER"
+
+    device.open do |dev|
+      dev.attach_kernel_driver 0
+      assert dev.kernel_driver_active?(0), "kernel driver should attached, now"
+      dev.auto_detach_kernel_driver = true
+      dev.claim_interface(0)
+      refute dev.kernel_driver_active?(0), "kernel driver should get detached automatically"
+    end
   end
 end
