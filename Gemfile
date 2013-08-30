@@ -5,6 +5,7 @@ gemspec
 
 group :test do
   gem 'eventmachine'
+  gem 'minitest'
 end
 
 platforms :rbx do

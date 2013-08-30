@@ -14,10 +14,10 @@
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbMassStorage2 < Test::Unit::TestCase
+class TestLibusbMassStorage2 < Minitest::Test
   include LIBUSB
 
   attr_accessor :usb

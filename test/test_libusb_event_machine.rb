@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 require "libusb/eventmachine"
 require "eventmachine"
 
-class TestLibusbEventMachine < Test::Unit::TestCase
+class TestLibusbEventMachine < Minitest::Test
   include LIBUSB
   BOMS_GET_MAX_LUN = 0xFE
 

@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbIsoTransfer < Test::Unit::TestCase
+class TestLibusbIsoTransfer < Minitest::Test
   include LIBUSB
 
   def setup
@@ -43,7 +43,7 @@ class TestLibusbIsoTransfer < Test::Unit::TestCase
     assert_equal 12, tr[7].length, "packet length should be set"
     assert_equal 13, tr[8].length, "packet length should be set"
 
-    assert_raise(LIBUSB::ERROR_IO, "the randomly choosen device will probably not handle iso transfer") do
+    assert_raises(LIBUSB::ERROR_IO, "the randomly choosen device will probably not handle iso transfer") do
       tr.submit!
     end
   end

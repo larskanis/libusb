@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb/compat"
 
-class TestLibusbCompatMassStorage < Test::Unit::TestCase
+class TestLibusbCompatMassStorage < Minitest::Test
   include USB
 
   attr_accessor :devh

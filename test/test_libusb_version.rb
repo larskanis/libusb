@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbVersion < Test::Unit::TestCase
+class TestLibusbVersion < Minitest::Test
   def setup
     @v = LIBUSB.version
   end

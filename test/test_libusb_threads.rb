@@ -16,10 +16,10 @@
 # This test requires two connected, but not mounted mass storage device with
 # read/write access allowed.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbThreads < Test::Unit::TestCase
+class TestLibusbThreads < Minitest::Test
   include LIBUSB
 
   BOMS_GET_MAX_LUN = 0xFE

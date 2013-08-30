@@ -16,10 +16,10 @@
 # These tests should be started with valgrind to check for
 # invalid memmory access.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbGc < Test::Unit::TestCase
+class TestLibusbGc < Minitest::Test
   include LIBUSB
 
   def get_some_endpoint

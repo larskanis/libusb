@@ -19,10 +19,10 @@
 #   http://en.wikipedia.org/wiki/SCSI_command
 #
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbMassStorage < Test::Unit::TestCase
+class TestLibusbMassStorage < Minitest::Test
   include LIBUSB
 
   class CSWError < RuntimeError; end
@@ -215,7 +215,7 @@ class TestLibusbMassStorage < Test::Unit::TestCase
         sleep 0.01
       end
     end
-    assert_raise(LIBUSB::ERROR_TIMEOUT) do
+    assert_raises(LIBUSB::ERROR_TIMEOUT) do
       begin
         bulk_transfer(:endpoint=>endpoint_in, :dataIn=>123)
       rescue LIBUSB::ERROR_TIMEOUT => err
@@ -257,20 +257,10 @@ class TestLibusbMassStorage < Test::Unit::TestCase
     end
   end
 
-  def test_attach_kernel_driver
-    dev.release_interface(0)
-    if RUBY_PLATFORM=~/linux/i
-      dev.attach_kernel_driver(0)
-      assert dev.kernel_driver_active?(0), "kernel driver should be active again"
-    end
-    dev.close
-    @dev = nil
-  end
-
   def test_wrong_argument
-    assert_raise(ArgumentError){ dev.bulk_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
-    assert_raise(ArgumentError){ dev.interrupt_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
-    assert_raise(ArgumentError){ dev.control_transfer(
+    assert_raises(ArgumentError){ dev.bulk_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
+    assert_raises(ArgumentError){ dev.interrupt_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
+    assert_raises(ArgumentError){ dev.control_transfer(
       :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
       :bRequest=>BOMS_RESET,
       :wValue=>0, :wIndex=>0, :dataIn=>123) }

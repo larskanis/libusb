@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
-require "test/unit"
+require "minitest/autorun"
 require "libusb"
 
-class TestLibusbCapability < Test::Unit::TestCase
+class TestLibusbCapability < Minitest::Test
   def test_version_parts
     assert LIBUSB.has_capability?(:CAP_HAS_CAPABILITY)
   end
