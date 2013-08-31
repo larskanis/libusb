@@ -26,6 +26,8 @@ module LIBUSB
   Call::IsoSyncTypes.to_h.each{|k,v| const_set(k,v) }
   Call::Speeds.to_h.each{|k,v| const_set(k,v) }
   Call::Capabilities.to_h.each{|k,v| const_set(k,v) }
+  Call::HotplugEvents.to_h.each{|k,v| const_set(k,v) }
+  Call::HotplugFlags.to_h.each{|k,v| const_set(k,v) }
 
   # Base class of libusb errors
   class Error < RuntimeError
@@ -72,6 +74,9 @@ module LIBUSB
 
   POLLIN = 1
   POLLOUT = 4
+
+  # Wildcard matching for hotplug events.
+  HOTPLUG_MATCH_ANY = -1
 
 
   # http://www.usb.org/developers/defined_class

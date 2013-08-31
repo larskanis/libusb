@@ -159,11 +159,34 @@ module LIBUSB
       :CAP_HAS_HID_ACCESS, 0x0100,
       # The library supports detaching of the default USB driver, using
       # {DevHandle#detach_kernel_driver}, if one is set by the OS kernel.
-      :CAP_SUPPORTS_DETACH_KERNEL_DRIVER, 0x0101
+      :CAP_SUPPORTS_DETACH_KERNEL_DRIVER, 0x0101,
+    ]
+
+    # Since libusb version 1.0.16.
+    #
+    # Hotplug events
+    HotplugEvents = enum :libusb_hotplug_event, [
+      # A device has been plugged in and is ready to use.
+      :HOTPLUG_EVENT_DEVICE_ARRIVED, 0x01,
+
+      # A device has left and is no longer available.
+      # It is the user's responsibility to call libusb_close on any handle associated with a disconnected device.
+      # It is safe to call libusb_get_device_descriptor on a device that has left.
+      :HOTPLUG_EVENT_DEVICE_LEFT, 0x02,
+    ]
+
+    # Since libusb version 1.0.16.
+    #
+    # Flags for hotplug events */
+    HotplugFlags = enum :libusb_hotplug_flag, [
+      # Arm the callback and fire it for all matching currently attached devices.
+      :HOTPLUG_ENUMERATE, 1,
     ]
 
     typedef :pointer, :libusb_context
+    typedef :pointer, :libusb_device
     typedef :pointer, :libusb_device_handle
+    typedef :int, :libusb_hotplug_callback_handle
 
     def self.try_attach_function(method, *args)
       if ffi_libraries.find{|lib| lib.find_function(method) }
@@ -237,6 +260,13 @@ module LIBUSB
     attach_function 'libusb_set_pollfd_notifiers', [:libusb_context, :libusb_pollfd_added_cb, :libusb_pollfd_removed_cb, :pointer], :void
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
+
+    callback :libusb_hotplug_callback_fn, [:libusb_context, :libusb_device, :libusb_hotplug_event, :pointer], :int
+    try_attach_function 'libusb_hotplug_register_callback', [
+        :libusb_context, :libusb_hotplug_event, :libusb_hotplug_flag,
+        :int, :int, :int, :libusb_hotplug_callback_fn,
+        :pointer, :pointer], :int
+    try_attach_function 'libusb_hotplug_deregister_callback', [:libusb_context, :libusb_hotplug_callback_handle], :void
 
     class IsoPacketDescriptor < FFI::Struct
       layout :length, :uint,
