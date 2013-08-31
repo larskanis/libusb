@@ -225,7 +225,10 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_attach_kernel_driver" if res!=0
     end
 
+    # @private
     if Call.respond_to?(:libusb_set_auto_detach_kernel_driver)
+
+      # @method auto_detach_kernel_driver=
       # Enable/disable libusb's automatic kernel driver detachment.
       #
       # When this is enabled libusb will automatically detach the kernel driver on an
