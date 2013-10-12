@@ -73,9 +73,12 @@ module LIBUSB
     class HotplugCallback < FFI::Struct
       layout :handle,  :int
 
+      attr_reader :context
+
       # @private
-      def initialize(ctx, callbacks)
+      def initialize(context, ctx, callbacks)
         super()
+        @context = context
         @ctx = ctx
         @callbacks = callbacks
       end
@@ -331,35 +334,37 @@ module LIBUSB
     # Register a hotplug event notification.
     #
     # Register a callback with the {LIBUSB::Context}. The callback will fire
-    # when a matching event occurs on a matching device. The callback is
-    # armed until it is deregistered with {HotplugCallback#deregister}.
+    # when a matching event occurs on a matching device. The callback is armed
+    # until either it is deregistered with {HotplugCallback#deregister} or the
+    # supplied block returns +:finish+ to indicate it is finished processing events.
     #
     # If the flag {Call::HotplugFlags HOTPLUG_ENUMERATE} is passed the callback will be
     # called with a {Call::HotplugEvents :HOTPLUG_EVENT_DEVICE_ARRIVED} for all devices
     # already plugged into the machine. Note that libusb modifies its internal
     # device list from a separate thread, while calling hotplug callbacks from
-    # {handle_events}, so it is possible for a device to already be present
+    # {#handle_events}, so it is possible for a device to already be present
     # on, or removed from, its internal device list, while the hotplug callbacks
     # still need to be dispatched. This means that when using
-    # {LIBUSB::HOTPLUG_ENUMERATE}, your callback may be called twice for the arrival
-    # of the same device, once from {on_hotplug_event} and once
-    # from {handle_events}; and/or your callback may be called for the
+    # {Call::HotplugFlags HOTPLUG_ENUMERATE}, your callback may be called twice for the arrival
+    # of the same device, once from {#on_hotplug_event} and once
+    # from {#handle_events}; and/or your callback may be called for the
     # removal of a device for which an arrived call was never made.
     #
     # Since libusb version 1.0.16.
     #
     # @param [Hash] args
-    # @option args [Fixnum] :events  bitwise or of events that will trigger this callback.
-    #   Default is +HOTPLUG_EVENT_DEVICE_ARRIVED|HOTPLUG_EVENT_DEVICE_LEFT+ .
+    # @option args [Fixnum,Symbol] :events  bitwise or of events that will trigger this callback.
+    #   Default is +LIBUSB::HOTPLUG_EVENT_DEVICE_ARRIVED|LIBUSB::HOTPLUG_EVENT_DEVICE_LEFT+ .
     #   See {Call::HotplugEvents HotplugEvents}
-    # @option args [Fixnum] :flags hotplug callback flags. Default is 0. See {Call::HotplugFlags HotplugFlags}
+    # @option args [Fixnum,Symbol] :flags hotplug callback flags. Default is 0. See {Call::HotplugFlags HotplugFlags}
     # @option args [Fixnum] :vendor_id the vendor id to match. Default is {HOTPLUG_MATCH_ANY}.
     # @option args [Fixnum] :product_id the product id to match. Default is {HOTPLUG_MATCH_ANY}.
     # @option args [Fixnum] :dev_class the device class to match. Default is {HOTPLUG_MATCH_ANY}.
     # @return [HotplugCallback]  The handle to the registered callback.
     #
-    # @yieldparam [Device] device  the attached or removed device is yielded to the block
-    # @yieldparam [Fixnum] event  a {Call::HotplugEvents HotplugEvents} symbol
+    # @yieldparam [Device] device  the attached or removed {Device} is yielded to the block
+    # @yieldparam [Symbol] event  a {Call::HotplugEvents HotplugEvents} symbol
+    # @yieldreturn [Symbol] +:finish+ to deregister the callback, +:repeat+ to receive additional events
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
     def on_hotplug_event(args={}, &block)
       events = args.delete(:events) || (HOTPLUG_EVENT_DEVICE_ARRIVED | HOTPLUG_EVENT_DEVICE_LEFT)
@@ -369,15 +374,22 @@ module LIBUSB
       dev_class = args.delete(:dev_class) || HOTPLUG_MATCH_ANY
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
-      handle = HotplugCallback.new @ctx, @hotplug_callbacks
+      handle = HotplugCallback.new self, @ctx, @hotplug_callbacks
 
       block2 = proc do |ctx, pDevice, event, _user_data|
         raise "internal error: unexpected context" unless @ctx==ctx
         dev = Device.new @ctx, pDevice
 
-        block.call(dev, event)
+        blres = block.call(dev, event)
 
-        0 # rearm the callback
+        case blres
+        when :finish
+          1
+        when :repeat
+          0
+        else
+          raise ArgumentError, "hotplug event handler must return :finish or :repeat"
+        end
       end
 
       res = Call.libusb_hotplug_register_callback(@ctx,

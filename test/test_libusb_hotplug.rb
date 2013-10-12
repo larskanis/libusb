@@ -34,6 +34,7 @@ class TestLibusbHotplug < Minitest::Test
     ctx.on_hotplug_event :flags => HOTPLUG_ENUMERATE do |dev, event|
       devs << dev
       assert_equal :HOTPLUG_EVENT_DEVICE_ARRIVED, event
+      :repeat
     end
     # Not really necessary, but just to be sure that the callback was called:
     ctx.handle_events 0
@@ -41,39 +42,74 @@ class TestLibusbHotplug < Minitest::Test
     assert_equal ctx.devices.sort, devs.sort
   end
 
+  def test_enumerate_with_left
+    devs = []
+    ctx.on_hotplug_event :flags => HOTPLUG_ENUMERATE, :events => HOTPLUG_EVENT_DEVICE_LEFT do |dev, event|
+      devs << dev
+      assert_equal :HOTPLUG_EVENT_DEVICE_ARRIVED, event
+      :repeat
+    end
+    # Not really necessary, but just to be sure that the callback was called:
+    ctx.handle_events 0
+
+    assert_equal [], devs.sort, "Enumerate should not send any LEFT events"
+  end
+
   def test_deregister
     handle1 = ctx.on_hotplug_event{ assert false, "Callback should not be called" }
     handle2 = ctx.on_hotplug_event{ assert false, "Callback should not be called" }
     handle1.deregister
     handle2.deregister
+    ctx.handle_events 0
   end
 
-  def add_callback(events)
-    devs = []
-    handle = ctx.on_hotplug_event :events => events do |dev, event|
-      devs << [dev, event]
-      handle.deregister
+  def test_wrong_yieldreturn
+    ex = assert_raises(ArgumentError) do
+      ctx.on_hotplug_event :flags => :HOTPLUG_ENUMERATE do |dev, event|
+      end
     end
-    devs
+
+    assert_match(/:finish.*:repeat/, ex.to_s, "Should give a useful hint")
   end
 
-  def test_gc
-    adevs = add_callback HOTPLUG_EVENT_DEVICE_ARRIVED
-    ldevs = add_callback HOTPLUG_EVENT_DEVICE_LEFT
-    handle = ctx.on_hotplug_event{ assert false, "Deregistered callback should not be called" }
+  def test_context
+    handle = ctx.on_hotplug_event do |dev, event|
+    end
+    assert_equal ctx, handle.context, "The callback handle should have it's context"
+  end
 
+  def test_real_device_plugging_and_yieldreturn_and_gc_and_deregister
+    # This callback should be triggered once
+    devs = []
+    ctx.on_hotplug_event do |dev, event|
+      devs << [dev, event]
+      :finish
+    end
+
+    # This callback should be triggered twice
+    devs2 = []
+    ctx.on_hotplug_event do |dev, event|
+      devs2 << [dev, event]
+      puts format("  %p: %p", event, dev)
+      :repeat
+    end
+
+    # This callback should never be triggered
+    handle = ctx.on_hotplug_event{ assert false, "Deregistered callback should never be called" }
+
+    # GC shouldn't free any relevant callbacks or blocks
     GC.start
 
-    print "\nPlease add or remove an USB device (5 sec): "
+    print "\nPlease add and remove an USB device (2*5 sec): "
     handle.deregister
     ctx.handle_events 0
     ctx.handle_events 5000
+    ctx.handle_events 5000
 
-    devs = adevs + ldevs
-    skip if devs.empty?
-    devs.each do |dev, event|
-      puts format("  %p: %p", event, dev)
-    end
+    skip if devs.empty? && devs2.empty?
     assert_equal 1, devs.length, "Should be deregistered after the first event"
+    assert_equal 2, devs2.length, "Should have received two events"
+    assert_operator devs2.map(&:last), :include?, :HOTPLUG_EVENT_DEVICE_ARRIVED, "Should have received ARRIVED"
+    assert_operator devs2.map(&:last), :include?, :HOTPLUG_EVENT_DEVICE_LEFT, "Should have received LEFT"
   end
 end
