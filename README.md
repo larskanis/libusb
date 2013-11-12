@@ -65,10 +65,10 @@ Prerequisites
       ```
       $ sudo apt-get install libusb-1.0-0-dev
       ```
-  * OS-X: install with homebrew:
+  * OS-X: install with homebrew (note the `x`):
 
       ```
-      $ brew install libusb
+      $ brew install libusbx
       ```
     or macports:
 
