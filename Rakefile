@@ -35,7 +35,7 @@ STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from libusbx
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.14'
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.17'
 LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION[/^\d+\.\d+\.\d+/]}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
 LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 

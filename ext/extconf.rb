@@ -24,7 +24,7 @@ rescue LoadError
 
   old_dir = Dir.pwd
   Dir.chdir libusb_dir
-  cmd = "sh configure --prefix=#{root_dir} && make && make install"
+  cmd = "sh configure --disable-udev --prefix=#{root_dir} && make && make install"
   puts cmd
   system cmd
   raise "libusb build exited with #{$?.exitstatus}" if $?.exitstatus!=0
