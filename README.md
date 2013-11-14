@@ -58,8 +58,8 @@ maximum packet size.
 Prerequisites
 -------------
 
-* Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9.x, JRuby or recent version of Rubinius
-* [libusb](http://libusb.org) or [libusbx](http://libusbx.org) library version 1.0.8+ :
+* Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9/2.0, JRuby or recent version of Rubinius
+* Optionally: [libusb](http://libusb.org) or [libusbx](http://libusbx.org) library version 1.0.8+ :
   * Debian or Ubuntu:
 
       ```
@@ -75,18 +75,31 @@ Prerequisites
       ```
       $ port install libusb
       ```
-  * Windows: libusb.gem already comes with a precompiled `libusb.dll`, but you need to install a device driver (see below)
-
+  * Windows: libusb.gem already comes with a precompiled `libusb.dll`, but you need to install a device driver (see [below](#usage-on-windows))
 
 Install
 -------
 
     $ gem install libusb
 
+While ```gem install``` the system is checked for a usable libusb(x) library installation.
+If none could be found, a bundled libusbx version is built and used, instead.
+
 Latest code can be used in this way:
 
     $ git clone git://github.com/larskanis/libusb.git
     $ rake install_gem
+
+Device hotplug support
+----------------------
+
+Support for device hotplugging can be used, if ```LIBUSB.has_capability?(:CAP_HAS_HOTPLUG)``` returns ```true```.
+This requires libusb(x)-1.0.16 or newer on Linux or OS-X. Windows support is [still on the way](https://github.com/libusbx/libusbx/issues/9).
+
+A hotplug event handler can be registered with {LIBUSB::Context#on_hotplug_event}.
+You then need to call {LIBUSB::Context#handle_events} in order to receive any events.
+This can be done as blocking calls (possibly in it's own thread) or by using {LIBUSB::Context#pollfds} to
+detect any events to handle.
 
 
 Usage on Windows
