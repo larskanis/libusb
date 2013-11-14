@@ -2,7 +2,16 @@
 
 require 'rubygems'
 require 'ffi'
-require 'mkmf'
+
+if RUBY_PLATFORM =~ /java/
+  # JRuby's C extension support is disabled by default, so we can not easily test
+  # for udev availability and therefore suppose to have none.
+  have_udev = false
+else
+  require 'mkmf'
+  have_udev = true
+end
+
 
 begin
   module LibTest
@@ -27,7 +36,7 @@ rescue LoadError
   # This is the same check that is done in libusb's configure.ac file
   # but we don't abort in case it's not available, but continue
   # without hot-plugging.
-  have_udev = have_header('libudev.h') && have_library('udev', 'udev_new')
+  have_udev &&= have_header('libudev.h') && have_library('udev', 'udev_new')
 
   old_dir = Dir.pwd
   Dir.chdir libusb_dir
