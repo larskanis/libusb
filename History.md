@@ -1,3 +1,13 @@
+0.4.0 / 2013-11-20
+------------------
+* Add support for device hotplug notifications.
+* Update to libusbx-1.0.17.
+* Add DevHandle#auto_detach_kernel_driver= of libusb-1.0.16.
+* Add new capabilities introduced with libusb-1.0.16.
+* Offer #has_capability? for libusb versions older than 1.0.9.
+* Add new method port_numbers with alias to port_path.
+* Use libusb_get_port_numbers preferred to now deprecated libusb_get_port_path.
+
 0.3.4 / 2013-04-05
 ------------------
 * Avoid closing of pollfds by the Ruby GC when used as IO object.
