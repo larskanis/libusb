@@ -28,7 +28,7 @@ rescue LoadError
   # Unable to load libusb library on this system,
   # so we build our bundled version:
 
-  libusb_dir = Dir[File.expand_path('../../ext/libusbx-*', __FILE__)].first
+  libusb_dir = Dir[File.expand_path('../../ext/libusb-*', __FILE__)].first
   root_dir = File.expand_path('../..', __FILE__)
   raise "could not find embedded libusb sources" unless libusb_dir
 
@@ -40,6 +40,9 @@ rescue LoadError
 
   old_dir = Dir.pwd
   Dir.chdir libusb_dir
+  auto_cmd = "NOCONFIGURE=1 sh ./autogen.sh"
+  puts auto_cmd
+  system auto_cmd
   cmd = "sh configure #{'--disable-udev' unless have_udev} --prefix=#{root_dir} && make && make install"
   puts cmd
   system cmd
