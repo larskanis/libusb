@@ -35,26 +35,32 @@ STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from libusbx
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.17'
-LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION[/^\d+\.\d+\.\d+/]}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
-LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+#LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.17'
+#LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION[/^\d+\.\d+\.\d+/]}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
+#LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from Pete Batard's git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
 # LIBUSB_SOURCE_URI         = URI( "http://git.libusb.org/?p=libusb-pbatard.git;a=snapshot;h=#{LIBUSB_VERSION};sf=tbz2" )
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-pbatard-#{LIBUSB_VERSION}.tar.bz2"
 
+# Fetch tarball from libusb github repo
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.18'
+LIBUSB_SOURCE_URI         = URI( "https://github.com/libusb/libusb/archive/v#{LIBUSB_VERSION}.zip" )
+LIBUSB_ZIP                = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}"
+
+
 EXT_BUILDDIR              = Pathname( "./ext" ).expand_path
-EXT_LIBUSB_BUILDDIR       = EXT_BUILDDIR + LIBUSB_TARBALL.basename(".tar.bz2")
+EXT_LIBUSB_BUILDDIR       = EXT_BUILDDIR + LIBUSB_ZIP.basename(".zip")
 
 directory STATIC_SOURCESDIR.to_s
 
 # libusb source file should be stored there
-file LIBUSB_TARBALL => STATIC_SOURCESDIR do |t|
+file LIBUSB_ZIP => STATIC_SOURCESDIR do |t|
   # download the source file using wget or curl
   chdir File.dirname(t.name) do
     url = LIBUSB_SOURCE_URI
-    sh "wget '#{url}' -O #{LIBUSB_TARBALL}"
+    sh "wget '#{url}' -O #{LIBUSB_ZIP}"
   end
 end
 
@@ -72,7 +78,7 @@ class CrossLibrary < OpenStruct
     self.ruby_build                 = RbConfig::CONFIG["host"]
 
     # Static libusb build vars
-    self.static_libusb_builddir    = static_builddir + LIBUSB_TARBALL.basename(".tar.bz2")
+    self.static_libusb_builddir    = static_builddir + LIBUSB_ZIP.basename(".zip")
     self.libusb_configure          = static_libusb_builddir + 'configure'
     self.libusb_makefile           = static_libusb_builddir + 'Makefile'
     self.libusb_dll                = static_libusb_builddir + 'libusb/.libs/libusb-1.0.dll'
@@ -85,8 +91,8 @@ class CrossLibrary < OpenStruct
     directory static_libusb_builddir.to_s
 
     # Extract the libusb builds
-    file static_libusb_builddir => LIBUSB_TARBALL do |t|
-      sh 'tar', '-xjf', LIBUSB_TARBALL.to_s, '-C', static_libusb_builddir.parent.to_s
+    file static_libusb_builddir => LIBUSB_ZIP do |t|
+      sh 'unzip', LIBUSB_ZIP.to_s, '-d', static_libusb_builddir.parent.to_s
       libusb_makefile.unlink if libusb_makefile.exist?
     end
 
@@ -173,10 +179,12 @@ CrossLibraries = [
 end
 
 desc "Download and update bundled libusb(x)"
-task :update_libusb => LIBUSB_TARBALL do
+task :update_libusb => LIBUSB_ZIP do
   sh 'rm', '-r', (EXT_BUILDDIR + "libusbx-*").to_s do end
+  sh 'rm', '-r', (EXT_BUILDDIR + "libusb-*").to_s do end
   sh 'git', 'rm', '-rfq', (EXT_BUILDDIR + "libusbx-*").to_s do end
-  sh 'tar', '-xjf', LIBUSB_TARBALL.to_s, '-C', EXT_LIBUSB_BUILDDIR.parent.to_s
+  sh 'git', 'rm', '-rfq', (EXT_BUILDDIR + "libusb-*").to_s do end
+  sh 'unzip', LIBUSB_ZIP.to_s, '-d', EXT_LIBUSB_BUILDDIR.parent.to_s
   drops = %w[msvc].map{|f| (EXT_LIBUSB_BUILDDIR+f).to_s }
   sh 'rm', '-r', '-f', *drops
   sh 'git', 'add', EXT_LIBUSB_BUILDDIR.to_s
