@@ -7,8 +7,8 @@ Access USB devices from Ruby
 
 LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices.
 
-* [libusb](http://libusbx.org) is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
-* This Ruby binding supports the API version 1.0 of [libusb](http://libusbx.org). Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension [ruby-usb](http://www.a-k-r.org/ruby-usb/) .
+* [libusb](http://libusb.info) is a library that gives full access to devices connected via the USB bus. No special kernel driver is thus necessary for accessing USB devices.
+* This Ruby binding supports the API version 1.0 of [libusb](http://libusb.info). Note that the old "legacy" version 0.1.x of libusb uses a completely different API that is covered by the ruby extension [ruby-usb](http://www.a-k-r.org/ruby-usb/) .
 
 
 LIBUSB for Ruby is covered by the GNU Lesser General Public License version 3.
@@ -59,16 +59,16 @@ Prerequisites
 -------------
 
 * Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9/2.0, JRuby or recent version of Rubinius
-* Optionally: [libusb](http://libusb.org) or [libusbx](http://libusbx.org) library version 1.0.8+ :
+* Optionally: [libusb](http://libusb.info) or [libusbx](http://libusbx.org) library version 1.0.8+ :
   * Debian or Ubuntu:
 
       ```
       $ sudo apt-get install libusb-1.0-0-dev
       ```
-  * OS-X: install with homebrew (note the `x`):
+  * OS-X: install with homebrew:
 
       ```
-      $ brew install libusbx
+      $ brew install libusb
       ```
     or macports:
 
@@ -83,7 +83,7 @@ Install
     $ gem install libusb
 
 While ```gem install``` the system is checked for a usable libusb(x) library installation.
-If none could be found, a bundled libusbx version is built and used, instead.
+If none could be found, a bundled libusb version is built and used, instead.
 
 Latest code can be used in this way:
 
