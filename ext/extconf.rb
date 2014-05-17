@@ -28,7 +28,7 @@ rescue LoadError
   # Unable to load libusb library on this system,
   # so we build our bundled version:
 
-  libusb_dir = Dir[File.expand_path('../../ext/libusbx-*', __FILE__)].first
+  libusb_dir = Dir[File.expand_path('../../ext/libusb-*', __FILE__)].first
   root_dir = File.expand_path('../..', __FILE__)
   raise "could not find embedded libusb sources" unless libusb_dir
 

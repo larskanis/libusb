@@ -25,9 +25,9 @@ COMPILE_HOME               = Pathname( "./tmp" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 
 # Fetch tarball from sourceforge
-# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.9'
-# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
-# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.18'
+LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
+LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '295c9d1'
@@ -35,9 +35,9 @@ STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 # LIBUSB_TARBALL            = STATIC_SOURCESDIR + "libusb-#{LIBUSB_VERSION}.tar.bz2"
 
 # Fetch tarball from libusbx
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.17'
-LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION[/^\d+\.\d+\.\d+/]}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
-LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.17'
+# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusbx/releases/#{LIBUSB_VERSION[/^\d+\.\d+\.\d+/]}/source/libusbx-#{LIBUSB_VERSION}.tar.bz2" )
+# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from Pete Batard's git repo
 # LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '4cc72d0'
@@ -172,10 +172,10 @@ CrossLibraries = [
   CrossLibrary.new ruby_platform, host_platform
 end
 
-desc "Download and update bundled libusb(x)"
+desc "Download and update bundled libusb"
 task :update_libusb => LIBUSB_TARBALL do
-  sh 'rm', '-r', (EXT_BUILDDIR + "libusbx-*").to_s do end
-  sh 'git', 'rm', '-rfq', (EXT_BUILDDIR + "libusbx-*").to_s do end
+  sh 'rm', '-r', (EXT_BUILDDIR + "libusb-*").to_s do end
+  sh 'git', 'rm', '-rfq', (EXT_BUILDDIR + "libusb-*").to_s do end
   sh 'tar', '-xjf', LIBUSB_TARBALL.to_s, '-C', EXT_LIBUSB_BUILDDIR.parent.to_s
   drops = %w[msvc].map{|f| (EXT_LIBUSB_BUILDDIR+f).to_s }
   sh 'rm', '-r', '-f', *drops
