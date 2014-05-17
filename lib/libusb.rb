@@ -25,6 +25,7 @@ module LIBUSB
   autoload :Endpoint, 'libusb/endpoint'
   autoload :Interface, 'libusb/interface'
   autoload :Setting, 'libusb/setting'
+  autoload :SsCompanion, 'libusb/ss_companion'
   %w[ Transfer BulkTransfer ControlTransfer InterruptTransfer IsoPacket IsochronousTransfer ].each do |klass|
     autoload klass, 'libusb/transfer'
   end

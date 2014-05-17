@@ -108,15 +108,32 @@ module LIBUSB
     ]
 
     DescriptorTypes = enum :libusb_descriptor_type, [
+      # Device descriptor. See {Device}
       :DT_DEVICE, 0x01,
+      # Configuration descriptor. See {Configuration}
       :DT_CONFIG, 0x02,
+      # String descriptor
       :DT_STRING, 0x03,
+      # Interface descriptor. See {Interface}
       :DT_INTERFACE, 0x04,
+      # Endpoint descriptor. See {Endpoint}
       :DT_ENDPOINT, 0x05,
+      # BOS descriptor
+      :DT_BOS, 0x0f,
+      # Device Capability descriptor
+      :DT_DEVICE_CAPABILITY, 0x10,
+      # HID descriptor
       :DT_HID, 0x21,
+      # HID report descriptor
       :DT_REPORT, 0x22,
+      # Physical descriptor
       :DT_PHYSICAL, 0x23,
+      # Hub descriptor
       :DT_HUB, 0x29,
+      # SuperSpeed Hub descriptor
+      :DT_SUPERSPEED_HUB, 0x2a,
+      # SuperSpeed Endpoint Companion descriptor
+      :DT_SS_ENDPOINT_COMPANION, 0x30,
     ]
 
     RequestTypes = enum :libusb_request_type, [
@@ -220,6 +237,9 @@ module LIBUSB
     try_attach_function 'libusb_get_device_speed', [:pointer], :libusb_speed
     attach_function 'libusb_get_max_packet_size', [:pointer, :uint8], :int
     attach_function 'libusb_get_max_iso_packet_size', [:pointer, :uint8], :int
+
+    try_attach_function 'libusb_get_ss_endpoint_companion_descriptor', [:pointer, :pointer, :pointer], :int
+    try_attach_function 'libusb_free_ss_endpoint_companion_descriptor', [:pointer], :void
 
     attach_function 'libusb_open', [:pointer, :pointer], :int
     attach_function 'libusb_close', [:pointer], :void

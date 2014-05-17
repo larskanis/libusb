@@ -106,6 +106,17 @@ class TestLibusbDescriptors < Minitest::Test
               assert_kind_of Integer, ep.bRefresh
               assert_kind_of Integer, ep.bSynchAddress
               assert_kind_of String, ep.extra if ep.extra
+
+              if dev.device_speed == :SPEED_SUPER
+                ss = ep.ss_companion
+                assert_match(/SsCompanion/, ss.inspect, "SsCompanion#inspect should work")
+
+                assert_kind_of Integer, ss.bLength
+                assert_equal LIBUSB::DT_SS_ENDPOINT_COMPANION, ss.bDescriptorType
+                assert_kind_of Integer, ss.bMaxBurst
+                assert_kind_of Integer, ss.bmAttributes
+                assert_kind_of Integer, ss.wBytesPerInterval
+              end
             end
           end
         end

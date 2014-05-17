@@ -170,5 +170,21 @@ module LIBUSB
       t = bEndpointAddress<=>o.bEndpointAddress if t==0
       t
     end
+
+    if Call.respond_to?(:libusb_get_ss_endpoint_companion_descriptor)
+      # Get the endpoints superspeed endpoint companion descriptor (if any).
+      #
+      # @return [SsCompanion]
+      def ss_companion
+        ep_comp = FFI::MemoryPointer.new :pointer
+        res = Call.libusb_get_ss_endpoint_companion_descriptor(
+          device.context.instance_variable_get(:@ctx),
+          pointer,
+          ep_comp
+        )
+        LIBUSB.raise_error res, "in libusb_get_ss_endpoint_companion_descriptor" if res!=0
+        SsCompanion.new ep_comp.read_pointer
+      end
+    end
   end
 end
