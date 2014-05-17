@@ -1,3 +1,8 @@
+0.4.1 / 2014-05-17
+------------------
+* Update bundled libusb version to 1.0.18.
+* Change libusbx references back to libusb, since they have merged again.
+
 0.4.0 / 2013-11-20
 ------------------
 * Add support for device hotplug notifications.
