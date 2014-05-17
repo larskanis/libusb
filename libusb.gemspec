@@ -10,6 +10,7 @@ Gem::Specification.new do |s|
   s.homepage    = "http://github.com/larskanis/libusb"
   s.summary     = %q{Access USB devices from Ruby via libusb-1.0}
   s.description = %q{LIBUSB is a Ruby binding that gives Ruby programmers access to arbitrary USB devices}
+  s.licenses    = ['LGPL-3']
   s.rdoc_options = %w[--main README.md --charset=UTF-8]
 
   s.rubyforge_project = "libusb"
