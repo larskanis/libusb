@@ -176,6 +176,8 @@ module LIBUSB
       # @method ss_companion
       # Get the endpoints superspeed endpoint companion descriptor (if any).
       #
+      # Since libusb version 1.0.16.
+      #
       # @return [SsCompanion]
       def ss_companion
         ep_comp = FFI::MemoryPointer.new :pointer

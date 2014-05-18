@@ -261,6 +261,8 @@ module LIBUSB
       #
       # This is a BLOCKING function, which will send requests to the device.
       #
+      # Since libusb version 1.0.16.
+      #
       # @return [Bos]
       def bos
         ctx = device.context.instance_variable_get(:@ctx)
