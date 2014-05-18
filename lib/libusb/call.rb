@@ -165,6 +165,19 @@ module LIBUSB
       :SPEED_SUPER, 4,
     ]
 
+    # Supported speeds (wSpeedSupported) bitfield. Indicates what
+    # speeds the device supports.
+    SupportedSpeeds = enum :libusb_supported_speed, [
+      # Low speed operation supported (1.5MBit/s).
+      :LOW_SPEED_OPERATION, 1,
+      # Full speed operation supported (12MBit/s).
+      :FULL_SPEED_OPERATION, 2,
+      # High speed operation supported (480MBit/s).
+      :HIGH_SPEED_OPERATION, 4,
+      # Superspeed operation supported (5000MBit/s).
+      :SUPER_SPEED_OPERATION, 8,
+    ]
+
     Capabilities = enum :libusb_capability, [
       :CAP_HAS_CAPABILITY, 0x0000,
       # Hotplug support is available on this platform.
@@ -177,6 +190,36 @@ module LIBUSB
       # The library supports detaching of the default USB driver, using
       # {DevHandle#detach_kernel_driver}, if one is set by the OS kernel.
       :CAP_SUPPORTS_DETACH_KERNEL_DRIVER, 0x0101,
+    ]
+
+    # Masks for the bits of the
+    # {Bos::Usb20Extension#bmAttributes} field
+    # of the USB 2.0 Extension descriptor.
+    Usb20ExtensionAttributes = enum :libusb_usb_2_0_extension_attributes, [
+      # Supports Link Power Management (LPM)
+      :BM_LPM_SUPPORT, 2,
+    ]
+
+    # Masks for the bits of the
+    # {Bos::SsUsbDeviceCapability#bmAttributes} field
+    # field of the SuperSpeed USB Device Capability descriptor.
+    SsUsbDeviceCapabilityAttributes = enum :libusb_ss_usb_device_capability_attributes, [
+      # Supports Latency Tolerance Messages (LTM)
+      :BM_LTM_SUPPORT, 2,
+    ]
+
+    # USB capability types
+    #
+    # @see Bos::DeviceCapability
+    BosTypes = enum :libusb_bos_type, [
+      # Wireless USB device capability
+      :BT_WIRELESS_USB_DEVICE_CAPABILITY, 1,
+      # USB 2.0 extensions
+      :BT_USB_2_0_EXTENSION, 2,
+      # SuperSpeed USB device capability
+      :BT_SS_USB_DEVICE_CAPABILITY, 3,
+      # Container ID type
+      :BT_CONTAINER_ID, 4,
     ]
 
     # Since libusb version 1.0.16.
@@ -240,6 +283,15 @@ module LIBUSB
 
     try_attach_function 'libusb_get_ss_endpoint_companion_descriptor', [:pointer, :pointer, :pointer], :int
     try_attach_function 'libusb_free_ss_endpoint_companion_descriptor', [:pointer], :void
+
+    try_attach_function 'libusb_get_bos_descriptor', [:libusb_device_handle, :pointer], :int, :blocking=>true
+    try_attach_function 'libusb_free_bos_descriptor', [:pointer], :void
+    try_attach_function 'libusb_get_usb_2_0_extension_descriptor', [:libusb_context, :pointer, :pointer], :int
+    try_attach_function 'libusb_free_usb_2_0_extension_descriptor', [:pointer], :void
+    try_attach_function 'libusb_get_ss_usb_device_capability_descriptor', [:libusb_context, :pointer, :pointer], :int
+    try_attach_function 'libusb_free_ss_usb_device_capability_descriptor', [:pointer], :void
+    try_attach_function 'libusb_get_container_id_descriptor', [:libusb_context, :pointer, :pointer], :int
+    try_attach_function 'libusb_free_container_id_descriptor', [:pointer], :void
 
     attach_function 'libusb_open', [:pointer, :pointer], :int
     attach_function 'libusb_close', [:pointer], :void

@@ -26,6 +26,10 @@ module LIBUSB
   Call::IsoSyncTypes.to_h.each{|k,v| const_set(k,v) }
   Call::Speeds.to_h.each{|k,v| const_set(k,v) }
   Call::Capabilities.to_h.each{|k,v| const_set(k,v) }
+  Call::SupportedSpeeds.to_h.each{|k,v| const_set(k,v) }
+  Call::Usb20ExtensionAttributes.to_h.each{|k,v| const_set(k,v) }
+  Call::SsUsbDeviceCapabilityAttributes.to_h.each{|k,v| const_set(k,v) }
+  Call::BosTypes.to_h.each{|k,v| const_set(k,v) }
   Call::HotplugEvents.to_h.each{|k,v| const_set(k,v) }
   Call::HotplugFlags.to_h.each{|k,v| const_set(k,v) }
 

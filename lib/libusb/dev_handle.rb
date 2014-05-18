@@ -253,6 +253,24 @@ module LIBUSB
       end
     end
 
+    # @private
+    if Call.respond_to?(:libusb_get_bos_descriptor)
+
+      # @method bos
+      # Get a Binary Object Store (BOS) descriptor.
+      #
+      # This is a BLOCKING function, which will send requests to the device.
+      #
+      # @return [Bos]
+      def bos
+        ctx = device.context.instance_variable_get(:@ctx)
+        pp_desc = FFI::MemoryPointer.new :pointer
+        res = Call.libusb_get_bos_descriptor(@pHandle, pp_desc)
+        LIBUSB.raise_error res, "in libusb_get_bos_descriptor" if res!=0
+        Bos.new(ctx, pp_desc.read_pointer)
+      end
+    end
+
     # Perform a USB bulk transfer.
     #
     # When called without a block, the transfer is done synchronously - so all events are handled
