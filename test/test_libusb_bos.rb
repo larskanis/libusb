@@ -27,12 +27,15 @@ class TestLibusbBos < Minitest::Test
   end
 
   def test_bos
+    did_bos = false
+    did_cap = false
     usb.devices.each do |dev|
       # devices with USB version >= 0x201 could support bos
       # devices with USB version >= 0x210 must support bos
       if dev.bcdUSB >= 0x210
         dev.open do |devh|
           bos = devh.bos
+          did_bos = true
 
           assert_equal 5, bos.bLength
           assert_equal 0x0f, bos.bDescriptorType
@@ -55,6 +58,8 @@ class TestLibusbBos < Minitest::Test
 
 
           caps.each do |cap|
+            did_cap = true
+
             assert_operator 4, :<=, cap.bLength
             assert_equal LIBUSB::DT_DEVICE_CAPABILITY, cap.bDescriptorType
             assert_kind_of String, cap.dev_capability_data, "should provide binary capability data"
@@ -92,16 +97,22 @@ class TestLibusbBos < Minitest::Test
         end
       end
     end
+    skip "no device with BOS available" unless did_bos
+    skip "no device with BOS capability available" unless did_cap
   end
 
   def test_no_bos
+    did_failing_bos = false
+
     # devices with USB version < 0x201 shouldn't support bos
     if dev=usb.devices.find{|dev| dev.bcdUSB < 0x201 }
       dev.open do |devh|
         assert_raises LIBUSB::ERROR_PIPE do
           devh.bos
         end
+        did_failing_bos = true
       end
     end
+    skip "no device without BOS available" unless did_failing_bos
   end
 end

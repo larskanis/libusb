@@ -106,22 +106,40 @@ class TestLibusbDescriptors < Minitest::Test
               assert_kind_of Integer, ep.bRefresh
               assert_kind_of Integer, ep.bSynchAddress
               assert_kind_of String, ep.extra if ep.extra
-
-              if dev.device_speed == :SPEED_SUPER
-                ss = ep.ss_companion
-                assert_match(/SsCompanion/, ss.inspect, "SsCompanion#inspect should work")
-
-                assert_kind_of Integer, ss.bLength
-                assert_equal LIBUSB::DT_SS_ENDPOINT_COMPANION, ss.bDescriptorType
-                assert_kind_of Integer, ss.bMaxBurst
-                assert_kind_of Integer, ss.bmAttributes
-                assert_kind_of Integer, ss.wBytesPerInterval
-              end
             end
           end
         end
       end
     end
+  end
+
+  def test_ss_companion
+    did_cc_companion = false
+    did_failing_cc_companion = false
+
+    usb.devices.each do |dev|
+      dev.endpoints.each do |ep|
+        if dev.device_speed == :SPEED_SUPER
+          ss = ep.ss_companion
+          assert_match(/SsCompanion/, ss.inspect, "SsCompanion#inspect should work")
+
+          assert_kind_of Integer, ss.bLength
+          assert_equal LIBUSB::DT_SS_ENDPOINT_COMPANION, ss.bDescriptorType
+          assert_kind_of Integer, ss.bMaxBurst
+          assert_kind_of Integer, ss.bmAttributes
+          assert_kind_of Integer, ss.wBytesPerInterval
+          did_cc_companion = true
+        elsif !did_failing_cc_companion
+          assert_raises ERROR_NOT_FOUND do
+            ep.ss_companion
+          end
+          did_failing_cc_companion = true
+        end
+      end
+    end
+
+    skip "no device with cc_companion available" unless did_cc_companion
+    skip "no device without cc_companion available" unless did_failing_cc_companion
   end
 
   def test_constants

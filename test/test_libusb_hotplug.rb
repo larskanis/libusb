@@ -106,7 +106,7 @@ class TestLibusbHotplug < Minitest::Test
     ctx.handle_events 5000
     ctx.handle_events 5000
 
-    skip if devs.empty? && devs2.empty?
+    skip "no hotplug action taken" if devs.empty? && devs2.empty?
     assert_equal 1, devs.length, "Should be deregistered after the first event"
     assert_equal 2, devs2.length, "Should have received two events"
     assert_operator devs2.map(&:last), :include?, :HOTPLUG_EVENT_DEVICE_ARRIVED, "Should have received ARRIVED"
