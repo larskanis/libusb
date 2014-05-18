@@ -70,7 +70,7 @@ class TestLibusbThreads < Minitest::Test
     endpoint = endpoints_in[dev]
     1.times do
       st = Time.now
-      assert_raise LIBUSB::ERROR_TIMEOUT do
+      assert_raises LIBUSB::ERROR_TIMEOUT do
         dev.bulk_transfer(:endpoint=>endpoint, :dataIn=>123, :timeout=>100)
       end
       assert_operator Time.now-st, :<, 5

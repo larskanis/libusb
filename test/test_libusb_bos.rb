@@ -16,7 +16,7 @@
 require "minitest/autorun"
 require "libusb"
 
-class TestLibusbBoss < Minitest::Test
+class TestLibusbBos < Minitest::Test
   include LIBUSB
 
   attr_accessor :usb
