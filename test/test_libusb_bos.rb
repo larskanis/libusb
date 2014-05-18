@@ -93,4 +93,15 @@ class TestLibusbBos < Minitest::Test
       end
     end
   end
+
+  def test_no_bos
+    # devices with USB version < 0x201 shouldn't support bos
+    if dev=usb.devices.find{|dev| dev.bcdUSB < 0x201 }
+      dev.open do |devh|
+        assert_raises LIBUSB::ERROR_PIPE do
+          devh.bos
+        end
+      end
+    end
+  end
 end
