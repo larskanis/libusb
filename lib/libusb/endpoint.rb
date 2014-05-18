@@ -172,6 +172,8 @@ module LIBUSB
     end
 
     if Call.respond_to?(:libusb_get_ss_endpoint_companion_descriptor)
+
+      # @method ss_companion
       # Get the endpoints superspeed endpoint companion descriptor (if any).
       #
       # @return [SsCompanion]
