@@ -1,3 +1,8 @@
+0.5.0 / YYYY-MM-DD
+------------------
+* Add support for BOS describtors of libusb-1.0.16
+* Add support for superspeed endpoint companion descriptors of libusb-1.0.16
+
 0.4.1 / 2014-05-17
 ------------------
 * Update bundled libusb version to 1.0.18.

@@ -18,6 +18,7 @@ Features
 
 * Access to descriptors of devices, configurations, interfaces, settings and endpoints
 * Synchronous and asynchronous communication for bulk, control, interrupt and isochronous transfers
+* Full support for USB-3.0 descriptors
 * Compatibility layer for [ruby-usb](http://www.a-k-r.org/ruby-usb/) (API based on libusb-0.1). See {::USB} for description.
 
 Synopsis
