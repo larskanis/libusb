@@ -203,6 +203,40 @@ module LIBUSB
     end
   end
 
+  if Call.respond_to?(:libusb_transfer_get_stream_id)
+
+    # Transfer class for USB bulk transfers using USB-3.0 streams.
+    #
+    # @see DevHandle#alloc_streams
+    #
+    # Available since libusb-1.0.19.
+    class BulkStreamTransfer < Transfer
+      def initialize(args={})
+        @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
+        @transfer[:type] = TRANSFER_TYPE_BULK_STREAM
+        @transfer[:timeout] = 1000
+        super
+      end
+
+      # Set a transfers bulk stream id.
+      #
+      # @param [Fixnum] stream_id  the stream id to set
+      def stream_id=(v)
+        Call.libusb_transfer_set_stream_id(@transfer, v)
+        v
+      end
+
+      # Get a transfers bulk stream id.
+      #
+      # Since version 1.0.19.
+      #
+      # \returns [Fixnum] the stream id for the transfer
+      def stream_id
+        Call.libusb_transfer_get_stream_id(@transfer)
+      end
+    end
+  end
+
   class ControlTransfer < Transfer
     def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)

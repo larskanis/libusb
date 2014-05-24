@@ -81,11 +81,18 @@ module LIBUSB
       :TRANSFER_ADD_ZERO_PACKET, 1 << 3,
     ]
 
+    # Values for {Endpoint#transfer_type}.
     TransferTypes = enum :libusb_transfer_type, [
+      # Control endpoint
       :TRANSFER_TYPE_CONTROL, 0,
+      # Isochronous endpoint
       :TRANSFER_TYPE_ISOCHRONOUS, 1,
+      # Bulk endpoint
       :TRANSFER_TYPE_BULK, 2,
+      # Interrupt endpoint
       :TRANSFER_TYPE_INTERRUPT, 3,
+      # Stream endpoint
+      :TRANSFER_TYPE_BULK_STREAM, 4,
     ]
 
     StandardRequests = enum :libusb_standard_request, [
@@ -246,6 +253,7 @@ module LIBUSB
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device
     typedef :pointer, :libusb_device_handle
+    typedef :pointer, :libusb_transfer
     typedef :int, :libusb_hotplug_callback_handle
 
     def self.try_attach_function(method, *args)
@@ -306,6 +314,8 @@ module LIBUSB
     attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int, :blocking=>true
     attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int, :blocking=>true
     attach_function 'libusb_reset_device', [:libusb_device_handle], :int, :blocking=>true
+    try_attach_function 'libusb_alloc_streams', [:libusb_device_handle, :uint32, :pointer, :int], :int
+    try_attach_function 'libusb_free_streams', [:libusb_device_handle, :pointer, :int], :int
 
     attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
     attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int
@@ -318,6 +328,8 @@ module LIBUSB
     attach_function 'libusb_submit_transfer', [:pointer], :int
     attach_function 'libusb_cancel_transfer', [:pointer], :int
     attach_function 'libusb_free_transfer', [:pointer], :void
+    try_attach_function 'libusb_transfer_set_stream_id', [:libusb_transfer, :uint32], :void
+    try_attach_function 'libusb_transfer_get_stream_id', [:libusb_transfer], :uint32
 
     attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
     try_attach_function 'libusb_handle_events_completed', [:libusb_context, :pointer], :int, :blocking=>true

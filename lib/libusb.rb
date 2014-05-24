@@ -27,7 +27,7 @@ module LIBUSB
   autoload :Setting, 'libusb/setting'
   autoload :SsCompanion, 'libusb/ss_companion'
   autoload :Bos, 'libusb/bos'
-  %w[ Transfer BulkTransfer ControlTransfer InterruptTransfer IsoPacket IsochronousTransfer ].each do |klass|
+  %w[ Transfer BulkTransfer BulkStreamTransfer ControlTransfer InterruptTransfer IsoPacket IsochronousTransfer ].each do |klass|
     autoload klass, 'libusb/transfer'
   end
 

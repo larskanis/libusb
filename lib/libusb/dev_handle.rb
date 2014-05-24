@@ -189,6 +189,54 @@ module LIBUSB
       LIBUSB.raise_error res, "in libusb_reset_device" if res!=0
     end
 
+    if Call.respond_to?(:libusb_alloc_streams)
+
+      # @method alloc_streams
+      #
+      # Allocate up to num_streams usb bulk streams on the specified endpoints. This
+      # function takes an array of endpoints rather then a single endpoint because
+      # some protocols require that endpoints are setup with similar stream ids.
+      # All endpoints passed in must belong to the same interface.
+      #
+      # Note this function may return less streams then requested. Also note that the
+      # same number of streams are allocated for each endpoint in the endpoint array.
+      #
+      # Stream id 0 is reserved, and should not be used to communicate with devices.
+      # If {alloc_streams} returns with a value of N, you may use stream ids
+      # 1 to N.
+      #
+      # Available since libusb-1.0.19.
+      #
+      # @param [Fixnum] num_streams  number of streams to try to allocate
+      # @param [Array<Fixnum>, Array<Endpoint>] endpoints  array of endpoints to allocate streams on
+      # @return [Fixnum] number of streams allocated
+      # @see #free_streams
+      # @see BulkStreamTransfer
+      def alloc_streams(num_streams, endpoints)
+        pEndpoints = endpoints_as_ffi_bytes(endpoints)
+        res = Call.libusb_alloc_streams(@pHandle, num_streams, pEndpoints, endpoints.length)
+        LIBUSB.raise_error res, "in libusb_alloc_streams" unless res>=0
+        res
+      end
+
+      # @method free_streams
+      #
+      # Free usb bulk streams allocated with {alloc_streams}
+      #
+      # Note streams are automatically free-ed when releasing an interface.
+      #
+      # Available since libusb-1.0.19.
+      #
+      # @param [Array<Fixnum>, Array<Endpoint>] endpoints  array of endpoints to free streams on
+      # @see #alloc_streams
+      def free_streams(endpoints)
+        pEndpoints = endpoints_as_ffi_bytes(endpoints)
+        res = Call.libusb_free_streams(@pHandle, pEndpoints, endpoints.length)
+        LIBUSB.raise_error res, "in libusb_free_streams" unless res>=0
+        nil
+      end
+    end
+
     # Determine if a kernel driver is active on an interface.
     #
     # If a kernel driver is active, you cannot claim the interface,
@@ -492,6 +540,15 @@ module LIBUSB
         end
         res
       end
+    end
+
+    def endpoints_as_ffi_bytes(endpoints)
+      pEndpoints = FFI::MemoryPointer.new :char, endpoints.length
+      endpoints.each_with_index do |ep, epi|
+        ep = ep.bEndpointAddress if ep.respond_to? :bEndpointAddress
+        pEndpoints.put_uchar(epi, ep)
+      end
+      pEndpoints
     end
   end
 end
