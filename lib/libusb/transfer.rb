@@ -230,7 +230,7 @@ module LIBUSB
       #
       # Since version 1.0.19.
       #
-      # \returns [Fixnum] the stream id for the transfer
+      # @return [Fixnum] the stream id for the transfer
       def stream_id
         Call.libusb_transfer_get_stream_id(@transfer)
       end
