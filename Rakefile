@@ -123,17 +123,14 @@ class CrossLibrary < OpenStruct
 
     task "libusb_dll:#{ruby_platform}" => libusb_dll
 
-    desc "compile static libusb libraries"
-    task :libusb_dll => "libusb_dll:#{ruby_platform}"
-
     desc 'Cross compile libusb for win32'
     task :cross => [ "libusb_dll:#{ruby_platform}" ] do |t|
-      spec = Gem::Specification::load("libusb.gemspec")
-      spec.instance_variable_set(:"@cache_file", nil) if spec.respond_to?(:cache_file)
+      spec = Gem::Specification::load("libusb.gemspec").dup
       spec.platform = Gem::Platform.new(ruby_platform)
-      spec.files << "lib/#{File.basename(libusb_dll)}"
-      spec.files -= `git ls-files ext`.split("\n")
       spec.extensions = []
+      spec.files -= `git ls-files ext`.split("\n")
+      spec_text_files = spec.files.dup
+      spec.files << "lib/#{File.basename(libusb_dll)}"
 
       # Generate a package for this gem
       pkg = Gem::PackageTask.new(spec) do |pkg|
@@ -145,22 +142,23 @@ class CrossLibrary < OpenStruct
       end
 
       # copy files of the gem to pkg directory
-      file pkg.package_dir_path => spec.files do
-        spec.files.each do |fn|
-          next if fn == "lib/#{File.basename(libusb_dll)}"
+      file pkg.package_dir_path => spec_text_files do
+        spec_text_files.each do |fn|
           f = File.join(pkg.package_dir_path, fn)
           fdir = File.dirname(f)
           mkdir_p(fdir) if !File.exist?(fdir)
           rm_f f
           safe_ln(fn, f)
         end
-      end
-      # copy libusb.dll to pkg directory
-      file pkg.package_dir_path => [libusb_dll] do
+
+        # copy libusb.dll to pkg directory
         f = "#{pkg.package_dir_path}/lib/#{File.basename(libusb_dll)}"
+        mkdir_p File.dirname(f)
         rm_f f
         safe_ln libusb_dll, f
       end
+
+      file "lib/#{File.basename(libusb_dll)}" => [libusb_dll]
     end
   end
 end
