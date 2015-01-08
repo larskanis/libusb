@@ -98,6 +98,8 @@ class CrossLibrary < OpenStruct
 
     libusb_env = [
       "CFLAGS='-fno-omit-frame-pointer'",
+      "LDFLAGS='-static-libgcc'",
+      "CC='#{host_platform}-gcc -static-libgcc'", # hack libtool, since it doesn't support -static-libgcc yet.
     ]
 
     # generate the makefile in a clean build location

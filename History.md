@@ -1,9 +1,10 @@
-0.5.0 / 2014-06-25
+0.5.0 / 2015-01-08
 ------------------
 * Add support for BOS describtors of libusb-1.0.16
 * Add support for superspeed endpoint companion descriptors of libusb-1.0.16
 * Add support for USB-3.0 bulk streams of libusb-1.0.19
 * Update bundled libusb version to 1.0.19.
+* Update windows cross build to gcc-4.8 and recent rubygems
 
 0.4.1 / 2014-05-17
 ------------------
