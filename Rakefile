@@ -7,19 +7,26 @@ require 'pathname'
 require 'uri'
 require 'ostruct'
 require 'rake/clean'
+require 'rake_compiler_dock'
 
 task :gem => :build
 task :compile do
   sh "ruby ext/extconf.rb"
 end
+
 task :test=>:compile do
   sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
 end
+
 travis_tests = %w[test_libusb_capability.rb test_libusb_structs.rb test_libusb_version.rb]
 task :travis=>:compile do
   sh "ruby -w -W2 -I. -Ilib -e \"#{travis_tests.map{|f| "require 'test/#{f}';"}.join}\" -- -v"
 end
 task :default => :test
+
+task 'gem:windows' do
+  RakeCompilerDock.sh "bundle && rake cross gem MAKE=\"make -j `nproc`\""
+end
 
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'

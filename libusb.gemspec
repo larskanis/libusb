@@ -22,6 +22,7 @@ Gem::Specification.new do |s|
   s.extensions    = ['ext/extconf.rb']
 
   s.add_runtime_dependency 'ffi', '>= 1.0'
-  s.add_development_dependency 'rake-compiler', '>= 0.6'
+  s.add_development_dependency 'rake-compiler', '~> 0.9'
+  s.add_development_dependency 'rake-compiler-dock', '~> 0.2'
   s.add_development_dependency 'bundler'
 end

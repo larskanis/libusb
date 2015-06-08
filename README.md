@@ -89,6 +89,7 @@ If none could be found, a bundled libusb version is built and used, instead.
 Latest code can be used in this way:
 
     $ git clone git://github.com/larskanis/libusb.git
+    $ bundle
     $ rake install_gem
 
 Device hotplug support
@@ -117,21 +118,10 @@ systems.
 Cross compiling for Windows
 ---------------------------
 
-Libusb-gem can be build on a linux or darwin host for the win32 platform,
-using the mingw cross compiler collection. Libusb is downloaded from source
-git repo, cross compiled and included in the generated libusb.gem.
+Libusb-gem can be cross built for the win32 platform, using the [rake-compiler-dock](https://github.com/larskanis/rake-compiler-dock) .
+Just run:
 
-Install mingw32. On a debian based system this should work:
-
-    $ apt-get install mingw32
-
-On MacOS X, if you have MacPorts installed:
-
-    $ port install i386-mingw32-gcc
-
-Download and cross compile libusb for win32:
-
-    $ rake cross gem
+    $ rake gem:windows
 
 If everything works, there should be `libusb-VERSION-x86-mingw32.gem` in the pkg
 directory.
