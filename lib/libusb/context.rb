@@ -260,8 +260,11 @@ module LIBUSB
         pollfds << Pollfd.new(pollfd[:fd], pollfd[:events])
         offs += FFI.type_size :pointer
       end
-      # ppPollfds has to be released by free() -> give the GC this job
-      ppPollfds.autorelease = true
+      if Call.respond_to?(:libusb_free_pollfds)
+        Call.libusb_free_pollfds(ppPollfds)
+      else
+        Stdio.free(ppPollfds)
+      end
       pollfds
     end
 

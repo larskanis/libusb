@@ -342,6 +342,7 @@ module LIBUSB
     attach_function 'libusb_get_pollfds', [:libusb_context], :pointer
     attach_function 'libusb_get_next_timeout', [:libusb_context, :pointer], :int
     attach_function 'libusb_set_pollfd_notifiers', [:libusb_context, :libusb_pollfd_added_cb, :libusb_pollfd_removed_cb, :pointer], :void
+    try_attach_function 'libusb_free_pollfds', [:pointer], :void
 
     callback :libusb_transfer_cb_fn, [:pointer], :void
 
