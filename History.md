@@ -1,3 +1,8 @@
+0.5.1 / unreleased
+------------------
+* Build Windows binary gems per rake-compiler-dock.
+* Fix memory leak in Context#pollfds and use libusb_free_pollfds() if available.
+
 0.5.0 / 2015-01-08
 ------------------
 * Add support for BOS describtors of libusb-1.0.16
