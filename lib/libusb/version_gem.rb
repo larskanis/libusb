@@ -15,5 +15,5 @@
 
 module LIBUSB
   # Library version of libusb for Ruby
-  VERSION = "0.5.0"
+  VERSION = "0.5.1"
 end
