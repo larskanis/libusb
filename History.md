@@ -1,5 +1,8 @@
-0.5.1 / unreleased
+0.5.1 / 2015-09-29
 ------------------
+* Add ability to force use of the system or builtin libusb-1.0 library.
+    Use: gem install libusb -- --enable-system-libusb / --disable-system-libusb
+* Update to libusb-1.0.20.
 * Build Windows binary gems per rake-compiler-dock.
 * Fix memory leak in Context#pollfds and use libusb_free_pollfds() if available.
 
