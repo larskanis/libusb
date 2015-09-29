@@ -25,7 +25,7 @@ end
 task :default => :test
 
 task 'gem:windows' do
-  RakeCompilerDock.sh "bundle && rake cross gem MAKE=\"make -j `nproc`\""
+  RakeCompilerDock.sh "bundle && rake cross gem"
 end
 
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path
