@@ -235,6 +235,13 @@ module LIBUSB
         LIBUSB.raise_error res, "in libusb_free_streams" unless res>=0
         nil
       end
+
+    else
+
+      def alloc_streams(num_streams, endpoints)
+        raise NotImplementedError, "libusb-1.0.19+ is required for bulk stream transfers"
+      end
+
     end
 
     # Determine if a kernel driver is active on an interface.
