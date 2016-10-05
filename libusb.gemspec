@@ -21,6 +21,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.extensions    = ['ext/extconf.rb']
 
+  s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
   s.add_runtime_dependency 'ffi', '>= 1.0'
   s.add_development_dependency 'rake-compiler', '~> 0.9'
   s.add_development_dependency 'rake-compiler-dock', '~> 0.2'
