@@ -23,8 +23,6 @@ Features
 
 Synopsis
 --------
-See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API description.
-
 ```ruby
 require "libusb"
 
@@ -54,6 +52,8 @@ An alternate setting can be used independent on each interface.
 Each {LIBUSB::Setting} specifies it's own set of communication endpoints.
 Each {LIBUSB::Endpoint} specifies the type of transfer, direction, polling interval and
 maximum packet size.
+
+See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API description.
 
 
 Prerequisites
