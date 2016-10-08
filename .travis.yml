@@ -1,10 +1,12 @@
 language: ruby
 sudo: false
 rvm:
-  - "1.9.3"
-  - "2.0.0"
-  - "2.1"
-  - "2.2"
-  - jruby
-  - rbx-3
+  #- "1.9.3"
+  #- "2.0.0"
+  #- "2.1"
+  #- "2.2"
+  - "2.3.1"
+  - jruby-1.7.26
+  - jruby-9.1.5.0
+  - rbx-2
 script: bundle exec rake travis
