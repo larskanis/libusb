@@ -1,12 +1,17 @@
 language: ruby
 sudo: false
 rvm:
-  #- "1.9.3"
-  #- "2.0.0"
-  #- "2.1"
-  #- "2.2"
-  #- "2.3.1"
+  - "1.9.3"
+  - "2.0.0"
+  - "2.1"
+  - "2.2"
+  - "2.3.1"
   - "2.3.1-clang"
-  #- jruby-1.7.26
-  #- jruby-9.1.5.0
+  - jruby-1.7.26
+  - jruby-9.1.5.0
+  - rbx
+matrix:
+  allow_failures:
+    - rvm: rbx
+    - rvm: "2.3.1-clang"
 script: bundle exec rake travis
