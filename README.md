@@ -1,6 +1,7 @@
 <!-- -*- coding: utf-8 -*- -->
 
 [![Build Status](https://travis-ci.org/larskanis/libusb.svg)](https://travis-ci.org/larskanis/libusb)
+[![Build Status](https://ci.appveyor.com/api/projects/status/mdfnfdwu4mil42o3?svg=true)](https://ci.appveyor.com/project/larskanis/libusb)
 
 Access USB devices from Ruby
 ============================
