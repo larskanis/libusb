@@ -34,7 +34,7 @@ class TestLibusbThreads < Minitest::Test
     @usb = Context.new
     @usb.debug = 3
 
-    @devices = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>[0x06,0x01], :bProtocol=>0x50 )
+    @devices = usb.devices( bClass: CLASS_MASS_STORAGE, bSubClass: [0x06,0x01], bProtocol: 0x50 )
     skip "less than two mass storage devices found" unless @devices.length >= 2
 
     @devs = @devices.map do |device|
@@ -71,7 +71,7 @@ class TestLibusbThreads < Minitest::Test
     1.times do
       st = Time.now
       assert_raises LIBUSB::ERROR_TIMEOUT do
-        dev.bulk_transfer(:endpoint=>endpoint, :dataIn=>123, :timeout=>100)
+        dev.bulk_transfer(endpoint: endpoint, dataIn: 123, timeout: 100)
       end
       assert_operator Time.now-st, :<, 5
       dev.clear_halt(endpoint)

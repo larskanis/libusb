@@ -292,7 +292,7 @@ module LIBUSB
     try_attach_function 'libusb_get_ss_endpoint_companion_descriptor', [:pointer, :pointer, :pointer], :int
     try_attach_function 'libusb_free_ss_endpoint_companion_descriptor', [:pointer], :void
 
-    try_attach_function 'libusb_get_bos_descriptor', [:libusb_device_handle, :pointer], :int, :blocking=>true
+    try_attach_function 'libusb_get_bos_descriptor', [:libusb_device_handle, :pointer], :int, blocking: true
     try_attach_function 'libusb_free_bos_descriptor', [:pointer], :void
     try_attach_function 'libusb_get_usb_2_0_extension_descriptor', [:libusb_context, :pointer, :pointer], :int
     try_attach_function 'libusb_free_usb_2_0_extension_descriptor', [:pointer], :void
@@ -305,15 +305,15 @@ module LIBUSB
     attach_function 'libusb_close', [:pointer], :void
     attach_function 'libusb_get_device', [:libusb_device_handle], :pointer
 
-    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int, :blocking=>true
+    attach_function 'libusb_set_configuration', [:libusb_device_handle, :int], :int, blocking: true
     attach_function 'libusb_claim_interface', [:libusb_device_handle, :int], :int
-    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int, :blocking=>true
+    attach_function 'libusb_release_interface', [:libusb_device_handle, :int], :int, blocking: true
 
     attach_function 'libusb_open_device_with_vid_pid', [:pointer, :int, :int], :pointer
 
-    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int, :blocking=>true
-    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int, :blocking=>true
-    attach_function 'libusb_reset_device', [:libusb_device_handle], :int, :blocking=>true
+    attach_function 'libusb_set_interface_alt_setting', [:libusb_device_handle, :int, :int], :int, blocking: true
+    attach_function 'libusb_clear_halt', [:libusb_device_handle, :int], :int, blocking: true
+    attach_function 'libusb_reset_device', [:libusb_device_handle], :int, blocking: true
     try_attach_function 'libusb_alloc_streams', [:libusb_device_handle, :uint32, :pointer, :int], :int
     try_attach_function 'libusb_free_streams', [:libusb_device_handle, :pointer, :int], :int
 
@@ -331,10 +331,10 @@ module LIBUSB
     try_attach_function 'libusb_transfer_set_stream_id', [:libusb_transfer, :uint32], :void
     try_attach_function 'libusb_transfer_get_stream_id', [:libusb_transfer], :uint32
 
-    attach_function 'libusb_handle_events', [:libusb_context], :int, :blocking=>true
-    try_attach_function 'libusb_handle_events_completed', [:libusb_context, :pointer], :int, :blocking=>true
-    attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, :blocking=>true
-    try_attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, :blocking=>true
+    attach_function 'libusb_handle_events', [:libusb_context], :int, blocking: true
+    try_attach_function 'libusb_handle_events_completed', [:libusb_context, :pointer], :int, blocking: true
+    attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, blocking: true
+    try_attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, blocking: true
 
     callback :libusb_pollfd_added_cb, [:int, :short, :pointer], :void
     callback :libusb_pollfd_removed_cb, [:int, :pointer], :void

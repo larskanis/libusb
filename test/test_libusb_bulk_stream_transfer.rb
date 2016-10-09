@@ -44,7 +44,7 @@ class TestLibusbBulkStreamTransfer < Minitest::Test
   end
 
   def test_bulk_stream_transfer
-    tr = BulkStreamTransfer.new :dev_handle=>@dev, :stream_id=>123, :buffer=>' '*100
+    tr = BulkStreamTransfer.new dev_handle: @dev, stream_id: 123, buffer: ' '*100
     assert_equal 123, tr.stream_id, "stream_id should match"
   end
 end

@@ -31,7 +31,7 @@ class TestLibusbHotplug < Minitest::Test
 
   def test_enumerate
     devs = []
-    ctx.on_hotplug_event :flags => HOTPLUG_ENUMERATE do |dev, event|
+    ctx.on_hotplug_event flags: HOTPLUG_ENUMERATE do |dev, event|
       devs << dev
       assert_equal :HOTPLUG_EVENT_DEVICE_ARRIVED, event
       :repeat
@@ -44,7 +44,7 @@ class TestLibusbHotplug < Minitest::Test
 
   def test_enumerate_with_left
     devs = []
-    ctx.on_hotplug_event :flags => HOTPLUG_ENUMERATE, :events => HOTPLUG_EVENT_DEVICE_LEFT do |dev, event|
+    ctx.on_hotplug_event flags: HOTPLUG_ENUMERATE, events: HOTPLUG_EVENT_DEVICE_LEFT do |dev, event|
       devs << dev
       assert_equal :HOTPLUG_EVENT_DEVICE_ARRIVED, event
       :repeat
@@ -65,7 +65,7 @@ class TestLibusbHotplug < Minitest::Test
 
   def test_wrong_yieldreturn
     ex = assert_raises(ArgumentError) do
-      ctx.on_hotplug_event :flags => :HOTPLUG_ENUMERATE do |dev, event|
+      ctx.on_hotplug_event flags: :HOTPLUG_ENUMERATE do |dev, event|
       end
     end
 

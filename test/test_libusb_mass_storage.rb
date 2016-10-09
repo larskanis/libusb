@@ -40,7 +40,7 @@ class TestLibusbMassStorage < Minitest::Test
     @usb.debug = 3
     @asynchron = false
 
-    @device = usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>[0x06,0x01], :bProtocol=>0x50 ).last
+    @device = usb.devices( bClass: CLASS_MASS_STORAGE, bSubClass: [0x06,0x01], bProtocol: 0x50 ).last
     skip "no mass storage device found" unless @device
 
     @endpoint_in = @device.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }
@@ -97,10 +97,10 @@ class TestLibusbMassStorage < Minitest::Test
     cbw = ['USBC', expected_tag, data_length, direction, lun, cdb.length, cdb].pack('a*VVCCCa*')
     cbw = cbw.ljust(31, "\0")
 
-    num_bytes = bulk_transfer(:endpoint=>endpoint_out, :dataOut=>cbw)
+    num_bytes = bulk_transfer(endpoint: endpoint_out, dataOut: cbw)
     assert_equal 31, num_bytes, "31 bytes CBW should be sent"
 
-    recv = bulk_transfer(:endpoint=>endpoint_in, :dataIn=>data_length)
+    recv = bulk_transfer(endpoint: endpoint_in, dataIn: data_length)
 
     get_mass_storage_status(expected_tag)
     return recv
@@ -109,7 +109,7 @@ class TestLibusbMassStorage < Minitest::Test
   def get_mass_storage_status(expected_tag)
     retries = 5
     buffer = begin
-      bulk_transfer(:endpoint=>endpoint_in, :dataIn=>13)
+      bulk_transfer(endpoint: endpoint_in, dataIn: 13)
     rescue LIBUSB::ERROR_PIPE
       if (retries-=1)>=0
         dev.clear_halt(endpoint_in)
@@ -167,23 +167,23 @@ class TestLibusbMassStorage < Minitest::Test
 
   def mass_storage_reset
     res = control_transfer(
-      :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-      :bRequest=>BOMS_RESET,
-      :wValue=>0, :wIndex=>0)
+      bmRequestType: ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+      bRequest: BOMS_RESET,
+      wValue: 0, wIndex: 0)
     assert_equal 0, res, "BOMS_RESET response should be 0 byte"
 
     res = control_transfer(
-      :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-      :bRequest=>BOMS_RESET,
-      :wValue=>0, :wIndex=>0, :dataOut=>'')
+      bmRequestType: ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+      bRequest: BOMS_RESET,
+      wValue: 0, wIndex: 0, dataOut: '')
     assert_equal 0, res, "BOMS_RESET response should be 0 byte"
   end
 
   def read_max_lun
     res = control_transfer(
-      :bmRequestType=>ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-      :bRequest=>BOMS_GET_MAX_LUN,
-      :wValue=>0, :wIndex=>0, :dataIn=>1)
+      bmRequestType: ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+      bRequest: BOMS_GET_MAX_LUN,
+      wValue: 0, wIndex: 0, dataIn: 1)
     assert [0].pack("C")==res || [1].pack("C")==res, "BOMS_GET_MAX_LUN response is usually 0 or 1"
   end
 
@@ -217,7 +217,7 @@ class TestLibusbMassStorage < Minitest::Test
     end
     assert_raises(LIBUSB::ERROR_TIMEOUT) do
       begin
-        bulk_transfer(:endpoint=>endpoint_in, :dataIn=>123)
+        bulk_transfer(endpoint: endpoint_in, dataIn: 123)
       rescue LIBUSB::ERROR_TIMEOUT => err
         assert_kind_of String, err.transferred
         raise
@@ -258,11 +258,11 @@ class TestLibusbMassStorage < Minitest::Test
   end
 
   def test_wrong_argument
-    assert_raises(ArgumentError){ dev.bulk_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
-    assert_raises(ArgumentError){ dev.interrupt_transfer(:endpoint=>endpoint_in, :dataOut=>"data") }
+    assert_raises(ArgumentError){ dev.bulk_transfer(endpoint: endpoint_in, dataOut: "data") }
+    assert_raises(ArgumentError){ dev.interrupt_transfer(endpoint: endpoint_in, dataOut: "data") }
     assert_raises(ArgumentError){ dev.control_transfer(
-      :bmRequestType=>ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-      :bRequest=>BOMS_RESET,
-      :wValue=>0, :wIndex=>0, :dataIn=>123) }
+      bmRequestType: ENDPOINT_OUT|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+      bRequest: BOMS_RESET,
+      wValue: 0, wIndex: 0, dataIn: 123) }
   end
 end

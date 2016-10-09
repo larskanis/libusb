@@ -161,11 +161,11 @@ class TestLibusbDescriptors < Minitest::Test
       end
     end
 
-    devs2 =  usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x01, :bProtocol=>0x50 )
-    devs2 += usb.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>0x06, :bProtocol=>0x50 )
+    devs2 =  usb.devices( bClass: CLASS_MASS_STORAGE, bSubClass: 0x01, bProtocol: 0x50 )
+    devs2 += usb.devices( bClass: CLASS_MASS_STORAGE, bSubClass: 0x06, bProtocol: 0x50 )
     assert_equal devs1.sort, devs2.sort, "devices and devices with filter should deliver the same device"
 
-    devs3 =  usb.devices( :bClass=>[CLASS_MASS_STORAGE], :bSubClass=>[0x01,0x06], :bProtocol=>[0x50] )
+    devs3 =  usb.devices( bClass: [CLASS_MASS_STORAGE], bSubClass: [0x01,0x06], bProtocol: [0x50] )
     assert_equal devs1.sort, devs3.sort, "devices and devices with array-filter should deliver the same device"
   end
 
@@ -179,7 +179,7 @@ class TestLibusbDescriptors < Minitest::Test
       end
     end
 
-    devs2 = usb.devices( :bClass=>CLASS_HUB )
+    devs2 = usb.devices( bClass: CLASS_HUB )
     assert_equal devs1.sort, devs2.sort, "devices and devices with filter should deliver the same device"
   end
 

@@ -32,7 +32,7 @@ class TestLibusbEventMachine < Minitest::Test
     @context = Context.new
     @context.debug = 3
 
-    @device = context.devices( :bClass=>CLASS_MASS_STORAGE, :bSubClass=>[0x06,0x01], :bProtocol=>0x50 ).last
+    @device = context.devices( bClass: CLASS_MASS_STORAGE, bSubClass: [0x06,0x01], bProtocol: 0x50 ).last
     skip "no mass storage device found" unless @device
 
     @endpoint_in = @device.endpoints.find{|ep| ep.bEndpointAddress&ENDPOINT_IN != 0 }
@@ -70,9 +70,9 @@ class TestLibusbEventMachine < Minitest::Test
     em_run do
       ticks = 0
       tr = devh.eventmachine_bulk_transfer(
-          :endpoint => @endpoint_in,
-          :timeout => 1500,
-          :dataIn => 123 )
+          endpoint: @endpoint_in,
+          timeout: 1500,
+          dataIn: 123 )
 #       puts "started usb transfer #{tr}"
 
       tr.callback do |data|
@@ -98,9 +98,9 @@ class TestLibusbEventMachine < Minitest::Test
   def test_event_loop
     em_run do
       tr = devh.eventmachine_control_transfer(
-        :bmRequestType=>ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-        :bRequest=>BOMS_GET_MAX_LUN,
-        :wValue=>0, :wIndex=>0, :dataIn=>1 )
+        bmRequestType: ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+        bRequest: BOMS_GET_MAX_LUN,
+        wValue: 0, wIndex: 0, dataIn: 1 )
 
 #       puts "started usb transfer #{tr}"
       tr.callback do |data|

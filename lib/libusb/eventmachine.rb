@@ -141,7 +141,7 @@ class DevHandle
   # Execute an eventmachine driven USB bulk transfer.
   #
   # @example
-  #   tr = devh.eventmachine_bulk_transfer( :endpoint => 0x02, :dataOut => "data" )
+  #   tr = devh.eventmachine_bulk_transfer( endpoint: 0x02, dataOut: "data" )
   #   tr.callback do |data|
   #     puts "sent: #{data.inspect}"
   #   end
@@ -159,9 +159,9 @@ class DevHandle
   #
   # @example
   #   tr = devh.eventmachine_control_transfer(
-  #     :bmRequestType=>ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
-  #     :bRequest=>0x01,
-  #     :wValue=>0, :wIndex=>0, :dataIn=>1 )
+  #     bmRequestType: ENDPOINT_IN|REQUEST_TYPE_CLASS|RECIPIENT_INTERFACE,
+  #     bRequest: 0x01,
+  #     wValue: 0, wIndex: 0, dataIn: 1 )
   #   tr.callback do |data|
   #     puts "recved: #{data.inspect}"
   #   end

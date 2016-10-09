@@ -34,7 +34,7 @@ class TestLibusbIsoTransfer < Minitest::Test
   end
 
   def test_iso_transfer
-    tr = IsochronousTransfer.new 10, :dev_handle=>@dev
+    tr = IsochronousTransfer.new 10, dev_handle: @dev
     assert_equal 10, tr.num_packets, "number of packets should match"
 
     tr.buffer = " "*130

@@ -218,7 +218,7 @@ module LIBUSB
     #
     # @example
     #   # Return all devices of vendor 0x0ab1 where idProduct is 3 or 4:
-    #   context.device :idVendor=>0x0ab1, :idProduct=>[0x0003, 0x0004]
+    #   context.device idVendor: 0x0ab1, idProduct: [0x0003, 0x0004]
     #
     # @return [Array<LIBUSB::Device>]
     def devices(filter_hash={})

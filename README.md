@@ -28,9 +28,9 @@ Synopsis
 require "libusb"
 
 usb = LIBUSB::Context.new
-device = usb.devices(:idVendor => 0x04b4, :idProduct => 0x8613).first
+device = usb.devices(idVendor: 0x04b4, idProduct: 0x8613).first
 device.open_interface(0) do |handle|
-  handle.control_transfer(:bmRequestType => 0x40, :bRequest => 0xa0, :wValue => 0xe600, :wIndex => 0x0000, :dataOut => 1.chr)
+  handle.control_transfer(bmRequestType: 0x40, bRequest: 0xa0, wValue: 0xe600, wIndex: 0x0000, dataOut: 1.chr)
 end
 ```
 {LIBUSB::Context#devices} is used to get all or only particular devices.
