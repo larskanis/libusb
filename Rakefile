@@ -32,8 +32,13 @@ COMPILE_HOME               = Pathname( "./tmp" ).expand_path
 STATIC_SOURCESDIR          = COMPILE_HOME + 'sources'
 
 # Fetch tarball from sourceforge
-LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.20'
-LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
+# LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.20'
+# LIBUSB_SOURCE_URI         = URI( "http://downloads.sourceforge.net/project/libusb/libusb-1.0/libusb-#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
+# LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
+
+# Fetch tarball from github releases
+LIBUSB_VERSION            = ENV['LIBUSB_VERSION'] || '1.0.21'
+LIBUSB_SOURCE_URI         = URI( "https://github.com/libusb/libusb/releases/download/v#{LIBUSB_VERSION}/libusb-#{LIBUSB_VERSION}.tar.bz2" )
 LIBUSB_TARBALL            = STATIC_SOURCESDIR + File.basename( LIBUSB_SOURCE_URI.path )
 
 # Fetch tarball from git repo
