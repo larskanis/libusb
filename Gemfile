@@ -7,3 +7,5 @@ group :test do
   gem 'eventmachine'
   gem 'minitest'
 end
+
+gem 'rake-compiler-dock', git: 'http://github.com/rake-compiler/rake-compiler-dock'
