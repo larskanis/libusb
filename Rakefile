@@ -25,7 +25,8 @@ end
 task :default => :test
 
 task 'gem:windows' do
-  RakeCompilerDock.sh "bundle && rake cross gem"
+  sh "bundle package"
+  RakeCompilerDock.sh "bundle --local && rake cross gem"
 end
 
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path
