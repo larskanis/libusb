@@ -75,7 +75,7 @@ end
 class CrossLibrary < OpenStruct
   include Rake::DSL
 
-  def initialize(ruby_platform, host_platform)
+  def initialize(ruby_platform, host_platform, libusb_dllname)
     super()
 
     self.ruby_platform              = ruby_platform
@@ -88,7 +88,7 @@ class CrossLibrary < OpenStruct
     self.static_libusb_builddir    = static_builddir + LIBUSB_TARBALL.basename(".tar.bz2")
     self.libusb_configure          = static_libusb_builddir + 'configure'
     self.libusb_makefile           = static_libusb_builddir + 'Makefile'
-    self.libusb_dll                = static_libusb_builddir + 'libusb/.libs/libusb-1.0.dll'
+    self.libusb_dll                = static_libusb_builddir + 'libusb/.libs' + libusb_dllname
 
     #
     # Static libusb build tasks
@@ -145,7 +145,7 @@ class CrossLibrary < OpenStruct
       spec.extensions = []
       spec.files -= `git ls-files ext`.split("\n")
       spec_text_files = spec.files.dup
-      spec.files << "lib/#{File.basename(libusb_dll)}"
+      spec.files << "lib/#{libusb_dll.basename}"
 
       # Generate a package for this gem
       pkg = Gem::PackageTask.new(spec) do |pkg|
@@ -167,22 +167,24 @@ class CrossLibrary < OpenStruct
         end
 
         # copy libusb.dll to pkg directory
-        f = "#{pkg.package_dir_path}/lib/#{File.basename(libusb_dll)}"
+        f = "#{pkg.package_dir_path}/lib/#{libusb_dll.basename}"
         mkdir_p File.dirname(f)
         rm_f f
         safe_ln libusb_dll, f
       end
 
-      file "lib/#{File.basename(libusb_dll)}" => [libusb_dll]
+      file "lib/#{libusb_dll.basename}" => [libusb_dll]
     end
   end
 end
 
 CrossLibraries = [
-  ['i386-mingw32', 'i686-w64-mingw32'],
-  ['x64-mingw32', 'x86_64-w64-mingw32'],
-].map do |ruby_platform, host_platform|
-  CrossLibrary.new ruby_platform, host_platform
+  ['i386-mingw32', 'i686-w64-mingw32', 'libusb-1.0.dll'],
+  ['x64-mingw32', 'x86_64-w64-mingw32', 'libusb-1.0.dll'],
+  ['x86-linux', 'i686-linux-gnu', 'libusb-1.0.so'],
+  ['x86_64-linux', 'x86_64-linux-gnu', 'libusb-1.0.so'],
+].map do |ruby_platform, host_platform, libusb_dll|
+  CrossLibrary.new ruby_platform, host_platform, libusb_dll
 end
 
 desc "Download and update bundled libusb"
