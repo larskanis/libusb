@@ -175,7 +175,7 @@ class CrossLibrary < OpenStruct
         f = "#{pkg.package_dir_path}/lib/#{libusb_dll.basename}"
         mkdir_p File.dirname(f)
         rm_f f
-        safe_ln libusb_dll, f
+        safe_ln libusb_dll.realpath, f
       end
 
       file "lib/#{libusb_dll.basename}" => [libusb_dll]
