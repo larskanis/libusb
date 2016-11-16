@@ -24,9 +24,14 @@ task :travis=>:compile do
 end
 task :default => :test
 
-task 'gem:windows' do
+task 'gem:native' do
   sh "bundle package"
-  RakeCompilerDock.sh "bundle --local && rake cross gem"
+  RakeCompilerDock.sh <<-EOT
+    sudo apt-get update &&
+    sudo apt-get -y install libudev-dev libudev-dev:i386 &
+    bundle --local &&
+    rake cross gem
+  EOT
 end
 
 COMPILE_HOME               = Pathname( "./tmp" ).expand_path
