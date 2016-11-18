@@ -58,6 +58,10 @@ def libusb_usable?
   end
 end
 
+def make
+  ENV['MAKE'] || 'make'
+end
+
 def build_bundled_libusb(have_udev)
   libusb_dir = Dir[File.expand_path('../../ext/libusb-*', __FILE__)].first
   root_dir = File.expand_path('../..', __FILE__)
@@ -77,7 +81,7 @@ def build_bundled_libusb(have_udev)
     File.open(f, "a+"){|fd| fd.write "\n" }
   end
 
-  cmd = "sh configure #{'--disable-udev' unless have_udev} --prefix=#{root_dir} && make && make install"
+  cmd = "sh configure #{'--disable-udev' unless have_udev} --prefix=#{root_dir} && #{make} && #{make} install"
   puts cmd
   system cmd
   raise "libusb build exited with #{$?.exitstatus}" if $?.exitstatus!=0
