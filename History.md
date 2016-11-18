@@ -1,3 +1,11 @@
+0.5.2 / YYYY-MM-DD
+------------------
+* Update bundled libusb version to 1.0.21.
+* Set minimum Ruby version requirement to 1.9.3.
+* Add binary gems for Linux in addition to Windows.
+* Respect MAKE environment variable for bundled libusb.
+* Raise a more meaningful exception in case of bulk stream transfers on too old libusb versions.
+
 0.5.1 / 2015-09-29
 ------------------
 * Add ability to force use of the system or builtin libusb-1.0 library.
