@@ -71,6 +71,12 @@ def build_bundled_libusb(have_udev)
 
   old_dir = Dir.pwd
   Dir.chdir libusb_dir
+
+  # Avoid any re-triggers of auto-tools
+  ["aclocal.m4", "config.h.in", "configure", "Makefile.in"].each do |f|
+    File.open(f, "a+"){|fd| fd.write "\n" }
+  end
+
   cmd = "sh configure #{'--disable-udev' unless have_udev} --prefix=#{root_dir} && make && make install"
   puts cmd
   system cmd
