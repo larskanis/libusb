@@ -11,7 +11,7 @@ require 'rake_compiler_dock'
 
 task :gem => :build
 task :compile do
-  sh "ruby ext/extconf.rb"
+  sh "ruby ext/extconf.rb --disable-system-libusb"
 end
 
 task :test=>:compile do
