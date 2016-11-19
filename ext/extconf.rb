@@ -50,7 +50,7 @@ def libusb_usable?
       prefix = FFI::Platform::LIBPREFIX.empty? ? 'lib' : FFI::Platform::LIBPREFIX
       bundled_dll = File.join(root_path, "lib/#{prefix}usb-1.0.#{ext}")
       bundled_dll_cygwin = File.join(root_path, "bin/#{prefix}usb-1.0.#{ext}")
-      ffi_lib(["#{prefix}usb-1.0", bundled_dll, bundled_dll_cygwin])
+      ffi_lib([bundled_dll, bundled_dll_cygwin, "#{prefix}usb-1.0"])
     end
     true
   rescue LoadError
@@ -58,34 +58,17 @@ def libusb_usable?
   end
 end
 
-def make
-  ENV['MAKE'] || 'make'
-end
-
 def build_bundled_libusb(have_udev)
-  libusb_dir = Dir[File.expand_path('../../ext/libusb-*', __FILE__)].first
-  root_dir = File.expand_path('../..', __FILE__)
-  raise "could not find embedded libusb sources" unless libusb_dir
-
   # Enable udev for hot-plugging when it is available.
   # This is the same check that is done in libusb's configure.ac file
   # but we don't abort in case it's not available, but continue
   # without hot-plugging.
   have_udev &&= have_header('libudev.h') && have_library('udev', 'udev_new')
 
-  old_dir = Dir.pwd
-  Dir.chdir libusb_dir
-
-  # Avoid any re-triggers of auto-tools
-  ["aclocal.m4", "config.h.in", "configure", "Makefile.in"].each do |f|
-    File.open(f, "a+"){|fd| fd.write "\n" }
-  end
-
-  cmd = "sh configure #{'--disable-udev' unless have_udev} --prefix=#{root_dir} && #{make} && #{make} install"
-  puts cmd
-  system cmd
-  raise "libusb build exited with #{$?.exitstatus}" if $?.exitstatus!=0
-  Dir.chdir old_dir
+  require_relative 'libusb_recipe'
+  recipe = LibusbRecipe.new
+  recipe.configure_options << "--disable-udev" unless have_udev
+  recipe.cook_and_activate
 end
 
 unless enable_config('system-libusb', libusb_usable?)
