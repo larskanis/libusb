@@ -44,9 +44,9 @@ module LIBUSB
     end
 
     def initialize(args={})
-      args.each{|k,v| send("#{k}=", v) }
       @buffer = nil
       @completion_flag = Context::CompletionFlag.new
+      args.each{|k,v| send("#{k}=", v) }
     end
     private :initialize
 
