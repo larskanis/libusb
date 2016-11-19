@@ -41,6 +41,9 @@ module LIBUSB
     #
     # This is a non-blocking function; no requests are sent over the bus.
     def close
+      @bulk_transfer.free_buffer if @bulk_transfer
+      @interrupt_transfer.free_buffer if @interrupt_transfer
+      @control_transfer.free_buffer if @control_transfer
       Call.libusb_close(@pHandle)
     end
 

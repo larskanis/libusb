@@ -316,6 +316,8 @@ module LIBUSB
     attach_function 'libusb_reset_device', [:libusb_device_handle], :int, blocking: true
     try_attach_function 'libusb_alloc_streams', [:libusb_device_handle, :uint32, :pointer, :int], :int
     try_attach_function 'libusb_free_streams', [:libusb_device_handle, :pointer, :int], :int
+    try_attach_function 'libusb_dev_mem_alloc', [:libusb_device_handle, :size_t], :pointer
+    try_attach_function 'libusb_dev_mem_free', [:libusb_device_handle, :pointer, :size_t], :int
 
     attach_function 'libusb_kernel_driver_active', [:libusb_device_handle, :int], :int
     attach_function 'libusb_detach_kernel_driver', [:libusb_device_handle, :int], :int

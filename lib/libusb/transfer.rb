@@ -25,6 +25,24 @@ module LIBUSB
   # Using {Transfer} derived classes directly, however, is needed for isochronous transfers and
   # allows a more advanced buffer management.
   class Transfer
+    class ZeroCopyMemory < FFI::Pointer
+      attr_reader :size
+
+      def initialize(dev_handle, ptr, size)
+        @dev_handle = dev_handle
+        @size = size
+        super(ptr)
+      end
+
+      def free(id=nil)
+        return unless @size
+#         puts format("libusb_dev_mem_free(%#x, %d)%s", address, @size, id ? " by GC" : '')
+        res = Call.libusb_dev_mem_free( @dev_handle.pHandle, self, @size )
+        LIBUSB.raise_error res, "in libusb_dev_mem_free" if res!=0
+        @size = nil
+      end
+    end
+
     def initialize(args={})
       args.each{|k,v| send("#{k}=", v) }
       @buffer = nil
@@ -53,10 +71,7 @@ module LIBUSB
 
     # Set output data that should be sent.
     def buffer=(data)
-      if !@buffer || data.bytesize>@buffer.size
-        free_buffer
-        @buffer = FFI::MemoryPointer.new(data.bytesize, 1, false)
-      end
+      ensure_enough_buffer(data.bytesize)
       @buffer.put_bytes(0, data)
       @transfer[:buffer] = @buffer
       @transfer[:length] = data.bytesize
@@ -82,10 +97,7 @@ module LIBUSB
     # @param [Fixnum]  len  Number of bytes to allocate
     # @param [String, nil] data  some data to initialize the buffer with
     def alloc_buffer(len, data=nil)
-      if !@buffer || len>@buffer.size
-        free_buffer
-        @buffer = FFI::MemoryPointer.new(len, 1, false)
-      end
+      ensure_enough_buffer(len)
       @buffer.put_bytes(0, data) if data
       @transfer[:buffer] = @buffer
       @transfer[:length] = len
@@ -95,6 +107,23 @@ module LIBUSB
     def actual_length
       @transfer[:actual_length]
     end
+
+    def ensure_enough_buffer(len)
+      if !@buffer || len>@buffer.size
+        free_buffer
+        # Try to use zero-copy-memory and fallback to FFI-memory if not available
+        if @dev_handle && Call.respond_to?(:libusb_dev_mem_alloc)
+          ptr = Call.libusb_dev_mem_alloc( @dev_handle.pHandle, len )
+#           puts format("libusb_dev_mem_alloc(%d) => %#x", len, ptr.address)
+          unless ptr.null?
+            buffer = ZeroCopyMemory.new(@dev_handle, ptr, len)
+            ObjectSpace.define_finalizer(self, buffer.method(:free))
+          end
+        end
+        @buffer = buffer || FFI::MemoryPointer.new(len, 1, false)
+      end
+    end
+    private :ensure_enough_buffer
 
     # Retrieve the data actually transferred.
     #
