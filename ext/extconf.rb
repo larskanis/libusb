@@ -2,6 +2,9 @@
 
 require 'rubygems'
 require 'ffi'
+require 'fileutils'
+
+include FileUtils
 
 if RUBY_PLATFORM =~ /java/
   # JRuby's C extension support is disabled by default, so we can not easily test
@@ -69,6 +72,8 @@ def build_bundled_libusb(have_udev)
   recipe = LibusbRecipe.new
   recipe.configure_options << "--disable-udev" unless have_udev
   recipe.cook_and_activate
+
+  cp_r File.join(recipe.path, '.'), '.', verbose: true, remove_destination: true
 end
 
 unless enable_config('system-libusb', libusb_usable?)
