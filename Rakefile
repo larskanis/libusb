@@ -45,8 +45,11 @@ class CrossLibrary < OpenStruct
     self.recipe = LibusbRecipe.new
     recipe.host = host_platform
     recipe.configure_options << "--host=#{recipe.host}"
-    recipe.cook
     self.libusb_dll = Pathname.new(recipe.path) + libusb_dllname
+
+    file libusb_dll do
+      recipe.cook
+    end
 
     task "libusb_dll:#{ruby_platform}" => libusb_dll
 
@@ -100,7 +103,7 @@ CrossLibraries = [
   ['x64-mingw32', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x86-linux', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
   ['x86_64-linux', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
-].map do |ruby_platform, host_platform, libusb_dll|
+].each do |ruby_platform, host_platform, libusb_dll|
   CrossLibrary.new ruby_platform, host_platform, libusb_dll
 end
 
