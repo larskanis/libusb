@@ -67,6 +67,9 @@ class CrossLibrary < OpenStruct
       # Add native libusb-dll
       spec.files << "lib/#{libusb_dll.basename}"
 
+      # MiniPortile isn't required for native gems
+      spec.dependencies.reject!{|d| d.name=="mini_portile2" }
+
       # Generate a package for this gem
       pkg = Gem::PackageTask.new(spec) do |pkg|
         pkg.need_zip = false
