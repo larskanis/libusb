@@ -1,10 +1,11 @@
+require_relative '../lib/libusb/dependencies'
 require 'rubygems'
 # NOTE: Keep this version constraint in sync with libusb.gemspec
-gem "mini_portile2", MINI_PORTILE_VERSION
+gem "mini_portile2", LIBUSB::MINI_PORTILE_VERSION
 require "mini_portile2"
-require_relative 'constants'
 
 class LibusbRecipe < MiniPortile
+  include LIBUSB
   ROOT = File.expand_path('../..', __FILE__)
 
   def initialize

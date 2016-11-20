@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
 require "libusb/version_gem"
-require_relative 'ext/constants'
+require "libusb/dependencies"
 
 Gem::Specification.new do |s|
   s.name        = "libusb"
@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.rdoc_options = %w[--main README.md --charset=UTF-8]
 
   s.files         = `git ls-files`.split("\n")
-  s.files         << "ports/archives/libusb-#{LIBUSB_VERSION}.tar.bz2"
+  s.files         << "ports/archives/libusb-#{LIBUSB::LIBUSB_VERSION}.tar.bz2"
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
   s.add_runtime_dependency 'ffi', '~> 1.0'
-  s.add_runtime_dependency 'mini_portile2', MINI_PORTILE_VERSION
+  s.add_runtime_dependency 'mini_portile2', LIBUSB::MINI_PORTILE_VERSION
   s.add_development_dependency 'rake-compiler', '~> 0.9'
   s.add_development_dependency 'rake-compiler-dock', '~> 0.2'
   s.add_development_dependency 'bundler', '~> 1.8'
