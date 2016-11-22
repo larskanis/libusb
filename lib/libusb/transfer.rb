@@ -46,6 +46,7 @@ module LIBUSB
     def initialize(args={})
       @buffer = nil
       @completion_flag = Context::CompletionFlag.new
+      @allow_device_memory = false
       args.each{|k,v| send("#{k}=", v) }
     end
     private :initialize
@@ -70,6 +71,7 @@ module LIBUSB
     end
 
     # Set output data that should be sent.
+    # @see #allow_device_memory
     def buffer=(data)
       ensure_enough_buffer(data.bytesize)
       @buffer.put_bytes(0, data)
@@ -96,6 +98,7 @@ module LIBUSB
     #
     # @param [Fixnum]  len  Number of bytes to allocate
     # @param [String, nil] data  some data to initialize the buffer with
+    # @see #allow_device_memory
     def alloc_buffer(len, data=nil)
       ensure_enough_buffer(len)
       @buffer.put_bytes(0, data) if data
@@ -108,11 +111,40 @@ module LIBUSB
       @transfer[:actual_length]
     end
 
+    # Try to use persistent device memory.
+    #
+    # If enabled, attempts to allocate a block of persistent DMA memory suitable for transfers against the given device.
+    # The memory is allocated by {#alloc_buffer} or {#buffer=}.
+    # If unsuccessful, ordinary user space memory will be used.
+    #
+    # Using this memory instead of regular memory means that the host controller can use DMA directly into the buffer to increase performance, and also that transfers can no longer fail due to kernel memory fragmentation.
+    #
+    # It requires libusb-1.0.21 and Linux-4.6.
+    #
+    # Note that this type of memory is bound to the {#dev_handle=}.
+    # So even if the {DevHandle} is closed, the memory is still accessable and the device is locked.
+    # It is free'd by the garbage collector eventually, but in order to close the device deterministic, it is required to call {#free_buffer} on all {Transfer}s which use persistent device memory.
+    #
+    # @see #free_buffer
+    # @see #memory_type
+    attr_accessor :allow_device_memory
+
+    # @return +:device_memory+   - If persistent device memory is allocated.
+    # @return +:user_space+      - If user space memory is allocated.
+    # @return +nil+              - If no memory is allocated.
+    def memory_type
+      case @buffer
+        when ZeroCopyMemory then :device_memory
+        when FFI::MemoryPointer then :user_space
+        else nil
+      end
+    end
+
     def ensure_enough_buffer(len)
       if !@buffer || len>@buffer.size
         free_buffer
         # Try to use zero-copy-memory and fallback to FFI-memory if not available
-        if @dev_handle && Call.respond_to?(:libusb_dev_mem_alloc)
+        if @allow_device_memory && @dev_handle && Call.respond_to?(:libusb_dev_mem_alloc)
           ptr = Call.libusb_dev_mem_alloc( @dev_handle.pHandle, len )
 #           puts format("libusb_dev_mem_alloc(%d) => %#x", len, ptr.address)
           unless ptr.null?

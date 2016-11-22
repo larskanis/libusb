@@ -384,7 +384,7 @@ module LIBUSB
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
-      @bulk_transfer ||= BulkTransfer.new dev_handle: self
+      @bulk_transfer ||= BulkTransfer.new dev_handle: self, allow_device_memory: true
       tr = @bulk_transfer
       tr.endpoint = endpoint
       tr.timeout = timeout
@@ -452,7 +452,7 @@ module LIBUSB
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
-      @interrupt_transfer ||= InterruptTransfer.new dev_handle: self
+      @interrupt_transfer ||= InterruptTransfer.new dev_handle: self, allow_device_memory: true
       tr = @interrupt_transfer
       tr.endpoint = endpoint
       tr.timeout = timeout
@@ -512,7 +512,7 @@ module LIBUSB
       raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
-      @control_transfer ||= ControlTransfer.new dev_handle: self
+      @control_transfer ||= ControlTransfer.new dev_handle: self, allow_device_memory: true
       tr = @control_transfer
       tr.timeout = timeout
       if dataIn
