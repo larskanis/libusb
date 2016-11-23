@@ -112,4 +112,15 @@ class TestLibusbHotplug < Minitest::Test
     assert_operator devs2.map(&:last), :include?, :HOTPLUG_EVENT_DEVICE_ARRIVED, "Should have received ARRIVED"
     assert_operator devs2.map(&:last), :include?, :HOTPLUG_EVENT_DEVICE_LEFT, "Should have received LEFT"
   end
+
+  def test_interrupt_event_handler
+    th = Thread.new do
+      ctx.handle_events 5000
+    end
+
+    st = Time.now
+    ctx.interrupt_event_handler
+    th.join
+    assert_operator Time.now-st, :<, 5.0
+  end
 end

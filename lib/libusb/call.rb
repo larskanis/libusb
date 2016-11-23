@@ -337,6 +337,7 @@ module LIBUSB
     try_attach_function 'libusb_handle_events_completed', [:libusb_context, :pointer], :int, blocking: true
     attach_function 'libusb_handle_events_timeout', [:libusb_context, :pointer], :int, blocking: true
     try_attach_function 'libusb_handle_events_timeout_completed', [:libusb_context, :pointer, :pointer], :int, blocking: true
+    try_attach_function 'libusb_interrupt_event_handler', [:libusb_context], :void
 
     callback :libusb_pollfd_added_cb, [:int, :short, :pointer], :void
     callback :libusb_pollfd_removed_cb, [:int, :pointer], :void

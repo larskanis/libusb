@@ -181,6 +181,8 @@ module LIBUSB
     # @param [Integer, nil] timeout  the maximum time (in millseconds) to block waiting for
     #                                events, or 0 for non-blocking mode
     # @param [Context::CompletionFlag, nil] completion_flag  CompletionFlag to check
+    #
+    # @see interrupt_event_handler
     def handle_events(timeout=nil, completion_flag=nil)
       if completion_flag && !completion_flag.is_a?(Context::CompletionFlag)
         raise ArgumentError, "completion_flag is not a CompletionFlag"
@@ -201,6 +203,19 @@ module LIBUSB
         end
       end
       LIBUSB.raise_error res, "in libusb_handle_events" if res<0
+    end
+
+    if Call.respond_to?(:libusb_interrupt_event_handler)
+      # Interrupt any active thread that is handling events.
+      #
+      # This is mainly useful for interrupting a dedicated event handling thread when an application wishes to call {Context#exit}.
+      #
+      # Available since libusb-1.0.21.
+      #
+      # @see handle_events
+      def interrupt_event_handler
+        Call.libusb_interrupt_event_handler(@ctx)
+      end
     end
 
     # Obtain a list of devices currently attached to the USB system, optionally matching certain criteria.
