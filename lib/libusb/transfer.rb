@@ -119,7 +119,7 @@ module LIBUSB
     #
     # Using this memory instead of regular memory means that the host controller can use DMA directly into the buffer to increase performance, and also that transfers can no longer fail due to kernel memory fragmentation.
     #
-    # It requires libusb-1.0.21 and Linux-4.6.
+    # It requires libusb-1.0.21 and Linux-4.6 to be effective, but it can safely be enabled on other systems.
     #
     # Note that this type of memory is bound to the {#dev_handle=}.
     # So even if the {DevHandle} is closed, the memory is still accessable and the device is locked.
@@ -289,7 +289,7 @@ module LIBUSB
 
       # Get a transfers bulk stream id.
       #
-      # Since version 1.0.19.
+      # Available since libusb-1.0.19.
       #
       # @return [Fixnum] the stream id for the transfer
       def stream_id
