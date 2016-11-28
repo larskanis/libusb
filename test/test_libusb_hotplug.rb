@@ -118,6 +118,7 @@ class TestLibusbHotplug < Minitest::Test
       ctx.handle_events 5000
     end
 
+    sleep 0.1 # Workaround a bug in libusb-1,0.21
     st = Time.now
     ctx.interrupt_event_handler
     th.join
