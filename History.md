@@ -1,10 +1,14 @@
-0.5.2 / YYYY-MM-DD
+0.6.0 / YYYY-MM-DD
 ------------------
 * Update bundled libusb version to 1.0.21.
 * Set minimum Ruby version requirement to 1.9.3.
 * Add binary gems for Linux in addition to Windows.
-* Respect MAKE environment variable for bundled libusb.
+* Switch to mini_portile2 for (cross-) builing the libusb library.
+* Add Context#interrupt_event_handler new in libusb-1.0.21
+* Add support for persistent/zerocopy device memory for transfers.
+  It is new in libusb-1.0.21 and enabled by default for DevHandle#*_transfer methods.
 * Raise a more meaningful exception in case of bulk stream transfers on too old libusb versions.
+* Prefer the bundled libusb-dll over installed system library.
 
 0.5.1 / 2015-09-29
 ------------------
