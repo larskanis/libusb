@@ -60,14 +60,15 @@ See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API d
 Prerequisites
 -------------
 
-* Linux, MacOSX or Windows system with Ruby MRI 1.8.7/1.9/2.0, JRuby or recent version of Rubinius
-* Optionally: [libusb](http://libusb.info) or [libusbx](http://libusbx.org) library version 1.0.8+ :
+* Linux, MacOS or Windows system with Ruby MRI 1.9/2.x, JRuby or recent version of Rubinius
+* Optionally: [libusb](http://libusb.info) C-library version 1.0.8 or any newer version.
+  The system libusb library can be installed like so:
   * Debian or Ubuntu:
 
       ```
       $ sudo apt-get install libusb-1.0-0-dev
       ```
-  * OS-X: install with homebrew:
+  * MacOS: install with homebrew:
 
       ```
       $ brew install libusb
@@ -84,7 +85,7 @@ Install
 
     $ gem install libusb
 
-While ```gem install``` the system is checked for a usable libusb(x) library installation.
+While ```gem install``` the system is checked for a usable libusb library installation.
 If none could be found, a bundled libusb version is built and used, instead.
 
 Latest code can be used in this way:
@@ -97,7 +98,7 @@ Device hotplug support
 ----------------------
 
 Support for device hotplugging can be used, if ```LIBUSB.has_capability?(:CAP_HAS_HOTPLUG)``` returns ```true```.
-This requires libusb(x)-1.0.16 or newer on Linux or OS-X. Windows support is [still on the way](https://github.com/libusbx/libusbx/issues/9).
+This requires libusb-1.0.16 or newer on Linux or MacOS. Windows support is [still on the way](https://github.com/libusbx/libusbx/issues/9).
 
 A hotplug event handler can be registered with {LIBUSB::Context#on_hotplug_event}.
 You then need to call {LIBUSB::Context#handle_events} in order to receive any events.
@@ -112,19 +113,19 @@ In contrast to Linux, any access to an USB device by LIBUSB on Windows requires 
 installed in the system. Fortunately creating such a driver is quite easy with
 [Zadig](http://sourceforge.net/projects/libwdi/files/zadig/). Select the interesting USB device,
 choose WinUSB driver and press "Install Driver". That's it. You may take the generated output directory
-with it's INI-file and use it for driver installation on other 32 or 64 bit Windows
+with it's INI-file and use it for driver installations on other 32 or 64 bit Windows
 systems.
 
 
 Cross compiling for Windows
 ---------------------------
 
-Libusb-gem can be cross built for the win32 platform, using the [rake-compiler-dock](https://github.com/larskanis/rake-compiler-dock) .
+Libusb-gem can be cross built for Windows and Linux operating systems, using the [rake-compiler-dock](https://github.com/larskanis/rake-compiler-dock) .
 Just run:
 
-    $ rake gem:windows
+    $ rake gem:native
 
-If everything works, there should be `libusb-VERSION-x86-mingw32.gem` in the pkg
+If everything works, there are several platform specific gem files (like `libusb-VERSION-x64-mingw32.gem`) in the pkg
 directory.
 
 EventMachine integration
