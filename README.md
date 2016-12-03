@@ -56,6 +56,15 @@ maximum packet size.
 
 See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API description.
 
+Working with USB devices
+------------------------
+In order to implement a driver for a USB device, it's essential to have a look at the packets that are send to and received back from the USB device. [Wireshark](https://www.wireshark.org) has builtin capabilities to sniff USB. On Linux you possibly need to load the usbmon kernel module before start:
+```
+    sudo modprobe usbmon
+```
+It's equally possible to sniff USB on Windows.
+
+![Wireshark](wireshark-usb-sniffer.png?raw=true "Title")
 
 Prerequisites
 -------------
