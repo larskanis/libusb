@@ -56,16 +56,6 @@ maximum packet size.
 
 See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API description.
 
-Working with USB devices
-------------------------
-In order to implement a driver for a USB device, it's essential to have a look at the packets that are send to and received back from the USB device. [Wireshark](https://www.wireshark.org) has builtin capabilities to sniff USB. On Linux you possibly need to load the usbmon kernel module before start:
-```
-    sudo modprobe usbmon
-```
-It's equally possible to sniff USB on Windows.
-
-![Wireshark](wireshark-usb-sniffer.png?raw=true "Title")
-
 Prerequisites
 -------------
 
@@ -103,6 +93,16 @@ Latest code can be used in this way:
     $ bundle
     $ rake install_gem
 
+Troubleshooting
+------------------------
+In order to implement a driver for a USB device, it's essential to have a look at the packets that are send to and received back from the USB device. [Wireshark](https://www.wireshark.org) has builtin capabilities to sniff USB traffic. On Linux you possibly need to load the usbmon kernel module before start:
+```
+    sudo modprobe usbmon
+```
+On Windows it's possible to sniff USB, if the USB kernel driver was installed by the Wireshark setup.
+
+![Wireshark](wireshark-usb-sniffer.png?raw=true "Wireshark sniffing USB packets")
+
 Device hotplug support
 ----------------------
 
@@ -120,7 +120,7 @@ Usage on Windows
 
 In contrast to Linux, any access to an USB device by LIBUSB on Windows requires a proper driver
 installed in the system. Fortunately creating such a driver is quite easy with
-[Zadig](http://sourceforge.net/projects/libwdi/files/zadig/). Select the interesting USB device,
+[Zadig](http://zadig.akeo.ie/). Select the interesting USB device,
 choose WinUSB driver and press "Install Driver". That's it. You may take the generated output directory
 with it's INI-file and use it for driver installations on other 32 or 64 bit Windows
 systems.
