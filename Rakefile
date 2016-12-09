@@ -52,6 +52,12 @@ end
 
 task "release:guard_clean" => "release:tag"
 
+task "release:rubygem_push" => "gem:native" do
+  CrossLibraries.each do |ruby_platform, _|
+    gh = Bundler::GemHelper.new
+    gh.send(:rubygem_push, "pkg/#{gh.gemspec.name}-#{gh.gemspec.version}-#{ruby_platform}.gem")
+  end
+end
 
 task 'gem:native' do
   sh "bundle package"
@@ -130,7 +136,7 @@ class CrossLibrary < OpenStruct
 end
 
 CrossLibraries = [
-  ['i386-mingw32', 'i686-w64-mingw32', 'bin/libusb-1.0.dll'],
+  ['x86-mingw32', 'i686-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw32', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x86-linux', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
   ['x86_64-linux', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
