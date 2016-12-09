@@ -25,6 +25,34 @@ task :travis=>:compile do
 end
 task :default => :test
 
+task "release:tag" do
+  hfile = "History.md"
+  version = LIBUSB::VERSION
+  reldate = Time.now.strftime("%Y-%m-%d")
+  headline = '([^\w]*)(\d+\.\d+\.\d+)([^\w]+)([2Y][0Y][0-9Y][0-9Y]-[0-1M][0-9M]-[0-3D][0-9D])([^\w]*|$)'
+
+  hin = File.read(hfile)
+  hout = hin.sub(/#{headline}/) do
+    raise "#{hfile} isn't up-to-date for version #{version}" unless $2==version
+    $1 + $2 + $3 + reldate + $5
+  end
+  if hout != hin
+    Bundler.ui.confirm "Updating #{hfile} for release."
+    File.write(hfile, hout)
+    sh "git", "commit", hfile, "-m", "Update release date in #{hfile}"
+  end
+
+  Bundler.ui.confirm "Tag release with annotation:"
+  m = hout.match(/(?<annotation>#{headline}.*?)#{headline}/m) || raise("Unable to find release notes in #{hfile}")
+  Bundler.ui.info(m[:annotation].gsub(/^/, "    "))
+  IO.popen(["git", "tag", "--file=-", version], "w") do |fd|
+    fd.write m[:annotation]
+  end
+end
+
+task "release:guard_clean" => "release:tag"
+
+
 task 'gem:native' do
   sh "bundle package"
   RakeCompilerDock.sh <<-EOT
