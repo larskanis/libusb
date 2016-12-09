@@ -1,4 +1,4 @@
-0.6.0 / YYYY-MM-DD
+0.6.0 / 2016-12-09
 ------------------
 * Update bundled libusb version to 1.0.21.
 * Set minimum Ruby version requirement to 1.9.3.
