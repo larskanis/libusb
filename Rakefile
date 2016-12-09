@@ -8,7 +8,7 @@ require 'uri'
 require 'ostruct'
 require 'rake/clean'
 require 'rake_compiler_dock'
-require_relative 'ext/libusb_recipe'
+require_relative 'lib/libusb/libusb_recipe'
 require_relative 'lib/libusb/gem_helper'
 
 task :gem => :build

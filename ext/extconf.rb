@@ -68,8 +68,8 @@ def build_bundled_libusb(have_udev)
   # without hot-plugging.
   have_udev &&= have_header('libudev.h') && have_library('udev', 'udev_new')
 
-  require_relative 'libusb_recipe'
-  recipe = LibusbRecipe.new
+  require_relative '../lib/libusb/libusb_recipe'
+  recipe = LIBUSB::LibusbRecipe.new
   recipe.configure_options << "--disable-udev" unless have_udev
   recipe.cook_and_activate
 

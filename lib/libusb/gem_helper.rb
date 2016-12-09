@@ -86,7 +86,7 @@ module LIBUSB
       super()
 
       self.ruby_platform = ruby_platform
-      self.recipe = LibusbRecipe.new
+      self.recipe = LIBUSB::LibusbRecipe.new
       recipe.host = host_platform
       recipe.configure_options << "--host=#{recipe.host}"
       self.libusb_dll = Pathname.new(recipe.path) + libusb_dllname
