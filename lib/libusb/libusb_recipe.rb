@@ -6,7 +6,7 @@ require "mini_portile2"
 
 module LIBUSB
   class LibusbRecipe < MiniPortile
-    ROOT = File.expand_path('../..', __FILE__)
+    ROOT = File.expand_path('../../..', __FILE__)
 
     def initialize
       super("libusb", LIBUSB_VERSION)
