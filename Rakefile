@@ -14,6 +14,7 @@ require_relative 'lib/libusb/gem_helper'
 task :gem => :build
 task :compile do
   sh "ruby ext/extconf.rb --disable-system-libusb"
+  sh "make -C ext install RUBYARCHDIR=../lib"
 end
 
 task :test=>:compile do

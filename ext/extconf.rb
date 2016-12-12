@@ -72,17 +72,27 @@ def build_bundled_libusb(have_udev)
   recipe = LIBUSB::LibusbRecipe.new
   recipe.configure_options << "--disable-udev" unless have_udev
   recipe.cook_and_activate
-
-  cp_r File.join(recipe.path, '.'), '.', verbose: true, remove_destination: true
+  recipe.path
 end
 
 unless enable_config('system-libusb', libusb_usable?)
   # Unable to load libusb library on this system,
   # so we build our bundled version:
-  build_bundled_libusb(have_udev)
+  libusb_path = build_bundled_libusb(have_udev)
 end
 
-File.open("Makefile", "w") do |mf|
-  mf.puts "# Dummy makefile since libusb-1.0 is usable on this system"
-  mf.puts "all install::\n"
+# Create a Makefile which copies the libusb library files to the gem's lib dir.
+File.open(File.expand_path("../Makefile", __FILE__), "w") do |mf|
+  mf.puts <<-EOT
+RUBYARCHDIR = #{RbConfig::MAKEFILE_CONFIG['sitearchdir'].dump}
+all:
+clean:
+install:
+EOT
+
+  if libusb_path
+    mf.puts <<-EOT
+	cp -r #{File.join(libusb_path, "lib").dump}/* $(RUBYARCHDIR)
+    EOT
+  end
 end
