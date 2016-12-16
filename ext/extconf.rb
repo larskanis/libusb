@@ -82,7 +82,7 @@ unless enable_config('system-libusb', libusb_usable?)
 end
 
 # Create a Makefile which copies the libusb library files to the gem's lib dir.
-File.open(File.expand_path("../Makefile", __FILE__), "w") do |mf|
+File.open("Makefile", "wb") do |mf|
   mf.puts <<-EOT
 RUBYARCHDIR = #{RbConfig::MAKEFILE_CONFIG['sitearchdir'].dump}
 all:
