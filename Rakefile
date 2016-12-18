@@ -30,8 +30,6 @@ task :default => :test
 task 'gem:native' do
   sh "bundle package"
   RakeCompilerDock.sh <<-EOT
-    sudo apt-get update &&
-    sudo apt-get -y install libudev-dev libudev-dev:i386 &
     bundle --local &&
     rake cross gem
   EOT
