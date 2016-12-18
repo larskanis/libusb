@@ -1,3 +1,7 @@
+0.6.1 / YYYY-MM-DD
+------------------
+* Fix installation of bundled libusb library in source gem.
+
 0.6.0 / 2016-12-09
 ------------------
 * Update bundled libusb version to 1.0.21.
