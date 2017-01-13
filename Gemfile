@@ -8,4 +8,4 @@ group :test do
   gem 'minitest'
 end
 
-gem 'rake-compiler-dock', git: 'http://github.com/rake-compiler/rake-compiler-dock'
+gem 'rake-compiler-dock', '~> 0.6.0'
