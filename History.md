@@ -1,3 +1,7 @@
+0.6.2 / 2016-12-18
+------------------
+* Fix windows DLL loading bugs #22 and #23.
+
 0.6.1 / 2016-12-18
 ------------------
 * Fix installation of bundled libusb library in source gem.
