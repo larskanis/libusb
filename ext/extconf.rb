@@ -92,7 +92,7 @@ EOT
 
   if libusb_path
     mf.puts <<-EOT
-	cp -r #{File.join(libusb_path, "lib").dump}/* $(RUBYARCHDIR)
+	cp -r #{libusb_path.dump}/*/* $(RUBYARCHDIR)
     EOT
   end
 end
