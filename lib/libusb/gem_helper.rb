@@ -89,6 +89,7 @@ module LIBUSB
       self.recipe = LIBUSB::LibusbRecipe.new
       recipe.host = host_platform
       recipe.configure_options << "--host=#{recipe.host}"
+      recipe.configure_options << "CC=#{recipe.host}-gcc -static-libgcc" if recipe.host =~ /mingw/
       self.libusb_dll = Pathname.new(recipe.path) + libusb_dllname
 
       file libusb_dll do
