@@ -1,4 +1,4 @@
-0.6.3 / YYYY-MM-DD
+0.6.3 / 2017-08-20
 ------------------
 * Fix compat with FreeBSD. #24
 
