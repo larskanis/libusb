@@ -24,7 +24,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
   s.add_runtime_dependency 'ffi', '~> 1.0'
   s.add_runtime_dependency 'mini_portile2', LIBUSB::MINI_PORTILE_VERSION
-  s.add_development_dependency 'rake-compiler', '~> 0.9'
+  s.add_development_dependency 'rake-compiler', '~> 1.0'
   s.add_development_dependency 'rake-compiler-dock', '~> 0.2'
   s.add_development_dependency 'bundler', '~> 1.0'
 end
