@@ -1,3 +1,7 @@
+0.6.3 / YYYY-MM-DD
+------------------
+* Fix compat with FreeBSD. #24
+
 0.6.2 / 2017-01-13
 ------------------
 * Fix windows DLL loading bugs #22 and #23.
