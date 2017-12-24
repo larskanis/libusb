@@ -2,6 +2,11 @@ init:
   - SET PATH=C:/Ruby%ruby_version%/bin;%PATH%
   - SET RAKEOPT=-rdevkit
 install:
+  - ps: |
+      if ($env:RUBYDOWNLOAD -ne $null) {
+        $(new-object net.webclient).DownloadFile("https://github.com/oneclick/rubyinstaller2/releases/download/rubyinstaller-head/rubyinstaller-head-$env:RUBYDOWNLOAD.exe", "$pwd/ruby-setup.exe")
+        cmd /c ruby-setup.exe /verysilent /dir=C:/Ruby$env:ruby_version
+      }
   - ruby --version
   - gem --version
   - ps: |
@@ -10,6 +15,7 @@ install:
           $env:SSL_CERT_FILE = "$env:TMP/ca-bundle.crt"
           Write-Host "Using SSL CA list $env:SSL_CERT_FILE" -foreground Green
         }
+  - gem install bundler --conservative
   - bundle install
 build_script:
   - bundle exec rake compile
@@ -17,21 +23,15 @@ test_script:
   - bundle exec rake travis
 environment:
   matrix:
-    - ruby_version: "24-x64"
+    - ruby_version: "head"
+      RUBYDOWNLOAD: x64
     - ruby_version: "200"
-      BROKEN_SSL: true
-    - ruby_version: "200-x64"
-      BROKEN_SSL: true
-    - ruby_version: "21"
       BROKEN_SSL: true
     - ruby_version: "21-x64"
       BROKEN_SSL: true
     - ruby_version: "22"
       BROKEN_SSL: true
-    - ruby_version: "22-x64"
-      BROKEN_SSL: true
-    - ruby_version: "23"
-      BROKEN_SSL: true
     - ruby_version: "23-x64"
       BROKEN_SSL: true
     - ruby_version: "24"
+    - ruby_version: "24-x64"
