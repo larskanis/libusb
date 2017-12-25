@@ -3,17 +3,19 @@ sudo: false
 dist: trusty
 matrix:
   include:
-    - rvm: 2.4.1
+    - rvm: ruby-head
       env:
         - RUBYOPT="--enable-frozen-string-literal --debug=frozen-string-literal"
-    - rvm: 1.9.3
+    - rvm: 2.4.3
+      env:
+        - RUBYOPT="--enable-frozen-string-literal --debug=frozen-string-literal"
     - rvm: 2.0
     - rvm: 2.1
     - rvm: 2.2.5
     - rvm: 2.3.1
-    - rvm: jruby-1.7
     - rvm: jruby-9.1.5.0
     - rvm: rbx-3
   allow_failures:
     - rvm: rbx-3
+    - rvm: ruby-head
 script: bundle exec rake travis
