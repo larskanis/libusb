@@ -9,3 +9,8 @@ group :test do
 end
 
 gem 'rake-compiler-dock', '~> 0.6.0'
+
+# For some reason this is required in addition to the gemspec
+# when 'bundle config force_ruby_platform true' is active:
+gem 'ffi'
+gem 'mini_portile2'
