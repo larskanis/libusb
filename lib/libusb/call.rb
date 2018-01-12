@@ -259,6 +259,56 @@ module LIBUSB
       :HOTPLUG_ENUMERATE, 1,
     ]
 
+    # Log message levels.
+    #
+    # - :LOG_LEVEL_NONE (0)    : no messages ever printed by the library (default)
+    # - :LOG_LEVEL_ERROR (1)   : error messages are printed to stderr
+    # - :LOG_LEVEL_WARNING (2) : warning and error messages are printed to stderr
+    # - :LOG_LEVEL_INFO (3)    : informational messages are printed to stderr
+    # - :LOG_LEVEL_DEBUG (4)   : debug and informational messages are printed to stderr
+    LogLevels = enum :libusb_log_level, [
+      :LOG_LEVEL_NONE, 0,
+      :LOG_LEVEL_ERROR, 1,
+      :LOG_LEVEL_WARNING, 2,
+      :LOG_LEVEL_INFO, 3,
+      :LOG_LEVEL_DEBUG, 4,
+    ]
+
+    # Available option values for {Context#set_option}.
+    Options = enum :libusb_option, [
+      # Set the log message verbosity.
+      #
+      # The default level is :LOG_LEVEL_NONE, which means no messages are ever
+      # printed. If you choose to increase the message verbosity level, ensure
+      # that your application does not close the stderr file descriptor.
+      #
+      # You are advised to use level :LOG_LEVEL_WARNING. libusb is conservative
+      # with its message logging and most of the time, will only log messages that
+      # explain error conditions and other oddities. This will help you debug
+      # your software.
+      #
+      # If the +LIBUSB_DEBUG+ environment variable was set when libusb was
+      # initialized, this function does nothing: the message verbosity is fixed
+      # to the value in the environment variable.
+      #
+      # If libusb was compiled without any message logging, this function does
+      # nothing: you'll never get any messages.
+      #
+      # If libusb was compiled with verbose debug message logging, this function
+      # does nothing: you'll always get messages from all levels.
+      :OPTION_LOG_LEVEL,
+
+      # Use the UsbDk backend for a specific context, if available.
+      #
+      # This option should be set immediately after calling {Context.new}, otherwise
+      # unspecified behavior may occur.
+      #
+      # Only valid on Windows.
+      #
+      # Available since libusb-1.0.22.
+      :OPTION_USE_USBDK,
+    ]
+
     typedef :pointer, :libusb_context
     typedef :pointer, :libusb_device
     typedef :pointer, :libusb_device_handle
@@ -275,7 +325,8 @@ module LIBUSB
 
     attach_function 'libusb_init', [ :pointer ], :int
     attach_function 'libusb_exit', [ :pointer ], :void
-    attach_function 'libusb_set_debug', [:pointer, :int], :void
+    attach_function 'libusb_set_debug', [:pointer, :libusb_log_level], :void
+    try_attach_function 'libusb_set_option', [:libusb_context, :libusb_option, :varargs], :int
     try_attach_function 'libusb_has_capability', [:libusb_capability], :int
 
     attach_function 'libusb_get_device_list', [:pointer, :pointer], :ssize_t

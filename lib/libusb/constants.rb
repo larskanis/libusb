@@ -16,22 +16,28 @@
 require 'libusb/call'
 
 module LIBUSB
-  Call::ClassCodes.to_h.each{|k,v| const_set(k,v) }
-  Call::TransferTypes.to_h.each{|k,v| const_set(k,v) }
-  Call::StandardRequests.to_h.each{|k,v| const_set(k,v) }
-  Call::RequestTypes.to_h.each{|k,v| const_set(k,v) }
-  Call::DescriptorTypes.to_h.each{|k,v| const_set(k,v) }
-  Call::EndpointDirections.to_h.each{|k,v| const_set(k,v) }
-  Call::RequestRecipients.to_h.each{|k,v| const_set(k,v) }
-  Call::IsoSyncTypes.to_h.each{|k,v| const_set(k,v) }
-  Call::Speeds.to_h.each{|k,v| const_set(k,v) }
-  Call::Capabilities.to_h.each{|k,v| const_set(k,v) }
-  Call::SupportedSpeeds.to_h.each{|k,v| const_set(k,v) }
-  Call::Usb20ExtensionAttributes.to_h.each{|k,v| const_set(k,v) }
-  Call::SsUsbDeviceCapabilityAttributes.to_h.each{|k,v| const_set(k,v) }
-  Call::BosTypes.to_h.each{|k,v| const_set(k,v) }
-  Call::HotplugEvents.to_h.each{|k,v| const_set(k,v) }
-  Call::HotplugFlags.to_h.each{|k,v| const_set(k,v) }
+  [
+    Call::ClassCodes,
+    Call::TransferTypes,
+    Call::StandardRequests,
+    Call::RequestTypes,
+    Call::DescriptorTypes,
+    Call::EndpointDirections,
+    Call::RequestRecipients,
+    Call::IsoSyncTypes,
+    Call::Speeds,
+    Call::Capabilities,
+    Call::SupportedSpeeds,
+    Call::Usb20ExtensionAttributes,
+    Call::SsUsbDeviceCapabilityAttributes,
+    Call::BosTypes,
+    Call::HotplugEvents,
+    Call::HotplugFlags,
+    Call::LogLevels,
+    Call::Options,
+  ].each do |enum|
+    enum.to_h.each{|k,v| const_set(k,v) }
+  end
 
   # Base class of libusb errors
   class Error < RuntimeError

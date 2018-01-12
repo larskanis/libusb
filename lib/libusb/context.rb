@@ -114,35 +114,44 @@ module LIBUSB
       Call.libusb_exit(@ctx)
     end
 
-    # Set message verbosity.
-    #
-    # * Level 0: no messages ever printed by the library (default)
-    # * Level 1: error messages are printed to stderr
-    # * Level 2: warning and error messages are printed to stderr
-    # * Level 3: informational messages are printed to stdout, warning and
-    #   error messages are printed to stderr
-    #
-    # The default level is 0, which means no messages are ever printed. If you
-    # choose to increase the message verbosity level, ensure that your
-    # application does not close the stdout/stderr file descriptors.
-    #
-    # You are advised to set level 3. libusb is conservative with its message
-    # logging and most of the time, will only log messages that explain error
-    # conditions and other oddities. This will help you debug your software.
-    #
-    # If the LIBUSB_DEBUG environment variable was set when libusb was
-    # initialized, this method does nothing: the message verbosity is
-    # fixed to the value in the environment variable.
-    #
-    # If libusb was compiled without any message logging, this method
-    # does nothing: you'll never get any messages.
-    #
-    # If libusb was compiled with verbose debug message logging, this
-    # method does nothing: you'll always get messages from all levels.
-    #
-    # @param [Fixnum] level  debug level to set
+    # @deprecated Use {Context#set_option} instead using the +:OPTION_LOG_LEVEL+ option.
     def debug=(level)
       Call.libusb_set_debug(@ctx, level)
+    end
+
+    def expect_option_args(exp, is)
+      raise ArgumentError, "wrong number of arguments (given #{is+1}, expected #{exp+1})" if is != exp
+    end
+    private :expect_option_args
+
+    # Set a libusb option from the {Call::Options option list}.
+    #
+    # @param [Symbol, Fixnum] option
+    # @param args  Zero or more arguments depending on +option+
+    def set_option(option, *args)
+      if Call.respond_to?(:libusb_set_option)
+        # Available since libusb-1.0.22
+
+        ffi_args = case option
+          when :OPTION_LOG_LEVEL, LIBUSB::OPTION_LOG_LEVEL
+            expect_option_args(1, args.length)
+            [:libusb_log_level, args[0]]
+          when :OPTION_USE_USBDK, LIBUSB::OPTION_USE_USBDK
+            expect_option_args(0, args.length)
+            []
+          else
+            raise ArgumentError, "unknown option #{option.inspect}"
+        end
+
+        res = Call.libusb_set_option(@ctx, option, *ffi_args)
+        LIBUSB.raise_error res, "in libusb_set_option" if res<0
+
+      else
+        # Fallback to deprecated function, if the gem is linked to an older libusb.
+
+        raise ArgumentError, "unknown option #{option.inspect}" unless [:OPTION_LOG_LEVEL, LIBUSB::OPTION_LOG_LEVEL].include?(option)
+        Call.libusb_set_debug(@ctx, *args)
+      end
     end
 
     def device_list
