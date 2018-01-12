@@ -62,11 +62,21 @@ module LIBUSB
       @transfer[:dev_handle] = @dev_handle.pHandle
     end
 
-    # Timeout for this transfer in millseconds.
+    # The handle for the device to communicate with.
+    attr_reader :dev_handle
+
+    # Set timeout for this transfer in millseconds.
     #
     # A value of 0 indicates no timeout.
     def timeout=(value)
       @transfer[:timeout] = value
+    end
+
+    # Get timeout for this transfer in millseconds.
+    #
+    # A value of 0 indicates no timeout.
+    def timeout
+      @transfer[:timeout]
     end
 
     # Set the address of a valid endpoint to communicate with.
@@ -230,6 +240,8 @@ module LIBUSB
     #
     # Inspect {#status} to check for transfer errors.
     def submit_and_wait
+      raise ArgumentError, "#{self.class}#dev_handle not set" unless @dev_handle
+
       @completion_flag.completed = false
       submit! do |tr2|
         @completion_flag.completed = true
