@@ -20,6 +20,7 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
   s.extensions    = ['ext/extconf.rb']
+  s.metadata["yard.run"] = "yri"
 
   s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
   s.add_runtime_dependency 'ffi', '~> 1.0'
@@ -27,4 +28,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake-compiler', '~> 1.0'
   s.add_development_dependency 'rake-compiler-dock', '~> 0.2'
   s.add_development_dependency 'bundler', '~> 1.0'
+  s.add_development_dependency 'yard', '~> 0.6'
 end
