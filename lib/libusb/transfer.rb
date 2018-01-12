@@ -47,6 +47,7 @@ module LIBUSB
       @buffer = nil
       @completion_flag = Context::CompletionFlag.new
       @allow_device_memory = false
+      @dev_handle = nil
       args.each{|k,v| send("#{k}=", v) }
     end
     private :initialize
