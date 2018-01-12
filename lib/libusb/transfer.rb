@@ -43,6 +43,10 @@ module LIBUSB
       end
     end
 
+    class << self
+      private :new
+    end
+
     def initialize(args={})
       @buffer = nil
       @completion_flag = Context::CompletionFlag.new
@@ -257,6 +261,10 @@ module LIBUSB
   end
 
   class BulkTransfer < Transfer
+    def self.new(*)
+      super
+    end
+
     def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
       @transfer[:type] = TRANSFER_TYPE_BULK
@@ -273,6 +281,10 @@ module LIBUSB
     #
     # Available since libusb-1.0.19.
     class BulkStreamTransfer < Transfer
+      def self.new(*)
+        super
+      end
+
       def initialize(args={})
         @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
         @transfer[:type] = TRANSFER_TYPE_BULK_STREAM
@@ -300,6 +312,10 @@ module LIBUSB
   end
 
   class ControlTransfer < Transfer
+    def self.new(*)
+      super
+    end
+
     def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
       @transfer[:type] = TRANSFER_TYPE_CONTROL
@@ -309,6 +325,10 @@ module LIBUSB
   end
 
   class InterruptTransfer < Transfer
+    def self.new(*)
+      super
+    end
+
     def initialize(args={})
       @transfer = Call::Transfer.new Call.libusb_alloc_transfer(0)
       @transfer[:type] = TRANSFER_TYPE_INTERRUPT
@@ -340,6 +360,10 @@ module LIBUSB
   end
 
   class IsochronousTransfer < Transfer
+    def self.new(*)
+      super
+    end
+
     def initialize(num_packets, args={})
       @ptr = Call.libusb_alloc_transfer(num_packets)
       @transfer = Call::Transfer.new @ptr
