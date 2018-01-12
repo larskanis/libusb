@@ -47,12 +47,12 @@ class TestLibusbStructs < Minitest::Test
     t = LIBUSB::InterruptTransfer.new allow_device_memory: true
     assert_equal :TRANSFER_COMPLETED, t.status
     assert_equal true, t.allow_device_memory
-    assert_equal nil, t.memory_type
+    assert_nil t.memory_type
 
     t.alloc_buffer(10)
     assert_equal :user_space, t.memory_type, "no device assigned -> should use memory from user space"
 
     t.free_buffer
-    assert_equal nil, t.memory_type
+    assert_nil t.memory_type
   end
 end
