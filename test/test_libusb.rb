@@ -16,22 +16,24 @@
 require "minitest/autorun"
 require "libusb"
 
-class TestLibusbVersion < Minitest::Test
-  def setup
-    @v = LIBUSB.version
+class TestLibusb < Minitest::Test
+  def test_has_capability
+    assert LIBUSB.has_capability?(:CAP_HAS_CAPABILITY)
   end
 
   def test_version_parts
-    assert_operator @v.major, :>=, 0
-    assert_operator @v.minor, :>=, 0
-    assert_operator @v.micro, :>=, 0
-    assert_operator @v.nano, :>=, 0
-    assert_kind_of String, @v.rc
+    v = LIBUSB.version
+    assert_operator v.major, :>=, 0
+    assert_operator v.minor, :>=, 0
+    assert_operator v.micro, :>=, 0
+    assert_operator v.nano, :>=, 0
+    assert_kind_of String, v.rc
   end
 
   def test_version_string
-    assert_match(/^\d+\.\d+\.\d+/, @v.to_s)
-    assert_match(/^#<LIBUSB::Version \d+\.\d+\.\d+/, @v.inspect)
+    v = LIBUSB.version
+    assert_match(/^\d+\.\d+\.\d+/, v.to_s)
+    assert_match(/^#<LIBUSB::Version \d+\.\d+\.\d+/, v.inspect)
   end
 
   def test_gem_version_string

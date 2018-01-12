@@ -21,7 +21,7 @@ task :test=>:compile do
   sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
 end
 
-travis_tests = %w[test_libusb_capability.rb test_libusb_structs.rb test_libusb_version.rb test_libusb_context.rb]
+travis_tests = %w[test_libusb.rb test_libusb_structs.rb test_libusb_context.rb]
 task :travis=>:compile do
   sh "ruby -w -W2 -I. -Ilib -e \"#{travis_tests.map{|f| "require 'test/#{f}';"}.join}\" -- -v"
 end
