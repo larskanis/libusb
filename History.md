@@ -1,3 +1,18 @@
+0.6.4 / YYYY-MM-DD
+------------------
+
+Added:
+* New function Context#set_option.
+  It is also available when running libusb < 1.0.22 and calls libusb_set_debug() in this case.
+* Add definition for SUPER_SPEED_PLUS.
+
+Changed:
+* Update libusb to 1.0.22-rc1
+
+Deprecated:
+* Deprecate Context#debug= analogous to libusb_set_debug in libusb-1.0.22.
+
+
 0.6.3 / 2017-08-20
 ------------------
 * Fix compat with FreeBSD. #24
