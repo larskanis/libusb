@@ -164,12 +164,21 @@ module LIBUSB
       :ISO_SYNC_TYPE_SYNC, 3,
     ]
 
+    # Speed codes. Indicates the speed at which the device is operating.
     Speeds = enum :libusb_speed, [
+      # The OS doesn't report or know the device speed.
       :SPEED_UNKNOWN, 0,
+      # The device is operating at low speed (1.5MBit/s).
       :SPEED_LOW, 1,
+      # The device is operating at full speed (12MBit/s).
       :SPEED_FULL, 2,
+      # The device is operating at high speed (480MBit/s).
       :SPEED_HIGH, 3,
+      # The device is operating at super speed (5000MBit/s).
       :SPEED_SUPER, 4,
+      # The device is operating at super speed plus (10000MBit/s).
+      # Available since libusb-1.0.22
+      :SPEED_SUPER_PLUS, 5,
     ]
 
     # Supported speeds (wSpeedSupported) bitfield. Indicates what
