@@ -5,6 +5,7 @@ Added:
 * New function Context#set_option.
   It is also available when running libusb < 1.0.22 and calls libusb_set_debug() in this case.
 * Add definition for SUPER_SPEED_PLUS.
+* Linux: Use system libusb even when only library but no dev package is installed.
 
 Changed:
 * Update libusb to 1.0.22-rc1

@@ -28,7 +28,7 @@ module LIBUSB
     prefix = FFI::Platform::LIBPREFIX.empty? ? 'lib' : FFI::Platform::LIBPREFIX
     bundled_dll = File.join(root_path, "lib/#{prefix}usb-1.0.#{ext}")
     bundled_dll_cygwin = File.join(root_path, "bin/#{prefix}usb-1.0.#{ext}")
-    ffi_lib([bundled_dll, bundled_dll_cygwin, "#{prefix}usb-1.0", "#{prefix}usb"])
+    ffi_lib([bundled_dll, bundled_dll_cygwin, "#{prefix}usb-1.0.#{ext}.0", "#{prefix}usb-1.0", "#{prefix}usb"])
 
     ClassCodes = enum :libusb_class_code, [
       :CLASS_PER_INTERFACE, 0,
