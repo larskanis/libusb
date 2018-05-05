@@ -1,4 +1,4 @@
-0.6.4 / YYYY-MM-DD
+0.6.4 / 2018-05-05
 ------------------
 
 Added:
@@ -6,9 +6,12 @@ Added:
   It is also available when running libusb < 1.0.22 and calls libusb_set_debug() in this case.
 * Add definition for SUPER_SPEED_PLUS.
 * Linux: Use system libusb even when only library but no dev package is installed.
+* Add Transfer#dev_handle and #timeout
+* Use system libusb even when no development package is installed.
+  Means "libusb-1.0-0" is enough, no need for "libusb-dev" on Ubuntu.
 
 Changed:
-* Update libusb to 1.0.22-rc1
+* Update libusb to 1.0.22
 
 Deprecated:
 * Deprecate Context#debug= analogous to libusb_set_debug in libusb-1.0.22.
