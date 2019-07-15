@@ -11,6 +11,9 @@ require 'rake_compiler_dock'
 require_relative 'lib/libusb/libusb_recipe'
 require_relative 'lib/libusb/gem_helper'
 
+CLOBBER.include 'pkg'
+CLEAN.include 'ports'
+
 task :gem => :build
 task :compile do
   sh "ruby -C ext extconf.rb --disable-system-libusb"

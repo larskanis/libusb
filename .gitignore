@@ -1,6 +1,7 @@
 *.gem
 .bundle
 Gemfile.lock
+ports/*
 pkg/*
 lib/libusb-1.0*
 lib/pkgconfig
