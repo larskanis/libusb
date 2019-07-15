@@ -30,6 +30,7 @@ task :travis=>:compile do
 end
 task :default => :test
 
+desc "Build windows and linux fat binary gems"
 task 'gem:native' do
   sh "bundle package"
   RakeCompilerDock.sh <<-EOT
