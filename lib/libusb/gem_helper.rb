@@ -98,8 +98,11 @@ module LIBUSB
 
       task "libusb_dll:#{ruby_platform}" => libusb_dll
 
-      desc 'Cross compile libusb for win32'
-      task :cross => [ "libusb_dll:#{ruby_platform}" ] do |t|
+      desc 'Cross compile libusb for all targets'
+      task :cross => "cross:#{ruby_platform}"
+
+      desc "Cross compile libusb for #{ruby_platform}"
+      task "cross:#{ruby_platform}" => [ "libusb_dll:#{ruby_platform}" ] do |t|
         spec = Gem::Specification::load("libusb.gemspec").dup
         spec.platform = Gem::Platform.new(ruby_platform)
         spec.extensions = []

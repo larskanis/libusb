@@ -30,15 +30,6 @@ task :travis=>:compile do
 end
 task :default => :test
 
-desc "Build windows and linux fat binary gems"
-task 'gem:native' do
-  sh "bundle package"
-  RakeCompilerDock.sh <<-EOT
-    bundle --local &&
-    rake cross gem
-  EOT
-end
-
 CrossLibraries = [
   ['x86-mingw32', 'i686-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw32', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
@@ -50,5 +41,18 @@ end
 
 LIBUSB::GemHelper.install_tasks
 Bundler::GemHelper.instance.cross_platforms = CrossLibraries.map(&:ruby_platform)
+
+CrossLibraries.map(&:ruby_platform).each do |platform|
+  desc "Build windows and linux fat binary gems"
+  multitask 'gem:native' => "gem:native:#{platform}"
+
+  task "gem:native:#{platform}" do
+    sh "bundle package"
+    RakeCompilerDock.sh <<-EOT, platform: platform
+      bundle --local &&
+      rake cross:#{platform} gem
+    EOT
+  end
+end
 
 # vim: syntax=ruby
