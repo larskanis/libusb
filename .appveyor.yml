@@ -1,6 +1,9 @@
+image: Visual Studio 2019
+
 init:
   - SET PATH=C:/Ruby%ruby_version%/bin;%PATH%
   - SET RAKEOPT=-rdevkit
+
 install:
   - ps: |
       if ($env:ruby_version -like "*head*") {
@@ -9,28 +12,18 @@ install:
       }
   - ruby --version
   - gem --version
-  - ps: |
-        if ($env:BROKEN_SSL -eq "true") {
-          $(New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/bagder/ca-bundle/master/ca-bundle.crt', "$env:TMP/ca-bundle.crt")
-          $env:SSL_CERT_FILE = "$env:TMP/ca-bundle.crt"
-          Write-Host "Using SSL CA list $env:SSL_CERT_FILE" -foreground Green
-        }
   - gem install bundler --conservative
-  - bundle config force_ruby_platform true
   - bundle install
+
 build_script:
   - bundle exec rake compile
+
 test_script:
   - bundle exec rake travis
+
 environment:
   matrix:
     - ruby_version: "head-x64"
-    - ruby_version: "200"
-      BROKEN_SSL: true
-    - ruby_version: "21-x64"
-      BROKEN_SSL: true
-    - ruby_version: "22"
-      BROKEN_SSL: true
-    - ruby_version: "23-x64"
-      BROKEN_SSL: true
+    - ruby_version: "30"
+    - ruby_version: "27-x64"
     - ruby_version: "24"

@@ -1,6 +1,8 @@
 language: ruby
+
 sudo: false
-dist: trusty
+
+dist: xenial
 matrix:
   include:
     - rvm: ruby-head
@@ -9,13 +11,14 @@ matrix:
     - rvm: 2.4.3
       env:
         - RUBYOPT="--enable-frozen-string-literal --debug=frozen-string-literal"
-    - rvm: 2.0
-    - rvm: 2.1
-    - rvm: 2.2.5
+    - rvm: 3.0
+      env:
+        - RUBYOPT="--enable-frozen-string-literal --debug=frozen-string-literal"
+    - rvm: 2.7
+    - rvm: 2.6
     - rvm: 2.3.1
-    - rvm: jruby-9.1.5.0
-    - rvm: rbx-3
+    - rvm: jruby-9.2.14.0
   allow_failures:
-    - rvm: rbx-3
     - rvm: ruby-head
+
 script: bundle exec rake travis
