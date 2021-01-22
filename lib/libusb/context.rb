@@ -119,10 +119,9 @@ module LIBUSB
       Call.libusb_set_debug(@ctx, level)
     end
 
-    def expect_option_args(exp, is)
+    private def expect_option_args(exp, is)
       raise ArgumentError, "wrong number of arguments (given #{is+1}, expected #{exp+1})" if is != exp
     end
-    private :expect_option_args
 
     # Set a libusb option from the {Call::Options option list}.
     #
@@ -393,13 +392,12 @@ module LIBUSB
     # @yieldparam [Symbol] event  a {Call::HotplugEvents HotplugEvents} symbol
     # @yieldreturn [Symbol] +:finish+ to deregister the callback, +:repeat+ to receive additional events
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
-    def on_hotplug_event(args={}, &block)
-      events = args.delete(:events) || (HOTPLUG_EVENT_DEVICE_ARRIVED | HOTPLUG_EVENT_DEVICE_LEFT)
-      flags = args.delete(:flags) || 0
-      vendor_id = args.delete(:vendor_id) || HOTPLUG_MATCH_ANY
-      product_id = args.delete(:product_id) || HOTPLUG_MATCH_ANY
-      dev_class = args.delete(:dev_class) || HOTPLUG_MATCH_ANY
-      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
+    def on_hotplug_event(events: HOTPLUG_EVENT_DEVICE_ARRIVED | HOTPLUG_EVENT_DEVICE_LEFT,
+                         flags: 0,
+                         vendor_id: HOTPLUG_MATCH_ANY,
+                         product_id: HOTPLUG_MATCH_ANY,
+                         dev_class: HOTPLUG_MATCH_ANY,
+                         &block)
 
       handle = HotplugCallback.new self, @ctx, @hotplug_callbacks
 

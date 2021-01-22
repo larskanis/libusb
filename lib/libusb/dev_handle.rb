@@ -372,16 +372,18 @@ module LIBUSB
     # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block,
     #   when the asynchronous transfer has finished
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
-    def bulk_transfer(args={}, &block)
-      timeout = args.delete(:timeout) || 1000
-      endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
+    def bulk_transfer(timeout: 1000,
+                      endpoint:,
+                      dataIn: nil,
+                      dataOut: nil,
+                      &block)
+
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       if endpoint&ENDPOINT_IN != 0
-        dataIn = args.delete(:dataIn) || raise(ArgumentError, "no :dataIn given for bulk read")
+        dataIn || raise(ArgumentError, "no :dataIn given for bulk read")
       else
-        dataOut = args.delete(:dataOut) || raise(ArgumentError, "no :dataOut given for bulk write")
+        dataOut || raise(ArgumentError, "no :dataOut given for bulk write")
       end
-      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
       @bulk_transfer ||= BulkTransfer.new dev_handle: self, allow_device_memory: true
@@ -440,16 +442,17 @@ module LIBUSB
     # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block,
     #   when the asynchronous transfer has finished
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
-    def interrupt_transfer(args={}, &block)
-      timeout = args.delete(:timeout) || 1000
-      endpoint = args.delete(:endpoint) || raise(ArgumentError, "no endpoint given")
+    def interrupt_transfer(timeout: 1000,
+                           endpoint:,
+                           dataIn: nil,
+                           dataOut: nil,
+                           &block)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       if endpoint&ENDPOINT_IN != 0
-        dataIn = args.delete(:dataIn) || raise(ArgumentError, "no :dataIn given for interrupt read")
+        dataIn || raise(ArgumentError, "no :dataIn given for interrupt read")
       else
-        dataOut = args.delete(:dataOut) || raise(ArgumentError, "no :dataOut given for interrupt write")
+        dataOut || raise(ArgumentError, "no :dataOut given for interrupt write")
       end
-      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
       @interrupt_transfer ||= InterruptTransfer.new dev_handle: self, allow_device_memory: true
@@ -497,19 +500,21 @@ module LIBUSB
     # @yieldparam [String, Integer, LIBUSB::Error] result  result of the transfer is yielded to the block,
     #   when the asynchronous transfer has finished
     # @raise [ArgumentError, LIBUSB::Error] in case of failure
-    def control_transfer(args={}, &block)
-      bmRequestType = args.delete(:bmRequestType) || raise(ArgumentError, "param :bmRequestType not given")
-      bRequest = args.delete(:bRequest) || raise(ArgumentError, "param :bRequest not given")
-      wValue = args.delete(:wValue) || raise(ArgumentError, "param :wValue not given")
-      wIndex = args.delete(:wIndex) || raise(ArgumentError, "param :wIndex not given")
-      timeout = args.delete(:timeout) || 1000
+    def control_transfer(bmRequestType:,
+                         bRequest:,
+                         wValue:,
+                         wIndex:,
+                         timeout: 1000,
+                         dataIn: nil,
+                         dataOut: nil,
+                         &block)
+
       if bmRequestType&ENDPOINT_IN != 0
-        dataIn = args.delete(:dataIn) || 0
+        dataIn ||= 0
         dataOut = ''
       else
-        dataOut = args.delete(:dataOut) || ''
+        dataOut ||= ''
       end
-      raise ArgumentError, "invalid params #{args.inspect}" unless args.empty?
 
       # reuse transfer struct to speed up transfer
       @control_transfer ||= ControlTransfer.new dev_handle: self, allow_device_memory: true
