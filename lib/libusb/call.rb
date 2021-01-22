@@ -315,9 +315,11 @@ module LIBUSB
     typedef :pointer, :libusb_transfer
     typedef :int, :libusb_hotplug_callback_handle
 
-    def self.try_attach_function(method, *args)
-      if ffi_libraries.find{|lib| lib.find_function(method) }
-        attach_function method, *args
+    class << self
+      private def try_attach_function(method, *args, **kwargs)
+        if ffi_libraries.find{|lib| lib.find_function(method) }
+          attach_function method, *args, **kwargs
+        end
       end
     end
 
