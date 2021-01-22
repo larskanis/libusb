@@ -59,7 +59,7 @@ See [the documentation](http://rubydoc.info/gems/libusb/frames) for a full API d
 Prerequisites
 -------------
 
-* Linux, MacOS or Windows system with Ruby MRI 1.9/2.x, JRuby or recent version of Rubinius
+* Linux, MacOS or Windows system with Ruby MRI 2.x/3.x, JRuby or recent version of Rubinius
 * Optionally: [libusb](http://libusb.info) C-library version 1.0.8 or any newer version.
   The system libusb library can be installed like so:
   * Debian or Ubuntu:
