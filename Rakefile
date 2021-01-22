@@ -13,6 +13,7 @@ require_relative 'lib/libusb/gem_helper'
 
 CLOBBER.include 'pkg'
 CLEAN.include 'ports'
+CLEAN.include 'tmp'
 
 task :gem => :build
 task :compile do
