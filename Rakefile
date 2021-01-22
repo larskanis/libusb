@@ -51,6 +51,7 @@ CrossLibraries.map(&:ruby_platform).each do |platform|
     sh "bundle package"
     RakeCompilerDock.sh <<-EOT, platform: platform
       bundle --local &&
+      #{ "yum install -y libudev-devel &&" if platform=~/linux/ }
       rake cross:#{platform} gem
     EOT
   end

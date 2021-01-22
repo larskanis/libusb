@@ -26,7 +26,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'ffi', '~> 1.0'
   s.add_runtime_dependency 'mini_portile2', LIBUSB::MINI_PORTILE_VERSION
   s.add_development_dependency 'rake-compiler', '~> 1.0'
-  s.add_development_dependency 'rake-compiler-dock', '~> 1.0'
+  s.add_development_dependency 'rake-compiler-dock', '~> 1.1'
   s.add_development_dependency 'bundler', '>= 1', '< 3'
   s.add_development_dependency 'yard', '~> 0.6'
 end
