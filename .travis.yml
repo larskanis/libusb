@@ -18,6 +18,8 @@ matrix:
     - rvm: 2.6
     - rvm: 2.3.1
     - rvm: jruby-9.2.14.0
+    - rvm: truffleruby
+
   allow_failures:
     - rvm: ruby-head
 
