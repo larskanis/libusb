@@ -126,10 +126,15 @@ with it's INI-file and use it for driver installations on other 32 or 64 bit Win
 systems.
 
 
-Cross compiling for Windows
+Binary gems for Windows and Linux
 ---------------------------
 
-Libusb-gem can be cross built for Windows and Linux operating systems, using the [rake-compiler-dock](https://github.com/larskanis/rake-compiler-dock) .
+The Libusb gem is provided as source gem and as binary gems for Windows and Linux operating systems on [rubygems.org](https://rubygems.org/gems/libusb).
+The binary version is usually preferred, but the source version of the gem can be enforced by:
+
+    $ gem install libusb --platform ruby
+
+Libusb gem can be cross built for Windows and Linux, using the [rake-compiler-dock](https://github.com/larskanis/rake-compiler-dock) .
 Just run:
 
     $ rake gem:native
