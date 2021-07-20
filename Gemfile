@@ -8,7 +8,10 @@ group :test do
   gem 'minitest'
 end
 
-gem 'rake-compiler-dock', '~> 1.0'
+gem 'rake-compiler-dock', '~> 1.1'
+gem 'rake-compiler', '~> 1.0'
+gem 'bundler', '>= 1', '< 3'
+gem 'yard', '~> 0.6'
 
 # For some reason this is required in addition to the gemspec
 # when 'bundle config force_ruby_platform true' is active:
