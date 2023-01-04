@@ -52,7 +52,7 @@ CrossLibraries.map(&:ruby_platform).each do |platform|
     RakeCompilerDock.sh <<-EOT, platform: platform
       bundle --local &&
       #{ "sudo yum install -y libudev-devel &&" if platform=~/linux/ }
-      rake cross:#{platform} gem
+      rake --trace cross:#{platform} gem "MAKE=make V=1 -j`nproc`"
     EOT
   end
 end
