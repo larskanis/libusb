@@ -30,12 +30,6 @@ jobs:
           - x64-mingw32
           - x86-linux
           - x86_64-linux
-          - x86_64-darwin
-          - arm64-darwin
-          - arm-linux
-          - aarch64-linux
-          - jruby
-          - truffleruby
 
     runs-on: ubuntu-latest
     env:
@@ -45,7 +39,7 @@ jobs:
 
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.2"
+          ruby-version: "3.3"
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
 
       - name: Build libusb.gem
@@ -66,36 +60,24 @@ jobs:
           path: pkg/*-?.?.?.gem
 
   job_test_native:
-    name: Test (${{matrix.ruby}}, ${{matrix.platform}})
+    name: Bin (${{matrix.ruby}}, ${{matrix.os}}, ${{matrix.platform}})
     needs: docker_build
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows
-          - macos
-          - ubuntu
-        ruby:
-          - "3.2"
-          - "2.4"
         include:
           - os: windows
+            ruby: "2.5"
             platform: x64-mingw32
-          - os: macos
-            platform: x86_64-darwin
+          - os: windows
+            ruby: "3.3"
+            platform: x64-mingw-ucrt
           - os: ubuntu
+            ruby: "2.5"
             platform: x86_64-linux
           - os: ubuntu
-            platform: ruby
-          - os: ubuntu
-            ruby: jruby-head
-            platform: jruby
-          - os: windows
-            ruby: "3.2"
-            platform: x64-mingw-ucrt
-        exclude:
-          - os: windows
-            ruby: "3.2"
+            ruby: "3.3"
+            platform: x86_64-linux
 
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -103,14 +85,88 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - run: ruby --version
       - name: Download gem-${{matrix.platform}}
         uses: actions/download-artifact@v3
         with:
           name: gem-${{ matrix.platform }}
       - name: Install gem-${{matrix.platform}}
-        run: gem install --local *.gem --verbose
+        run: gem install *.gem --verbose
+      - name: bundle install
+        run: bundle install
+      - name: Generate Gemfile_libusb_gem to ensure the installed gem is used
+        run: bundle exec rake gemfile_libusb_gem
       - name: Run tests
+        env:
+          BUNDLE_GEMFILE: Gemfile_libusb_gem
         run: |
-          bundle exec rake test
+          bundle exec rake ci
+
+  # These jobs use Buildx layer caching
+  source_gem:
+    name: Source gem
+
+    strategy:
+      fail-fast: false
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Build libusb.gem
+        run: |
+          bundle exec rake gem
+
+      - name: Upload binary gem
+        uses: actions/upload-artifact@v3
+        with:
+          name: gem-ruby
+          path: pkg/*.gem
+
+  job_test_source:
+    name: Src (${{matrix.ruby}}, ${{matrix.os}})
+    needs: source_gem
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows
+          - ubuntu
+          - macos
+        ruby:
+          - "3.3"
+          - "2.5"
+          - "head"
+          - "jruby"
+          - "truffleruby"
+        exclude:
+          - os: windows
+            ruby: "truffleruby"
+
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+      - run: ruby --version
+      - name: Download gem
+        uses: actions/download-artifact@v3
+        with:
+          name: gem-ruby
+      - name: Install gem
+        run: gem install *.gem --verbose
+      - name: bundle install
+        run: bundle install
+      - name: Generate Gemfile_libusb_gem to ensure the installed gem is used
+        run: bundle exec rake gemfile_libusb_gem
+      - name: Run tests
+        env:
+          BUNDLE_GEMFILE: Gemfile_libusb_gem
+        run: |
+          bundle exec rake ci
