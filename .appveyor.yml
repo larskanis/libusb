@@ -8,7 +8,7 @@ install:
   - ps: |
       if ($env:ruby_version -like "*head*") {
         $(new-object net.webclient).DownloadFile("https://github.com/oneclick/rubyinstaller2/releases/download/rubyinstaller-head/rubyinstaller-$env:ruby_version.exe", "$pwd/ruby-setup.exe")
-        cmd /c ruby-setup.exe /verysilent /dir=C:/Ruby$env:ruby_version
+        cmd /c ruby-setup.exe /verysilent /currentuser /dir=C:/Ruby$env:ruby_version
       }
   - ruby --version
   - gem --version
