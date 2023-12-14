@@ -252,7 +252,7 @@ module LIBUSB
           @dev_handle.device.context.handle_events nil, @completion_flag
         rescue ERROR_INTERRUPTED
           next
-        rescue LIBUSB::Error
+        rescue Exception
           cancel!
           until @completion_flag.completed?
             @dev_handle.device.context.handle_events nil, @completion_flag
