@@ -274,6 +274,25 @@ module LIBUSB
       :LOG_LEVEL_DEBUG, 4,
     ]
 
+    # /** \ingroup libusb_lib
+    #  *  Log callback mode.
+    #  *
+    #  *  Since version 1.0.23, \ref LIBUSB_API_VERSION >= 0x01000107
+    #  *
+    #  * \see libusb_set_log_cb()
+    #  */
+    # enum libusb_log_cb_mode {
+    #   /** Callback function handling all log messages. */
+    #   LIBUSB_LOG_CB_GLOBAL = (1 << 0),
+    #
+    #   /** Callback function handling context related log messages. */
+    #   LIBUSB_LOG_CB_CONTEXT = (1 << 1)
+    # };
+    LogCbMode = enum :libusb_log_cb_mode, [
+      :LOG_CB_GLOBAL, (1 << 0),
+      :LOG_CB_CONTEXT, (1 << 1),
+    ]
+
     # Available option values for {Context#set_option}.
     Options = enum :libusb_option, [
       # Set the log message verbosity.
@@ -296,7 +315,7 @@ module LIBUSB
       #
       # If libusb was compiled with verbose debug message logging, this function
       # does nothing: you'll always get messages from all levels.
-      :OPTION_LOG_LEVEL,
+      :OPTION_LOG_LEVEL, 0,
 
       # Use the UsbDk backend for a specific context, if available.
       #
@@ -306,7 +325,35 @@ module LIBUSB
       # Only valid on Windows.
       #
       # Available since libusb-1.0.22.
-      :OPTION_USE_USBDK,
+      :OPTION_USE_USBDK, 1,
+
+      # Do not scan for devices
+      #
+      # With this option set, libusb will skip scanning devices in
+      # libusb_init_context().
+      #
+      # Hotplug functionality will also be deactivated.
+      #
+      # The option is useful in combination with libusb_wrap_sys_device(),
+      # which can access a device directly without prior device scanning.
+      #
+      # This is typically needed on Android, where access to USB devices
+      # is limited.
+      #
+      # Only valid on Linux. Ignored on all other platforms.
+      :OPTION_NO_DEVICE_DISCOVERY, 2,
+
+      # Set the context log callback functon.
+      #
+      # Set the log callback function either on a context or globally. This
+      # option must be provided an argument of type libusb_log_cb. Using this
+      # option with a NULL context is equivalent to calling libusb_set_log_cb
+      # with mode LIBUSB_LOG_CB_GLOBAL. Using it with a non-NULL context is
+      # equivalent to calling libusb_set_log_cb with mode
+      # LIBUSB_LOG_CB_CONTEXT.
+      :OPTION_LOG_CB, 3,
+
+      :OPTION_MAX, 4,
     ]
 
     typedef :pointer, :libusb_context
@@ -314,6 +361,44 @@ module LIBUSB
     typedef :pointer, :libusb_device_handle
     typedef :pointer, :libusb_transfer
     typedef :int, :libusb_hotplug_callback_handle
+
+    # /** \ingroup libusb_lib
+    #  * Callback function for handling log messages.
+    #  * \param ctx the context which is related to the log message, or NULL if it
+    #  * is a global log message
+    #  * \param level the log level, see \ref libusb_log_level for a description
+    #  * \param str the log message
+    #  *
+    #  * Since version 1.0.23, \ref LIBUSB_API_VERSION >= 0x01000107
+    #  *
+    #  * \see libusb_set_log_cb()
+    #  */
+    # typedef void (LIBUSB_CALL *libusb_log_cb)(libusb_context *ctx,
+    #               enum libusb_log_level level, const char *str);
+    callback :libusb_log_cb, [:libusb_context, :libusb_log_level, :string], :void
+
+    # @private
+    # /** \ingroup libusb_lib
+    #  * Structure used for setting options through \ref libusb_init_context.
+    #  *
+    #  */
+    # struct libusb_init_option {
+    #     /** Which option to set */
+    #     enum libusb_option option;
+    #     /** An integer value used by the option (if applicable). */
+    #     union {
+    #         int64_t ival;
+    #         libusb_log_cb log_cbval;
+    #     } value;
+    # };
+    class InitOptionValue < FFI::Union
+      layout :ival, :int64_t,
+             :log_cbval, :libusb_log_cb
+    end
+    class InitOption < FFI::Struct
+      layout :option, :libusb_option,
+        :value, InitOptionValue
+    end
 
     class << self
       private def try_attach_function(method, *args, **kwargs)
@@ -326,6 +411,11 @@ module LIBUSB
     try_attach_function 'libusb_get_version', [], :pointer
 
     attach_function 'libusb_init', [ :pointer ], :int
+    # int LIBUSB_CALL libusb_init_context(libusb_context **ctx, const struct libusb_init_option options[], int num_options);
+    try_attach_function 'libusb_init_context', [:pointer, :pointer, :int], :int
+    # may be deprecated in the future in favor of libusb_init_context()+libusb_set_option()
+    # void LIBUSB_CALL libusb_set_log_cb(libusb_context *ctx, libusb_log_cb cb, int mode);
+    try_attach_function 'libusb_set_log_cb', [:libusb_context, :libusb_log_cb, :int], :void
     attach_function 'libusb_exit', [ :pointer ], :void
     attach_function 'libusb_set_debug', [:pointer, :libusb_log_level], :void
     try_attach_function 'libusb_set_option', [:libusb_context, :libusb_option, :varargs], :int
@@ -363,6 +453,8 @@ module LIBUSB
     try_attach_function 'libusb_get_container_id_descriptor', [:libusb_context, :pointer, :pointer], :int
     try_attach_function 'libusb_free_container_id_descriptor', [:pointer], :void
 
+    # int LIBUSB_CALL libusb_wrap_sys_device(libusb_context *ctx, intptr_t sys_dev, libusb_device_handle **dev_handle);
+    try_attach_function 'libusb_wrap_sys_device', [:libusb_context, :intptr_t, :pointer], :int
     attach_function 'libusb_open', [:pointer, :pointer], :int
     attach_function 'libusb_close', [:pointer], :void
     attach_function 'libusb_get_device', [:libusb_device_handle], :pointer
