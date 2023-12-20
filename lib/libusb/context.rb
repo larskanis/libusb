@@ -97,24 +97,25 @@ module LIBUSB
 
     # Initialize libusb context.
     #
-    # @param [Hash] options
+    # @param [Hash] options   Options are available since libusb-1.0.27
     # @option options [Integer, Symbol] :OPTION_LOG_LEVEL   The log Level as a Integer or Symbol. See Call::LogLevels
     # @option options [nil] :OPTION_USE_USBDK  Enable the use of USBDK driver. Pass a +nil+ as value like so: +OPTION_USE_USBDK: nil+
     # @option options [nil] :OPTION_NO_DEVICE_DISCOVERY  Disable device discovery for use with libusb_wrap_sys_device(). Pass a +nil+ as value like so: +OPTION_NO_DEVICE_DISCOVERY: nil+
-    # @option options [Proc] :OPTION_LOG_CB   Set a log callback Proc. It is called with parameters (context, level, logstring).
+    # @option options [Proc] :OPTION_LOG_CB   Set a context related log callback Proc. It is called with parameters (context, level, logstring).
     def initialize(options={})
       m = FFI::MemoryPointer.new :pointer
       if options.empty?
         res = Call.libusb_init(m)
         LIBUSB.raise_error res, "in libusb_init" if res!=0
       else
+        raise ArgumentError, "options require libusb-1.0.27+" unless Call.respond_to?(:libusb_init_context)
         i_opts = options.size
         p_opts = FFI::MemoryPointer.new(Call::InitOption, i_opts)
         opts = options.map.with_index do |(k, v), i|
           opt = Call::InitOption.new(p_opts + i * Call::InitOption.size)
           opt[:option] = k
 
-          ffitype, ffival = option_args_to_ffi(k, Array(v))
+          ffitype, ffival = LIBUSB.send(:option_args_to_ffi, k, Array(v), self)
           case ffitype
             when NilClass then nil
             when :libusb_log_level then
@@ -146,27 +147,22 @@ module LIBUSB
       Call.libusb_set_debug(@ctx, level)
     end
 
-    private def expect_option_args(exp, is)
-      raise ArgumentError, "wrong number of arguments (given #{is+1}, expected #{exp+1})" if is != exp
-    end
+    private def wrap_log_cb(block, mode)
+      cb_proc = proc do |p_ctx, lev, str|
+        ctx = case p_ctx
+          when FFI::Pointer::NULL then nil
+          when @ctx then self
+          else p_ctx.to_i
+        end
+        block.call(ctx, lev, str)
+      end
 
-    private def option_args_to_ffi(option, args)
-      ffi_args = case option
-        when :OPTION_LOG_LEVEL, LIBUSB::OPTION_LOG_LEVEL
-          expect_option_args(1, args.length)
-          [:libusb_log_level, args[0]]
-        when :OPTION_USE_USBDK, LIBUSB::OPTION_USE_USBDK
-          expect_option_args(0, args.length)
-          []
-        when :OPTION_NO_DEVICE_DISCOVERY, LIBUSB::OPTION_NO_DEVICE_DISCOVERY
-          expect_option_args(0, args.length)
-          []
-        when :OPTION_LOG_CB, LIBUSB::OPTION_LOG_CB
-          expect_option_args(1, args.length)
-          @log_cb_proc = args[0] # Avoid garbage collection
-          [:libusb_log_cb, args[0]]
-        else
-          raise ArgumentError, "unknown option #{option.inspect}"
+      # Avoid garbage collection of the proc, since only the function pointer is given to libusb
+      if Call::LogCbMode.to_native(mode, nil) & LOG_CB_GLOBAL != 0
+        @@log_cb_proc = cb_proc
+      end
+      if Call::LogCbMode.to_native(mode, nil) & LOG_CB_CONTEXT != 0
+        @log_cb_proc = cb_proc
       end
     end
 
@@ -177,7 +173,7 @@ module LIBUSB
     def set_option(option, *args)
       if Call.respond_to?(:libusb_set_option)
         # Available since libusb-1.0.22
-        ffi_args = option_args_to_ffi(option, args)
+        ffi_args = LIBUSB.send(:option_args_to_ffi, option, args, self)
         res = Call.libusb_set_option(@ctx, option, *ffi_args)
         LIBUSB.raise_error res, "in libusb_set_option" if res<0
 
@@ -190,9 +186,31 @@ module LIBUSB
     end
 
     if Call.respond_to?(:libusb_set_log_cb)
+      # Set log handler.
+      #
+      # libusb will redirect its log messages to the provided method block.
+      # libusb supports redirection of per context and global log messages.
+      # Log messages sent to the context will be sent to the global log handler too.
+      #
+      # If libusb is compiled without message logging or USE_SYSTEM_LOGGING_FACILITY
+      # is defined then global callback function will never be called.
+      # If ENABLE_DEBUG_LOGGING is defined then per context callback function will
+      # never be called.
+      #
+      # Available since libusb-1.0.23, LIBUSB_API_VERSION >= 0x01000107
+      #
+      # @param [Symbol, Integer] mode   mode of callback function operation.
+      #       Several modes can be selected for a single callback function, see Call::LogCbMode for a description.
+      #
+      # @yieldparam [Context, nil] context  The context which is related to the log message, or +nil+ if it is a global log message.
+      # @yieldparam [Symbol] level   The log level, see Call::LogLevels for a description.
+      # @yieldparam [String] str   The log message.
+      #
+      # @see Call::LogCbMode
+      #
       def set_log_cb(mode, &block)
-        Call.libusb_set_log_cb(@ctx, block, mode)
-        @log_cb_proc = block
+        cb_proc = wrap_log_cb(block, mode)
+        Call.libusb_set_log_cb(@ctx, cb_proc, mode)
         self
       end
     end
