@@ -97,7 +97,7 @@ module LIBUSB
 
     # Initialize libusb context.
     #
-    # @param [Hash] options   Options are available since libusb-1.0.27
+    # @param [Hash{Call::Options => Object}] options   Options are available since libusb-1.0.27
     # @option options [Integer, Symbol] :OPTION_LOG_LEVEL   The log Level as a Integer or Symbol. See Call::LogLevels
     # @option options [nil] :OPTION_USE_USBDK  Enable the use of USBDK driver. Pass a +nil+ as value like so: +OPTION_USE_USBDK: nil+
     # @option options [nil] :OPTION_NO_DEVICE_DISCOVERY  Disable device discovery for use with libusb_wrap_sys_device(). Pass a +nil+ as value like so: +OPTION_NO_DEVICE_DISCOVERY: nil+
@@ -166,10 +166,11 @@ module LIBUSB
       end
     end
 
-    # Set a libusb option from the {Call::Options option list}.
+    # Set a context related libusb option from the {Call::Options option list}.
     #
     # @param [Symbol, Fixnum] option
     # @param args  Zero or more arguments depending on +option+
+    # @see set_options
     def set_option(option, *args)
       if Call.respond_to?(:libusb_set_option)
         # Available since libusb-1.0.22
@@ -182,6 +183,20 @@ module LIBUSB
 
         raise ArgumentError, "unknown option #{option.inspect}" unless [:OPTION_LOG_LEVEL, LIBUSB::OPTION_LOG_LEVEL].include?(option)
         Call.libusb_set_debug(@ctx, *args)
+      end
+    end
+
+    # Convenience function to set context related options in the libusb library.
+    #
+    # Use this function to configure any number of options within the library.
+    # It takes a Hash the same way as given to {Context.initialize}.
+    # See also {Call::Options option list}.
+    #
+    # @param [Hash{Call::Options => Object}] options   Option hash
+    # @see set_option
+    def set_options(options={})
+      options.each do |k, v|
+        set_option(k, *Array(v))
       end
     end
 

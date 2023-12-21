@@ -122,7 +122,7 @@ module LIBUSB
         LIBUSB.raise_error res, "in libusb_set_option" if res<0
       end
 
-      # Set default options in the libusb library.
+      # Convenience function to set default options in the libusb library.
       #
       # Use this function to configure any number of options within the library.
       # It takes a Hash the same way as given to {Context.initialize}.
@@ -130,12 +130,11 @@ module LIBUSB
       #
       # Available since libusb-1.0.22, LIBUSB_API_VERSION >= 0x01000106
       #
-      # @param [Hash] options   Kind of: Hash[<{Call::Options}> => <option value(s)>]
+      # @param [Hash{Call::Options => Object}] options   Option hash
+      # @see set_option
       def set_options(options={})
-        opts = options.each do |k, v|
-          args = LIBUSB.send(:option_args_to_ffi, k, Array(v), self)
-          res = Call.libusb_set_option(nil, k, *args)
-          LIBUSB.raise_error res, "in libusb_set_option" if res<0
+        options.each do |k, v|
+          set_option(k, *Array(v))
         end
       end
     end
