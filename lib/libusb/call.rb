@@ -440,6 +440,8 @@ module LIBUSB
     try_attach_function 'libusb_get_device_speed', [:pointer], :libusb_speed
     attach_function 'libusb_get_max_packet_size', [:pointer, :uint8], :int
     attach_function 'libusb_get_max_iso_packet_size', [:pointer, :uint8], :int
+    # int API_EXPORTED libusb_get_max_alt_packet_size(libusb_device *dev, int interface_number, int alternate_setting, unsigned char endpoint)
+    try_attach_function 'libusb_get_max_alt_packet_size', [:pointer, :int, :int, :uchar], :int
 
     try_attach_function 'libusb_get_ss_endpoint_companion_descriptor', [:pointer, :pointer, :pointer], :int
     try_attach_function 'libusb_free_ss_endpoint_companion_descriptor', [:pointer], :void
