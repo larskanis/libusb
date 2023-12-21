@@ -209,4 +209,28 @@ class TestLibusbDescriptors < Minitest::Test
       end
     end
   end
+
+  def test_wrap_sys_device
+    skip unless RUBY_PLATFORM =~ /linux/
+    d = usb.devices[0]
+    File.open(format("/dev/bus/usb/%03d/%03d", d.bus_number, d.device_address), "w+") do |io|
+      devh = usb.wrap_sys_device(io)
+      devh.kernel_driver_active?(0)
+      devh.close
+
+      usb.wrap_sys_device(io) do |devh|
+        devh.kernel_driver_active?(0)
+      end
+    end
+  end
+
+  def test_wrap_sys_device_failure
+    skip unless RUBY_PLATFORM =~ /linux/
+    d = usb.devices[0]
+    assert_raises(LIBUSB::ERROR_OTHER) do
+      File.open(format("/dev/bus/usb/%03d/%03d", d.bus_number, d.device_address), "r") do |io|
+        usb.wrap_sys_device(io).kernel_driver_active?(0)
+      end
+    end
+  end
 end
