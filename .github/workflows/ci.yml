@@ -35,7 +35,7 @@ jobs:
     env:
       PLATFORM: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -47,14 +47,14 @@ jobs:
           bundle exec rake gem:native:${PLATFORM}
 
       - name: Upload binary gem
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gem-${{ matrix.platform }}
           path: pkg/*-*-*.gem
 
       - if: matrix.platform == 'jruby'
         name: Upload source gem
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gem-ruby
           path: pkg/*-?.?.?.gem
@@ -81,13 +81,13 @@ jobs:
 
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
       - run: ruby --version
       - name: Download gem-${{matrix.platform}}
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: gem-${{ matrix.platform }}
       - name: Install gem-${{matrix.platform}}
@@ -111,7 +111,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: ruby/setup-ruby@v1
         with:
@@ -123,7 +123,7 @@ jobs:
           bundle exec rake gem
 
       - name: Upload binary gem
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: gem-ruby
           path: pkg/*.gem
@@ -150,13 +150,13 @@ jobs:
 
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
       - run: ruby --version
       - name: Download gem
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: gem-ruby
       - name: Install gem
