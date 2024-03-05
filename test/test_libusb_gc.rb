@@ -34,4 +34,19 @@ class TestLibusbGc < Minitest::Test
     GC.start
     assert_equal ps, ep.wMaxPacketSize, "GC should not free EndpointDescriptor"
   end
+
+  def test_log_cb
+    LIBUSB.set_options OPTION_LOG_CB: proc{}, OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_DEBUG
+
+    c = LIBUSB::Context.new OPTION_LOG_CB: proc{}, OPTION_NO_DEVICE_DISCOVERY: nil
+    GC.start
+    c.devices
+    c.set_log_cb(LIBUSB::LOG_CB_CONTEXT){}
+    c.devices
+    GC.start
+    c.devices
+
+  ensure
+    LIBUSB.set_options OPTION_LOG_CB: [nil], OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_NONE
+  end
 end

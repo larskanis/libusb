@@ -32,27 +32,111 @@ module LIBUSB
     autoload klass, 'libusb/transfer'
   end
 
-  if Call.respond_to?(:libusb_get_version)
-    # Get version of the underlying libusb library.
-    # Available since libusb-1.0.10.
-    # @return [Version]  version object
-    def self.version
-      Version.new(Call.libusb_get_version)
+  class << self
+    if Call.respond_to?(:libusb_get_version)
+      # Get version of the underlying libusb library.
+      # Available since libusb-1.0.10.
+      # @return [Version]  version object
+      def version
+        Version.new(Call.libusb_get_version)
+      end
     end
-  end
 
-  if Call.respond_to?(:libusb_has_capability)
-    # Check at runtime if the loaded library has a given capability.
-    # Available since libusb-1.0.9.
-    # @param [Symbol] capability  the {Call::Capabilities Capabilities} symbol to check for
-    # @return [Boolean]  +true+ if the running library has the capability, +false+ otherwise
-    def self.has_capability?(capability)
-      r = Call.libusb_has_capability(capability)
-      return r != 0
+    if Call.respond_to?(:libusb_has_capability)
+      # Check at runtime if the loaded library has a given capability.
+      # Available since libusb-1.0.9.
+      # @param [Symbol] capability  the {Call::Capabilities Capabilities} symbol to check for
+      # @return [Boolean]  +true+ if the running library has the capability, +false+ otherwise
+      def has_capability?(capability)
+        r = Call.libusb_has_capability(capability)
+        return r != 0
+      end
+    else
+      def has_capability?(capability)
+        false
+      end
     end
-  else
-    def self.has_capability?(capability)
-      false
+
+    private def expect_option_args(exp, is)
+      raise ArgumentError, "wrong number of arguments (given #{is+1}, expected #{exp+1})" if is != exp
+    end
+
+    private def wrap_log_cb(block, mode)
+      cb_proc = proc do |p_ctx, lev, str|
+        ctx = case p_ctx
+          when FFI::Pointer::NULL then nil
+          else p_ctx.to_i
+        end
+        block.call(ctx, lev, str)
+      end
+
+      # Avoid garbage collection of the proc, since only the function pointer is given to libusb
+      if Call::LogCbMode.to_native(mode, nil) & LOG_CB_GLOBAL != 0
+        @log_cb_global_proc = cb_proc
+      end
+      if Call::LogCbMode.to_native(mode, nil) & LOG_CB_CONTEXT != 0
+        @log_cb_context_proc = cb_proc
+      end
+    end
+
+    private def option_args_to_ffi(option, args, ctx)
+      case option
+        when :OPTION_LOG_LEVEL, LIBUSB::OPTION_LOG_LEVEL
+          expect_option_args(1, args.length)
+          [:libusb_log_level, args[0]]
+        when :OPTION_USE_USBDK, LIBUSB::OPTION_USE_USBDK
+          expect_option_args(0, args.length)
+          []
+        when :OPTION_NO_DEVICE_DISCOVERY, LIBUSB::OPTION_NO_DEVICE_DISCOVERY
+          expect_option_args(0, args.length)
+          []
+        when :OPTION_LOG_CB, LIBUSB::OPTION_LOG_CB
+          expect_option_args(1, args.length)
+          cb_proc = ctx.send(:wrap_log_cb, args[0], LOG_CB_CONTEXT)
+          [:libusb_log_cb, cb_proc]
+        else
+          raise ArgumentError, "unknown option #{option.inspect}"
+      end
+    end
+
+    if Call.respond_to?(:libusb_set_option)
+      # Set an default option in the libusb library.
+      #
+      # Use this function to configure a specific option within the library.
+      # See {Call::Options option list}.
+      #
+      # Some options require one or more arguments to be provided.
+      # Consult each option's documentation for specific requirements.
+      #
+      # The option will be added to a list of default options that will be applied to all subsequently created contexts.
+      #
+      # Available since libusb-1.0.22, LIBUSB_API_VERSION >= 0x01000106
+      #
+      # @param [Symbol, Fixnum] option
+      # @param args  Zero or more arguments depending on +option+
+      #
+      # Available since libusb-1.0.22
+      def set_option(option, *args)
+        ffi_args = option_args_to_ffi(option, args, self)
+        res = Call.libusb_set_option(nil, option, *ffi_args)
+        LIBUSB.raise_error res, "in libusb_set_option" if res<0
+      end
+
+      # Convenience function to set default options in the libusb library.
+      #
+      # Use this function to configure any number of options within the library.
+      # It takes a Hash the same way as given to {Context.initialize}.
+      # See also {Call::Options option list}.
+      #
+      # Available since libusb-1.0.22, LIBUSB_API_VERSION >= 0x01000106
+      #
+      # @param [Hash{Call::Options => Object}] options   Option hash
+      # @see set_option
+      def set_options(options={})
+        options.each do |k, v|
+          set_option(k, *Array(v))
+        end
+      end
     end
   end
 end

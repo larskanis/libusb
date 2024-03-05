@@ -13,6 +13,7 @@ require_relative 'lib/libusb/gem_helper'
 CLOBBER.include 'pkg'
 CLEAN.include 'ports'
 CLEAN.include 'tmp'
+CLEAN.include 'ext/tmp'
 
 task :build do
   require_relative 'lib/libusb/libusb_recipe'
