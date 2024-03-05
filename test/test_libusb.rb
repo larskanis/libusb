@@ -52,18 +52,18 @@ class TestLibusb < Minitest::Test
     #pp called
     assert_nil called[:global][0][0]
     assert_equal :LOG_LEVEL_DEBUG, called[:global][0][1]
-    assert_match /timestamp.*threadID/, called[:global][0][2]
-    assert_match /no device discovery/, called[:global].join
+    assert_match(/timestamp.*threadID/, called[:global][0][2])
+    assert_match(/no device discovery/, called[:global].join)
 
     assert_operator called[:ctx1].size, :>, called[:ctx2].size
     assert_equal c, called[:ctx1][-1][0]
     assert_equal :LOG_LEVEL_DEBUG, called[:ctx1][-1][1]
-    assert_match /libusb_get_device_list/, called[:ctx1][-1][2]
-    assert_match /no device discovery/, called[:ctx1].join
+    assert_match(/libusb_get_device_list/, called[:ctx1][-1][2])
+    assert_match(/no device discovery/, called[:ctx1].join)
 
     assert_equal c, called[:ctx2][-1][0]
     assert_equal :LOG_LEVEL_DEBUG, called[:ctx2][-1][1]
-    assert_match /libusb_get_device_list/, called[:ctx2][-1][2]
+    assert_match(/libusb_get_device_list/, called[:ctx2][-1][2])
 
   ensure
     LIBUSB.set_options OPTION_LOG_CB: [nil], OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_NONE
