@@ -160,6 +160,44 @@ module LIBUSB
       res
     end
 
+    if Call.respond_to?(:libusb_get_max_alt_packet_size)
+
+      # Calculate the maximum packet size which a specific endpoint is capable of
+      # sending or receiving in the duration of 1 microframe
+      #
+      # Only the active configuration is examined. The calculation is based on the
+      # wMaxPacketSize field in the endpoint descriptor as described in section
+      # 9.6.6 in the USB 2.0 specifications.
+      #
+      # If acting on an isochronous or interrupt endpoint, this function will
+      # multiply the value found in bits 0:10 by the number of transactions per
+      # microframe (determined by bits 11:12). Otherwise, this function just
+      # returns the numeric value found in bits 0:10. For USB 3.0 device, it
+      # will attempts to retrieve the Endpoint Companion Descriptor to return
+      # wBytesPerInterval.
+      #
+      # This function is useful for setting up isochronous transfers, for example
+      # you might pass the return value from this function to
+      # +IsochronousTransfer.packet_lengths=+ in order to set the length field of every
+      # isochronous packet in a transfer.
+      #
+      # Available since libusb-1.0.27.
+      #
+      # @param [Interface, Fixnum] interface  the interface or its bInterfaceNumber of the interface the endpoint belongs to
+      # @param [Setting, Fixnum] alternate_setting  the alternate setting or its bAlternateSetting
+      # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
+      # @return [Fixnum]  the maximum packet size which can be sent/received on this endpoint
+      # @see max_iso_packet_size
+      def max_alt_packet_size(interface, alternate_setting, endpoint)
+        interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
+        alternate_setting = alternate_setting.bAlternateSetting if alternate_setting.respond_to? :bAlternateSetting
+        endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
+        res = Call.libusb_get_max_alt_packet_size(@pDev, interface, alternate_setting, endpoint)
+        LIBUSB.raise_error res, "in libusb_get_max_alt_packet_size" unless res>=0
+        res
+      end
+    end
+
     # Calculate the maximum packet size which a specific endpoint is capable is
     # sending or receiving in the duration of 1 microframe.
     #
@@ -179,6 +217,7 @@ module LIBUSB
     #
     # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
     # @return [Fixnum] the maximum packet size which can be sent/received on this endpoint
+    # @see max_alt_packet_size
     def max_iso_packet_size(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_get_max_iso_packet_size(@pDev, endpoint)

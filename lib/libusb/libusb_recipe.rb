@@ -11,7 +11,8 @@ module LIBUSB
     def initialize
       super("libusb", LIBUSB_VERSION)
       self.target = File.join(ROOT, "ports")
-      self.files = [url: LIBUSB_SOURCE_URI, sha1: LIBUSB_SOURCE_SHA1]
+      self.files = [url: LIBUSB_SOURCE_URI, sha256: LIBUSB_SOURCE_SHA256]
+      self.patch_files = Dir[File.join(ROOT, "patches", self.name, self.version, "*.patch")].sort
       self.configure_options = []
     end
 

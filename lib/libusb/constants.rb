@@ -34,6 +34,7 @@ module LIBUSB
     Call::HotplugEvents,
     Call::HotplugFlags,
     Call::LogLevels,
+    Call::LogCbMode,
     Call::Options,
   ].each do |enum|
     enum.to_h.each{|k,v| const_set(k,v) }

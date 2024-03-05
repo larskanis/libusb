@@ -7,13 +7,19 @@ require 'pathname'
 require 'uri'
 require 'ostruct'
 require 'rake/clean'
-require 'rake_compiler_dock'
 require_relative 'lib/libusb/libusb_recipe'
 require_relative 'lib/libusb/gem_helper'
 
 CLOBBER.include 'pkg'
 CLEAN.include 'ports'
 CLEAN.include 'tmp'
+CLEAN.include 'ext/tmp'
+
+task :build do
+  require_relative 'lib/libusb/libusb_recipe'
+  recipe = LIBUSB::LibusbRecipe.new
+  recipe.download
+end
 
 task :gem => :build
 task :compile do
@@ -21,13 +27,21 @@ task :compile do
   sh "make -C ext install RUBYARCHDIR=../lib"
 end
 
-task :test=>:compile do
-  sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
+task :gemfile_libusb_gem do
+  gf = File.read("Gemfile")
+  gf.gsub!(/^(gemspec)$/, "# \\1")
+  gf << "\ngem 'libusb'\n"
+  File.write("Gemfile_libusb_gem", gf)
+  puts "Gemfile_libusb_gem written"
 end
 
-travis_tests = %w[test_libusb.rb test_libusb_structs.rb]
-task :travis=>:compile do
-  sh "ruby -w -W2 -I. -Ilib -e \"#{travis_tests.map{|f| "require 'test/#{f}';"}.join}\" -- -v"
+task :test do
+  sh "ruby -w -W2 -I. -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
+end
+
+ci_tests = %w[test_libusb.rb test_libusb_structs.rb]
+task :ci do
+  sh "ruby -w -W2 -I. -e \"#{ci_tests.map{|f| "require 'test/#{f}';"}.join}\" -- -v"
 end
 task :default => :test
 
@@ -49,11 +63,12 @@ CrossLibraries.map(&:ruby_platform).each do |platform|
   multitask 'gem:native' => "gem:native:#{platform}"
 
   task "gem:native:#{platform}" do
+    require 'rake_compiler_dock'
     sh "bundle package"
     RakeCompilerDock.sh <<-EOT, platform: platform
       bundle --local &&
       #{ "sudo yum install -y libudev-devel &&" if platform=~/linux/ }
-      rake --trace cross:#{platform} gem "MAKE=make V=1 -j`nproc`"
+      bundle exec rake --trace cross:#{platform} gem "MAKE=make V=1 -j`nproc`" || cat tmp/*/ports/libusb/*/*.log
     EOT
   end
 end
