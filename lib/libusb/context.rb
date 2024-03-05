@@ -111,7 +111,7 @@ module LIBUSB
         raise ArgumentError, "options require libusb-1.0.27+" unless Call.respond_to?(:libusb_init_context)
         i_opts = options.size
         p_opts = FFI::MemoryPointer.new(Call::InitOption, i_opts)
-        opts = options.map.with_index do |(k, v), i|
+        options.each_with_index do |(k, v), i|
           opt = Call::InitOption.new(p_opts + i * Call::InitOption.size)
           opt[:option] = k
 
@@ -124,7 +124,6 @@ module LIBUSB
               opt[:value][:log_cbval] = ffival
             else raise ArgumentError, "internal error: unexpected ffitype: #{ffitype.inspect}"
           end
-          opt
         end
         res = Call.libusb_init_context(m, p_opts, i_opts)
         LIBUSB.raise_error res, "in libusb_init_context" if res!=0
