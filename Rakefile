@@ -14,6 +14,9 @@ CLOBBER.include 'pkg'
 CLEAN.include 'ports'
 CLEAN.include 'tmp'
 CLEAN.include 'ext/tmp'
+CLEAN.include 'lib/*.a'
+CLEAN.include 'lib/*.so*'
+CLEAN.include 'lib/*.dll*'
 
 task :build do
   require_relative 'lib/libusb/libusb_recipe'
