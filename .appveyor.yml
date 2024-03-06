@@ -23,11 +23,11 @@ build_script:
   - bundle exec rake compile
 
 test_script:
-  - bundle exec rake travis
+  - bundle exec rake ci
 
 environment:
   matrix:
     - ruby_version: "head-x64"
-    - ruby_version: "30"
+    - ruby_version: "33"
     - ruby_version: "27-x64"
-    - ruby_version: "24"
+    - ruby_version: "25"
