@@ -144,6 +144,7 @@ jobs:
           - "head"
           - "jruby"
           - "truffleruby"
+        extconfopts: [ --disable-system-libusb, --enable-system-libusb ]
         exclude:
           - os: windows
             ruby: "truffleruby"
@@ -162,8 +163,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: gem-ruby
+      - name: Install libusb on Windows
+        if: matrix.os == 'windows' && matrix.extconfopts == '--enable-system-libusb'
+        shell: cmd
+        run: C:/msys64/usr/bin/sh -c "pacman --sync --refresh --needed --noconfirm  ${MINGW_PACKAGE_PREFIX}-libusb"
       - name: Install gem
-        run: gem install *.gem --verbose
+        run: gem install *.gem --verbose -- ${{ matrix.extconfopts }}
       - name: bundle install
         run: bundle install
       - name: Generate Gemfile_libusb_gem to ensure the installed gem is used
