@@ -148,6 +148,9 @@ jobs:
         exclude:
           - os: windows
             ruby: "truffleruby"
+          - os: windows
+            ruby: "jruby"
+            extconfopts: --enable-system-libusb
 
     runs-on: ${{ matrix.os }}-latest
     steps:
