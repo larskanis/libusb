@@ -129,7 +129,7 @@ jobs:
           path: pkg/*.gem
 
   job_test_source:
-    name: Src (${{matrix.ruby}}, ${{matrix.os}})
+    name: Src (${{matrix.ruby}}, ${{matrix.os}}, ${{matrix.extconfopts}})
     needs: source_gem
     strategy:
       fail-fast: false
