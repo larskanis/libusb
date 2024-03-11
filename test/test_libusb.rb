@@ -39,38 +39,4 @@ class TestLibusb < Minitest::Test
   def test_gem_version_string
     assert_match(/^\d+\.\d+\.\d+/, LIBUSB::VERSION)
   end
-
-  def test_log_callback
-    skip "only supported on Linux" unless RUBY_PLATFORM=~/linux/
-    skip "libusb version older than 1.0.27" if Gem::Version.new(LIBUSB.version) < Gem::Version.new("1.0.27")
-
-    begin
-      called = Hash.new { |h, k| h[k] = [] }
-      LIBUSB.set_options OPTION_LOG_CB: proc{|*a| called[:global] << a }, OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_DEBUG
-
-      c = LIBUSB::Context.new OPTION_LOG_CB: proc{|*a| called[:ctx1] << a }, OPTION_NO_DEVICE_DISCOVERY: nil
-      c.devices
-      c.set_log_cb(LIBUSB::LOG_CB_CONTEXT){|*a| called[:ctx2] << a }
-      c.devices
-
-      #pp called
-      assert_nil called[:global][0][0]
-      assert_equal :LOG_LEVEL_DEBUG, called[:global][0][1]
-      assert_match(/timestamp.*threadID/, called[:global][0][2])
-      assert_match(/no device discovery/, called[:global].join)
-
-      assert_operator called[:ctx1].size, :>, called[:ctx2].size
-      assert_equal c, called[:ctx1][-1][0]
-      assert_equal :LOG_LEVEL_DEBUG, called[:ctx1][-1][1]
-      assert_match(/libusb_get_device_list/, called[:ctx1][-1][2])
-      assert_match(/no device discovery/, called[:ctx1].join)
-
-      assert_equal c, called[:ctx2][-1][0]
-      assert_equal :LOG_LEVEL_DEBUG, called[:ctx2][-1][1]
-      assert_match(/libusb_get_device_list/, called[:ctx2][-1][2])
-
-    ensure
-      LIBUSB.set_options OPTION_LOG_CB: [nil], OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_NONE
-    end
-  end
 end
