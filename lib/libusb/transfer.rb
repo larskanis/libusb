@@ -28,16 +28,16 @@ module LIBUSB
     class ZeroCopyMemory < FFI::Pointer
       attr_reader :size
 
-      def initialize(dev_handle, ptr, size)
-        @dev_handle = dev_handle
+      def initialize(pDevhandle, ptr, size)
+        @pDevhandle = pDevhandle
         @size = size
         super(ptr)
       end
 
       def free(id=nil)
+        # puts format("libusb_dev_mem_free(%#x, %d)%s", address, @size||0, id ? " by GC" : '')
         return unless @size
-#         puts format("libusb_dev_mem_free(%#x, %d)%s", address, @size, id ? " by GC" : '')
-        res = Call.libusb_dev_mem_free( @dev_handle.pHandle, self, @size )
+        res = Call.libusb_dev_mem_free( @pDevhandle, self, @size )
         LIBUSB.raise_error res, "in libusb_dev_mem_free" if res!=0
         @size = nil
       end
@@ -163,7 +163,7 @@ module LIBUSB
           ptr = Call.libusb_dev_mem_alloc( @dev_handle.pHandle, len )
 #           puts format("libusb_dev_mem_alloc(%d) => %#x", len, ptr.address)
           unless ptr.null?
-            buffer = ZeroCopyMemory.new(@dev_handle, ptr, len)
+            buffer = ZeroCopyMemory.new(@dev_handle.pHandle, ptr, len)
             ObjectSpace.define_finalizer(self, buffer.method(:free))
           end
         end
