@@ -147,6 +147,9 @@ jobs:
         exclude:
           - os: windows
             ruby: "truffleruby"
+          - os: windows
+            # configure: error: unrecognized option: `--prefix\=D:/jruby-9.4.6.0/lib/ruby/gems/shared/gems/libusb-0.6.4/ports/x86_64-w64-mingw32/libusb/1.0.27'
+            ruby: "jruby"
 
     runs-on: ${{ matrix.os }}-latest
     steps:
