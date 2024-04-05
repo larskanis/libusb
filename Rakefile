@@ -52,8 +52,10 @@ CrossLibraries = [
   ['x86-mingw32', 'i686-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw32', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw-ucrt', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
-  ['x86-linux', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
-  ['x86_64-linux', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
+  ['x86-linux-gnu', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
+  ['x86_64-linux-gnu', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
+  ['x86-linux-musl', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
+  ['x86_64-linux-musl', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
 ].map do |ruby_platform, host_platform, libusb_dll|
   LIBUSB::CrossLibrary.new ruby_platform, host_platform, libusb_dll
 end
@@ -70,7 +72,8 @@ CrossLibraries.map(&:ruby_platform).each do |platform|
     sh "bundle package"
     RakeCompilerDock.sh <<-EOT, platform: platform
       bundle --local &&
-      #{ "sudo yum install -y libudev-devel &&" if platform=~/linux/ }
+      #{ "sudo yum install -y libudev-devel &&" if platform=~/linux-gnu/ }
+      #{ "sudo apt-get update && sudo apt-get install -y libudev-dev &&" if platform=~/linux-musl/ }
       bundle exec rake --trace cross:#{platform} gem "MAKE=make V=1 -j`nproc`" || cat tmp/*/ports/libusb/*/*.log
     EOT
   end
