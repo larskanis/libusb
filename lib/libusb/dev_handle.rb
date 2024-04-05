@@ -376,6 +376,7 @@ module LIBUSB
                       endpoint:,
                       dataIn: nil,
                       dataOut: nil,
+                      allow_device_memory: false,
                       &block)
 
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
@@ -386,7 +387,7 @@ module LIBUSB
       end
 
       # reuse transfer struct to speed up transfer
-      @bulk_transfer ||= BulkTransfer.new dev_handle: self, allow_device_memory: true
+      @bulk_transfer ||= BulkTransfer.new dev_handle: self, allow_device_memory: allow_device_memory
       tr = @bulk_transfer
       tr.endpoint = endpoint
       tr.timeout = timeout
@@ -446,6 +447,7 @@ module LIBUSB
                            endpoint:,
                            dataIn: nil,
                            dataOut: nil,
+                           allow_device_memory: false,
                            &block)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       if endpoint&ENDPOINT_IN != 0
@@ -455,7 +457,7 @@ module LIBUSB
       end
 
       # reuse transfer struct to speed up transfer
-      @interrupt_transfer ||= InterruptTransfer.new dev_handle: self, allow_device_memory: true
+      @interrupt_transfer ||= InterruptTransfer.new dev_handle: self, allow_device_memory: allow_device_memory
       tr = @interrupt_transfer
       tr.endpoint = endpoint
       tr.timeout = timeout
@@ -507,6 +509,7 @@ module LIBUSB
                          timeout: 1000,
                          dataIn: nil,
                          dataOut: nil,
+                         allow_device_memory: false,
                          &block)
 
       if bmRequestType&ENDPOINT_IN != 0
@@ -517,7 +520,7 @@ module LIBUSB
       end
 
       # reuse transfer struct to speed up transfer
-      @control_transfer ||= ControlTransfer.new dev_handle: self, allow_device_memory: true
+      @control_transfer ||= ControlTransfer.new dev_handle: self, allow_device_memory: allow_device_memory
       tr = @control_transfer
       tr.timeout = timeout
       if dataIn
