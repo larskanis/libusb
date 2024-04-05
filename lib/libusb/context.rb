@@ -132,6 +132,11 @@ module LIBUSB
       @on_pollfd_added = nil
       @on_pollfd_removed = nil
       @hotplug_callbacks = {}
+
+      def @ctx.unref_context(id)
+        Call.libusb_exit(self)
+      end
+      ObjectSpace.define_finalizer(self, @ctx.method(:unref_context))
     end
 
     # Deinitialize libusb.
