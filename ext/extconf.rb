@@ -92,6 +92,7 @@ EOT
 
   if libusb_path
     mf.puts <<-EOT
+	mkdir -p $(RUBYARCHDIR)
 	cp -r #{libusb_path.dump}/*/* $(RUBYARCHDIR)
     EOT
   end

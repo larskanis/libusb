@@ -129,7 +129,7 @@ jobs:
           path: pkg/*.gem
 
   job_test_source:
-    name: Src (${{matrix.ruby}}, ${{matrix.os}})
+    name: Src (${{matrix.ruby}}, ${{matrix.os}}, ${{matrix.extconfopts}})
     needs: source_gem
     strategy:
       fail-fast: false
@@ -144,12 +144,18 @@ jobs:
           - "head"
           - "jruby"
           - "truffleruby"
+        extconfopts: [ --disable-system-libusb, --enable-system-libusb ]
         exclude:
           - os: windows
             ruby: "truffleruby"
           - os: windows
-            # configure: error: unrecognized option: `--prefix\=D:/jruby-9.4.6.0/lib/ruby/gems/shared/gems/libusb-0.6.4/ports/x86_64-w64-mingw32/libusb/1.0.27'
             ruby: "jruby"
+            # Fails to install libusb from MSYS2
+            extconfopts: --enable-system-libusb
+          - os: windows
+            ruby: "jruby"
+            # configure: error: unrecognized option: `--prefix\=D:/jruby-9.4.6.0/lib/ruby/gems/shared/gems/libusb-0.6.4/ports/x86_64-w64-mingw32/libusb/1.0.27'
+            extconfopts: --disable-system-libusb
 
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -162,8 +168,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: gem-ruby
+      - name: Install libusb on Windows
+        if: matrix.os == 'windows' && matrix.extconfopts == '--enable-system-libusb'
+        shell: cmd
+        run: C:/msys64/usr/bin/sh -c "pacman --sync --refresh --needed --noconfirm  ${MINGW_PACKAGE_PREFIX}-libusb"
       - name: Install gem
-        run: gem install *.gem --verbose
+        run: gem install *.gem --verbose -- ${{ matrix.extconfopts }}
       - name: bundle install
         run: bundle install
       - name: Generate Gemfile_libusb_gem to ensure the installed gem is used
