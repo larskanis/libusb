@@ -25,7 +25,5 @@ module LIBUSB
       self.activate
       self
     end
-
-    public :files_hashs
   end
 end
