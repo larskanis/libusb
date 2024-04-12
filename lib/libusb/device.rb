@@ -29,7 +29,9 @@ module LIBUSB
       @context = context
       def pDev.unref_device(id)
         Call.libusb_unref_device(self)
+        @ctx.unref_context
       end
+      pDev.instance_variable_set(:@ctx, context.instance_variable_get(:@ctx).ref_context)
       ObjectSpace.define_finalizer(self, pDev.method(:unref_device))
       Call.libusb_ref_device(pDev)
       @pDev = pDev

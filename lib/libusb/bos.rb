@@ -19,7 +19,7 @@ module LIBUSB
   # A structure representing the Binary Device Object Store (BOS) descriptor.
   # This descriptor is documented in section 9.6.2 of the USB 3.0 specification.
   # All multiple-byte fields are represented in host-endian format.
-  class Bos < FFI::ManagedStruct
+  class Bos < FFI::Struct
 
     module GenericMethods
       # @return [Integer]  Size of this descriptor (in bytes)
@@ -66,13 +66,25 @@ module LIBUSB
     # A structure representing the USB 2.0 Extension descriptor
     # This descriptor is documented in section 9.6.2.1 of the USB 3.0 specification.
     # All multiple-byte fields are represented in host-endian format.
-    class Usb20Extension < FFI::ManagedStruct
+    class Usb20Extension < FFI::Struct
       include GenericMethods
 
       layout :bLength, :uint8,
           :bDescriptorType, :uint8,
           :bDevCapabilityType, :uint8,
           :bmAttributes, :uint32
+
+      def initialize(ctx, *args)
+        super(*args)
+
+        ptr = pointer
+        def ptr.free_struct(id)
+          Call.libusb_free_usb_2_0_extension_descriptor(self)
+          @ctx.unref_context
+        end
+        ptr.instance_variable_set(:@ctx, ctx.ref_context)
+        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+      end
 
       # Bitmap encoding of supported device level features.
       # A value of one in a bit location indicates a feature is
@@ -93,17 +105,12 @@ module LIBUSB
         end
         "\#<#{self.class} #{attrs.compact.join(",")}>"
       end
-
-      # @private
-      def self.release(ptr)
-        Call.libusb_free_usb_2_0_extension_descriptor(ptr)
-      end
     end
 
     # A structure representing the SuperSpeed USB Device Capability descriptor
     # This descriptor is documented in section 9.6.2.2 of the USB 3.0 specification.
     # All multiple-byte fields are represented in host-endian format.
-    class SsUsbDeviceCapability < FFI::ManagedStruct
+    class SsUsbDeviceCapability < FFI::Struct
       include GenericMethods
 
       layout :bLength, :uint8,
@@ -114,6 +121,18 @@ module LIBUSB
           :bFunctionalitySupport, :uint8,
           :bU1DevExitLat, :uint8,
           :bU2DevExitLat, :uint16
+
+      def initialize(ctx, *args)
+        super(*args)
+
+        ptr = pointer
+        def ptr.free_struct(id)
+          Call.libusb_free_ss_usb_device_capability_descriptor(self)
+          @ctx.unref_context
+        end
+        ptr.instance_variable_set(:@ctx, ctx.ref_context)
+        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+      end
 
       # Bitmap encoding of supported device level features.
       # A value of one in a bit location indicates a feature is
@@ -178,17 +197,12 @@ module LIBUSB
       def bU2DevExitLat
         self[:bU2DevExitLat]
       end
-
-      # @private
-      def self.release(ptr)
-        Call.libusb_free_ss_usb_device_capability_descriptor(ptr)
-      end
     end
 
     # A structure representing the Container ID descriptor.
     # This descriptor is documented in section 9.6.2.3 of the USB 3.0 specification.
     # All multiple-byte fields, except UUIDs, are represented in host-endian format.
-    class ContainerId < FFI::ManagedStruct
+    class ContainerId < FFI::Struct
       include GenericMethods
 
       layout :bLength, :uint8,
@@ -196,6 +210,18 @@ module LIBUSB
           :bDevCapabilityType, :uint8,
           :bReserved, :uint8,
           :ContainerID, [:uint8, 16]
+
+      def initialize(ctx, *args)
+        super(*args)
+
+        ptr = pointer
+        def ptr.free_struct(id)
+          Call.libusb_free_container_id_descriptor(self)
+          @ctx.unref_context
+        end
+        ptr.instance_variable_set(:@ctx, ctx.ref_context)
+        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+      end
 
       # Reserved field
       def bReserved
@@ -210,16 +236,19 @@ module LIBUSB
       def inspect
         "\#<#{self.class} #{container_id.unpack("H*")[0]}>"
       end
-
-      # @private
-      def self.release(ptr)
-        Call.libusb_free_container_id_descriptor(ptr)
-      end
     end
 
-    def initialize( ctx, *args)
+    def initialize(ctx, *args)
       @ctx = ctx
       super(*args)
+
+      ptr = pointer
+      def ptr.free_struct(id)
+        Call.libusb_free_bos_descriptor(self)
+        @ctx.unref_context
+      end
+      ptr.instance_variable_set(:@ctx, ctx.ref_context)
+      ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
     end
 
     layout :bLength, :uint8,
@@ -265,13 +294,13 @@ module LIBUSB
             # no struct defined in libusb -> use generic DeviceCapability
           when LIBUSB::BT_USB_2_0_EXTENSION
             res = Call.libusb_get_usb_2_0_extension_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = Usb20Extension.new(pp_ext.read_pointer) if res==0
+            cap = Usb20Extension.new(@ctx, pp_ext.read_pointer) if res==0
           when LIBUSB::BT_SS_USB_DEVICE_CAPABILITY
             res = Call.libusb_get_ss_usb_device_capability_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = SsUsbDeviceCapability.new(pp_ext.read_pointer) if res==0
+            cap = SsUsbDeviceCapability.new(@ctx, pp_ext.read_pointer) if res==0
           when LIBUSB::BT_CONTAINER_ID
             res = Call.libusb_get_container_id_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = ContainerId.new(pp_ext.read_pointer) if res==0
+            cap = ContainerId.new(@ctx, pp_ext.read_pointer) if res==0
           else
             # unknown capability -> use generic DeviceCapability
         end
@@ -296,11 +325,6 @@ module LIBUSB
 
     def inspect
       "\#<#{self.class} #{device_capability_types.join(", ")}>"
-    end
-
-    # @private
-    def self.release(ptr)
-      Call.libusb_free_bos_descriptor(ptr)
     end
   end
 end

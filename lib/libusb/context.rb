@@ -133,10 +133,26 @@ module LIBUSB
       @on_pollfd_removed = nil
       @hotplug_callbacks = {}
 
-      def @ctx.unref_context(id)
-        Call.libusb_exit(self)
+      def @ctx.free_context(id)
+        @free_context = true
+        Call.libusb_exit(self) if @refs == 0
       end
-      ObjectSpace.define_finalizer(self, @ctx.method(:unref_context))
+      def @ctx.ref_context
+        @refs += 1
+        self
+      end
+      def @ctx.unref_context
+        @refs -= 1
+        raise "more unref_context than ref_context" if @refs < 0
+        free_context(nil) if @refs == 0 && @free_context
+        self
+      end
+      def @ctx.setref_context
+        @refs = 0
+        @free_context = false
+      end
+      @ctx.setref_context
+      ObjectSpace.define_finalizer(self, @ctx.method(:free_context))
     end
 
     # Deinitialize libusb.
