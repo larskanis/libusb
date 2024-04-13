@@ -181,13 +181,14 @@ module LIBUSB
       # @return [SsCompanion]
       def ss_companion
         ep_comp = FFI::MemoryPointer.new :pointer
+        ctx = device.context.instance_variable_get(:@ctx)
         res = Call.libusb_get_ss_endpoint_companion_descriptor(
-          device.context.instance_variable_get(:@ctx),
+          ctx,
           pointer,
           ep_comp
         )
         LIBUSB.raise_error res, "in libusb_get_ss_endpoint_companion_descriptor" if res!=0
-        SsCompanion.new ep_comp.read_pointer
+        SsCompanion.new ctx, ep_comp.read_pointer
       end
     end
   end
