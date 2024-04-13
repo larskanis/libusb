@@ -228,14 +228,23 @@ module LIBUSB
     #
     # @see Bos::DeviceCapability
     BosTypes = enum :libusb_bos_type, [
-      # Wireless USB device capability
-      :BT_WIRELESS_USB_DEVICE_CAPABILITY, 1,
-      # USB 2.0 extensions
-      :BT_USB_2_0_EXTENSION, 2,
-      # SuperSpeed USB device capability
-      :BT_SS_USB_DEVICE_CAPABILITY, 3,
-      # Container ID type
-      :BT_CONTAINER_ID, 4,
+      :BT_WIRELESS_USB_DEVICE_CAPABILITY, 0x01, # Wireless USB device capability
+      :BT_USB_2_0_EXTENSION, 0x02, # USB 2.0 extensions
+      :BT_SS_USB_DEVICE_CAPABILITY, 0x03, # SuperSpeed USB device capability
+      :BT_CONTAINER_ID, 0x04, # Container ID type
+      :BT_PLATFORM_DESCRIPTOR, 0x05, # Platform descriptor
+      :BT_POWER_DELIVERY_CAPABILITY, 0x06, # Defines the various PD Capabilities of this device
+      :BT_BATTERY_INFO_CAPABILITY, 0x07, # Provides information on each battery supported by the device
+      :BT_PD_CONSUMER_PORT_CAPABILITY, 0x08, # The consumer characteristics of a port on the device
+      :BT_PD_PROVIDER_PORT_CAPABILITY, 0x09, # The provider characteristics of a port on the device
+      :BT_SUPERSPEED_PLUS, 0x0A, # Defines the set of SuperSpeed Plus USB specific device level capabilities
+      :BT_PRECISION_TIME_MEASUREMENT, 0x0B, # Precision Time Measurement (PTM) Capability Descriptor
+      :BT_Wireless_USB_Ext, 0x0C, # Defines the set of Wireless USB 1.1-specific device level capabilities
+      :BT_BILLBOARD, 0x0D, # Billboard capability
+      :BT_AUTHENTICATION, 0x0E, # Authentication Capability Descriptor
+      :BT_BILLBOARD_EX, 0x0F, # Billboard Ex capability
+      :BT_CONFIGURATION_SUMMARY, 0x10, # Summarizes configuration information for a function implemented by the device
+      :BT_FWStatus_Capability, 0x11, # Describes the capability to support FWStatus
     ]
 
     # Since libusb version 1.0.16.
@@ -454,6 +463,8 @@ module LIBUSB
     try_attach_function 'libusb_free_ss_usb_device_capability_descriptor', [:pointer], :void
     try_attach_function 'libusb_get_container_id_descriptor', [:libusb_context, :pointer, :pointer], :int
     try_attach_function 'libusb_free_container_id_descriptor', [:pointer], :void
+    try_attach_function 'libusb_get_platform_descriptor', [:libusb_context, :pointer, :pointer], :int
+    try_attach_function 'libusb_free_platform_descriptor', [:pointer], :void
 
     # int LIBUSB_CALL libusb_wrap_sys_device(libusb_context *ctx, intptr_t sys_dev, libusb_device_handle **dev_handle);
     try_attach_function 'libusb_wrap_sys_device', [:libusb_context, :intptr_t, :pointer], :int
