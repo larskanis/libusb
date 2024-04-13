@@ -39,7 +39,7 @@ module LIBUSB
       end
 
       def inspect
-        "\#<#{self.class} cap: #{bDevCapabilityType} data: #{dev_capability_data.unpack("H*")[0]}>"
+        "\#<#{self.class} cap: #{bDevCapabilityType} data: #{dev_capability_data.unpack1("H*")}>"
       end
 
       # @return [String]  Device Capability data (bLength - 3 bytes)
@@ -234,7 +234,7 @@ module LIBUSB
       end
 
       def inspect
-        "\#<#{self.class} #{container_id.unpack("H*")[0]}>"
+        "\#<#{self.class} #{container_id.unpack1("H*")}>"
       end
     end
 
@@ -287,7 +287,7 @@ module LIBUSB
       end
 
       def inspect
-        "\#<#{self.class} #{platformCapabilityUUID.unpack("H*")[0]} (#{capabilityData.unpack("H*")[0]})>"
+        "\#<#{self.class} #{platformCapabilityUUID.unpack1("H*")} (#{capabilityData.unpack1("H*")})>"
       end
     end
 
