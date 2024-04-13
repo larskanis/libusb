@@ -238,6 +238,59 @@ module LIBUSB
       end
     end
 
+
+    # A structure representing a Platform descriptor.
+    # This descriptor is documented in section 9.6.2.4 of the USB 3.2 specification.
+    class PlatformDescriptor < FFI::Struct
+      include GenericMethods
+
+      layout :bLength, :uint8,
+          :bDescriptorType, :uint8,
+          # Capability type. Will have value
+          # libusb_capability_type::LIBUSB_BT_PLATFORM_DESCRIPTOR
+          # LIBUSB_BT_CONTAINER_ID in this context.
+          :bDevCapabilityType, :uint8,
+          # Reserved field
+          :bReserved, :uint8,
+          # 128 bit UUID
+          :PlatformCapabilityUUID, [:uint8, 16],
+          # Capability data (bLength - 20)
+          :CapabilityData, [:uint8, 0]
+
+      def initialize(ctx, *args)
+        super(*args)
+
+        ptr = pointer
+        def ptr.free_struct(id)
+          Call.libusb_free_platform_descriptor(self)
+          @ctx.unref_context
+        end
+        ptr.instance_variable_set(:@ctx, ctx.ref_context)
+        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+      end
+
+      # Reserved field
+      def bReserved
+        self[:bReserved]
+      end
+
+      # @return [String] 128 bit UUID
+      def platformCapabilityUUID
+        self[:PlatformCapabilityUUID].to_ptr.read_bytes(16)
+      end
+
+      # This is a variable-length field containing data associated with the platform specific capability.
+      # This field may be zero bytes in length.
+      # @return [String]
+      def capabilityData
+        self[:CapabilityData].to_ptr.read_bytes(bLength - 20)
+      end
+
+      def inspect
+        "\#<#{self.class} #{platformCapabilityUUID.unpack("H*")[0]} (#{capabilityData.unpack("H*")[0]})>"
+      end
+    end
+
     def initialize(ctx, *args)
       @ctx = ctx
       super(*args)
@@ -301,6 +354,9 @@ module LIBUSB
           when LIBUSB::BT_CONTAINER_ID
             res = Call.libusb_get_container_id_descriptor(@ctx, cap.pointer, pp_ext)
             cap = ContainerId.new(@ctx, pp_ext.read_pointer) if res==0
+          when LIBUSB::BT_PLATFORM_DESCRIPTOR
+            res = Call.libusb_get_platform_descriptor(@ctx, cap.pointer, pp_ext)
+            cap = PlatformDescriptor.new(@ctx, pp_ext.read_pointer) if res==0
           else
             # unknown capability -> use generic DeviceCapability
         end

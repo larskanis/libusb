@@ -53,6 +53,23 @@ class TestLibusbBos < Minitest::Test
                 :BT_USB_2_0_EXTENSION,
                 :BT_SS_USB_DEVICE_CAPABILITY,
                 :BT_CONTAINER_ID,
+                :BT_WIRELESS_USB_DEVICE_CAPABILITY,
+                :BT_USB_2_0_EXTENSION,
+                :BT_SS_USB_DEVICE_CAPABILITY,
+                :BT_CONTAINER_ID,
+                :BT_PLATFORM_DESCRIPTOR,
+                :BT_POWER_DELIVERY_CAPABILITY,
+                :BT_BATTERY_INFO_CAPABILITY,
+                :BT_PD_CONSUMER_PORT_CAPABILITY,
+                :BT_PD_PROVIDER_PORT_CAPABILITY,
+                :BT_SUPERSPEED_PLUS,
+                :BT_PRECISION_TIME_MEASUREMENT,
+                :BT_Wireless_USB_Ext,
+                :BT_BILLBOARD,
+                :BT_AUTHENTICATION,
+                :BT_BILLBOARD_EX,
+                :BT_CONFIGURATION_SUMMARY,
+                :BT_FWStatus_Capability,
               ], :include?, cap_type
           end
 
@@ -89,6 +106,11 @@ class TestLibusbBos < Minitest::Test
                 assert_equal 4, cap.bDevCapabilityType
                 assert_operator 0, :<=, cap.bReserved
                 assert_operator 16, :==, cap.container_id.bytesize, "container_id should be 16 bytes long"
+
+              when Bos::PlatformDescriptor
+                assert_operator 0, :<=, cap.bReserved
+                assert_operator 16, :==, cap.platformCapabilityUUID.bytesize, "container_id should be 16 bytes long"
+                assert_kind_of String, cap.capabilityData
 
               else
                 refute true, "invalid device capability class"
