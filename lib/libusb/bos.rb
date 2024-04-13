@@ -109,7 +109,7 @@ module LIBUSB
       layout :bLength, :uint8,
           :bDescriptorType, :uint8,
           :bDevCapabilityType, :uint8,
-          :bmAttributes, :uint32,
+          :bmAttributes, :uint8,
           :wSpeedSupported, :uint16,
           :bFunctionalitySupport, :uint8,
           :bU1DevExitLat, :uint8,
