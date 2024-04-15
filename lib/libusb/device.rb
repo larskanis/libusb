@@ -352,7 +352,7 @@ module LIBUSB
     def manufacturer
       return @manufacturer if defined? @manufacturer
       @manufacturer = try_string_descriptor_ascii(self.iManufacturer)
-      @manufacturer.strip! if @manufacturer
+      @manufacturer = @manufacturer.strip if @manufacturer
       @manufacturer
     end
 
@@ -361,7 +361,7 @@ module LIBUSB
     def product
       return @product if defined? @product
       @product = try_string_descriptor_ascii(self.iProduct)
-      @product.strip! if @product
+      @product = @product.strip if @product
       @product
     end
 
@@ -370,7 +370,7 @@ module LIBUSB
     def serial_number
       return @serial_number if defined? @serial_number
       @serial_number = try_string_descriptor_ascii(self.iSerialNumber)
-      @serial_number.strip! if @serial_number
+      @serial_number = @serial_number.strip if @serial_number
       @serial_number
     end
 
