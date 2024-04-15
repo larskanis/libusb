@@ -513,9 +513,11 @@ module LIBUSB
                          &block)
 
       if bmRequestType&ENDPOINT_IN != 0
+        raise ArgumentError, "invalid param :dataOut" unless dataOut.nil?
         dataIn ||= 0
         dataOut = ''
       else
+        raise ArgumentError, "invalid param :dataIn" unless dataIn.nil?
         dataOut ||= ''
       end
 
