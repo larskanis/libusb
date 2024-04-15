@@ -135,7 +135,10 @@ module LIBUSB
 
       def @ctx.free_context(id)
         @free_context = true
-        Call.libusb_exit(self) if @refs == 0
+        if @refs == 0
+          Call.libusb_exit(self)
+          @refs = nil
+        end
       end
       def @ctx.ref_context
         @refs += 1
@@ -151,6 +154,9 @@ module LIBUSB
         @refs = 0
         @free_context = false
       end
+      def @ctx.refs
+        @refs
+      end
       @ctx.setref_context
       ObjectSpace.define_finalizer(self, @ctx.method(:free_context))
     end
@@ -159,7 +165,8 @@ module LIBUSB
     #
     # Should be called after closing all open devices and before your application terminates.
     def exit
-      Call.libusb_exit(@ctx)
+      raise RemainingReferencesError, "#{@ctx.refs} remaining references to LIBUSB::Context" if @ctx.refs.to_i > 0
+      @ctx.free_context nil
     end
 
     # @deprecated Use {Context#set_option} instead using the +:OPTION_LOG_LEVEL+ option.

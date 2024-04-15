@@ -53,6 +53,9 @@ module LIBUSB
     end
   end
 
+  class RemainingReferencesError < Error
+  end
+
   # @private
   ErrorClassForResult = {}
 

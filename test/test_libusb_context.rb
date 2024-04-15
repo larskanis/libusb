@@ -39,6 +39,18 @@ class TestLibusbContext < Minitest::Test
     @c.debug = 0
   end
 
+  def test_left_references
+    @test_devs = @c.devices
+    assert_raises(LIBUSB::RemainingReferencesError) do
+      @c.exit
+    end
+    @c = nil
+  end
+
+  def test_double_exit
+    @c.exit
+  end
+
   def test_log_callback
     skip "only supported on Linux" unless RUBY_PLATFORM=~/linux/
     skip "libusb version older than 1.0.27" if Gem::Version.new(LIBUSB.version) < Gem::Version.new("1.0.27")
