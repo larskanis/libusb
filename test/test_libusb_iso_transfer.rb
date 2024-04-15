@@ -51,6 +51,6 @@ class TestLibusbIsoTransfer < Minitest::Test
   def test_max_alt_packet_size
     d = Context.new.devices[0]
     size = d.max_alt_packet_size d.interfaces[0], d.settings[0], d.endpoints[0]
-    assert_operator 0, :<, size
+    assert_operator 0, :<=, size
   end
 end

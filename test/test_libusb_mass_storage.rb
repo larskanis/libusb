@@ -61,7 +61,7 @@ class TestLibusbMassStorage < Minitest::Test
     dev.close if dev
   end
 
-  def do_transfer(method, args)
+  def do_transfer(method, **args)
     if @asynchron
       stop = false
       transfer = dev.send(method, args) do |tr|
@@ -78,14 +78,14 @@ class TestLibusbMassStorage < Minitest::Test
       end
       transfer.result
     else
-      dev.send(method, args)
+      dev.send(method, **args)
     end
   end
-  def control_transfer(args)
-    do_transfer(:control_transfer, args)
+  def control_transfer(**args)
+    do_transfer(:control_transfer, **args)
   end
-  def bulk_transfer(args)
-    do_transfer(:bulk_transfer, args)
+  def bulk_transfer(**args)
+    do_transfer(:bulk_transfer, **args)
   end
 
   def send_mass_storage_command(cdb, data_length, direction=ENDPOINT_IN)
