@@ -20,6 +20,8 @@ module LIBUSB
   #
   # This descriptor is documented in section 9.6.7 of the USB 3.0 specification. All multiple-byte fields are represented in host-endian format.
   class SsCompanion < FFI::Struct
+    include ContextReference
+
     layout :bLength, :uint8,
         :bDescriptorType, :uint8,
         :bMaxBurst, :uint8,
@@ -29,13 +31,7 @@ module LIBUSB
     def initialize(ctx, *args)
       super(*args)
 
-      ptr = pointer
-      def ptr.free_struct(id)
-        Call.libusb_free_ss_endpoint_companion_descriptor(self)
-        @ctx.unref_context
-      end
-      ptr.instance_variable_set(:@ctx, ctx.ref_context)
-      ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+      register_context(ctx, :libusb_free_ss_endpoint_companion_descriptor)
     end
 
     # Size of this descriptor (in bytes)

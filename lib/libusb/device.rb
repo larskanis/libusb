@@ -21,24 +21,25 @@ module LIBUSB
   # Devices of the system can be obtained with {Context#devices} .
   class Device
     include Comparable
+    include ContextReference
 
     # @return [Context] the context this device belongs to.
     attr_reader :context
 
     def initialize context, pDev
       @context = context
-      def pDev.unref_device(id)
-        Call.libusb_unref_device(self)
-        @ctx.unref_context
-      end
-      pDev.instance_variable_set(:@ctx, context.instance_variable_get(:@ctx).ref_context)
-      ObjectSpace.define_finalizer(self, pDev.method(:unref_device))
-      Call.libusb_ref_device(pDev)
       @pDev = pDev
+      register_context(context.instance_variable_get(:@ctx), :libusb_unref_device)
+      Call.libusb_ref_device(pDev)
 
       @pDevDesc = Call::DeviceDescriptor.new
       res = Call.libusb_get_device_descriptor(@pDev, @pDevDesc)
       LIBUSB.raise_error res, "in libusb_get_device_descriptor" if res!=0
+    end
+
+    # The pointer for ContextReference
+    private def pointer
+      @pDev
     end
 
     # Open the device and obtain a device handle.

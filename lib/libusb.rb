@@ -20,6 +20,7 @@ module LIBUSB
   autoload :VERSION, 'libusb/version_gem'
   autoload :Version, 'libusb/version_struct'
   autoload :Configuration, 'libusb/configuration'
+  autoload :ContextReference, 'libusb/context_reference'
   autoload :DevHandle, 'libusb/dev_handle'
   autoload :Device, 'libusb/device'
   autoload :Endpoint, 'libusb/endpoint'
