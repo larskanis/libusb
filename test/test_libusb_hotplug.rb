@@ -26,7 +26,9 @@ class TestLibusbHotplug < Minitest::Test
   end
 
   def teardown
-    @ctx.exit
+    # No need to release the LIBUSB::Context any longer.
+    # It is cleaned up by the GC.
+    # @ctx.exit
   end
 
   def test_enumerate
