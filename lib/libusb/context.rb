@@ -524,7 +524,7 @@ module LIBUSB
 
       block2 = proc do |ctx, pDevice, event, _user_data|
         raise "internal error: unexpected context" unless @ctx==ctx
-        dev = Device.new @ctx, pDevice
+        dev = Device.new self, pDevice
 
         blres = block.call(dev, event)
 
