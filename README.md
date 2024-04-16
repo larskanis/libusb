@@ -150,6 +150,26 @@ That API is currently proof of concept - see {LIBUSB::Context#eventmachine_regis
 If you're experienced with EventMachine, please leave a comment.
 
 
+Testing LIBUSB gem
+------------------
+
+Libusb for Ruby has a bundled test suite which verifies proper working of many functions of the library.
+Only a small subset of these tests are executed on Github Actions due to the missing USB functions in the CI environments.
+They just verify that the libusb library can be installed and called and that very basic functions are working.
+
+To run the tests against real devices the following procedure should be done:
+
+```sh
+$ # Connect a USB mass strorage device. It is used read-only.
+$ sudo chown $USER /dev/bus/usb/*/*
+$ rake test
+```
+
+While the tests are running a second arbitrary USB device is requested to be connected and shortly after disconnected again.
+There are only 5 seconds timeout for connecting and disconnecting, so that the device should have be ready.
+Some USB mass storage devices are not compatible to the tests, so that it's best to try out different models to find some that doesn't fail.
+
+
 Resources
 ---------
 
