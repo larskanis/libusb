@@ -536,7 +536,7 @@ module LIBUSB
           :wLength, :uint16
     end
 
-    class Transfer < FFI::ManagedStruct
+    class Transfer < FFI::Struct
       layout :dev_handle, :libusb_device_handle,
         :flags, :uint8,
         :endpoint, :uchar,
@@ -550,8 +550,19 @@ module LIBUSB
         :buffer, :pointer,
         :num_iso_packets, :int
 
-      def self.release(ptr)
-        Call.libusb_free_transfer(ptr)
+      def initialize(*)
+        super
+
+        ptr = pointer
+        def ptr.free_struct(id)
+          Call.libusb_free_transfer(self)
+          return unless @ctx
+          @ctx.unref_context
+        end
+        # The ctx pointer is not yet assigned.
+        # It happens at LIBUSB::Transfer#dev_handle= later on.
+        ptr.instance_variable_set(:@ctx, nil)
+        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
       end
     end
 
