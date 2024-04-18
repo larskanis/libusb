@@ -62,6 +62,10 @@ class Context
     @eventmachine_attached_fds.each do |fd, watcher|
       watcher.detach
     end
+
+    # Deregister callbacks
+    on_pollfd_added
+    on_pollfd_removed
   end
 
   class EMPollfdHandler < EventMachine::Connection

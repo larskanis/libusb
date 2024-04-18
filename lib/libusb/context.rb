@@ -136,18 +136,27 @@ module LIBUSB
       def @ctx.free_context(id)
         @free_context = true
         if @refs == 0
+          # puts "final libusb_exit #{to_i} #{id} #{caller[0]}"
+          if id # Is Context is about to be garbage collected?
+            # In GC mode there's no way to call the registered collbacks, since they are GC'ed as well.
+            # So disable callbacks now.
+            Call.libusb_set_log_cb(self, nil, LOG_CB_CONTEXT)
+            Call.libusb_set_pollfd_notifiers(self, nil, nil, nil)
+          end
           Call.libusb_exit(self)
           @refs = nil
         end
       end
       def @ctx.ref_context
         @refs += 1
+        # puts "ref_context #{to_i} #{@refs} #{caller[1]}"
         self
       end
       def @ctx.unref_context
         @refs -= 1
+        # puts "unref_context #{to_i} #{@refs}"
         raise "more unref_context than ref_context" if @refs < 0
-        free_context(nil) if @refs == 0 && @free_context
+        free_context(true) if @refs == 0 && @free_context
         self
       end
       def @ctx.setref_context
@@ -175,13 +184,15 @@ module LIBUSB
     end
 
     private def wrap_log_cb(block, mode)
-      cb_proc = proc do |p_ctx, lev, str|
-        ctx = case p_ctx
-          when FFI::Pointer::NULL then nil
-          when @ctx then self
-          else p_ctx.to_i
+      if block
+        cb_proc = proc do |p_ctx, lev, str|
+          ctx = case p_ctx
+            when FFI::Pointer::NULL then nil
+            when @ctx then self
+            else p_ctx.to_i
+          end
+          block.call(ctx, lev, str)
         end
-        block.call(ctx, lev, str)
       end
 
       # Avoid garbage collection of the proc, since only the function pointer is given to libusb
@@ -191,6 +202,7 @@ module LIBUSB
       if Call::LogCbMode.to_native(mode, nil) & LOG_CB_CONTEXT != 0
         @log_cb_proc = cb_proc
       end
+      cb_proc
     end
 
     # Set a context related libusb option from the {Call::Options option list}.
@@ -238,6 +250,8 @@ module LIBUSB
       # is defined then global callback function will never be called.
       # If ENABLE_DEBUG_LOGGING is defined then per context callback function will
       # never be called.
+      #
+      # To disable the log callback, execute set_log_cb without a block.
       #
       # Available since libusb-1.0.23, LIBUSB_API_VERSION >= 0x01000107
       #
@@ -447,14 +461,18 @@ module LIBUSB
     # This block will be invoked for every new file descriptor that
     # libusb uses as an event source.
     #
+    # To disable the notification callback, execute on_pollfd_added without a block.
+    #
     # Note that file descriptors may have been added even before you register these
     # notifiers (e.g. at {Context#initialize} time).
     #
     # @yieldparam [Pollfd] pollfd  The added file descriptor is yielded to the block
     def on_pollfd_added &block
-      @on_pollfd_added = proc do |fd, events, _|
-        pollfd = Pollfd.new fd, events
-        block.call pollfd
+      @on_pollfd_added = if block
+        proc do |fd, events, _|
+          pollfd = Pollfd.new fd, events
+          block.call pollfd
+        end
       end
       Call.libusb_set_pollfd_notifiers @ctx, @on_pollfd_added, @on_pollfd_removed, nil
     end
@@ -464,6 +482,8 @@ module LIBUSB
     # This block will be invoked for every removed file descriptor that
     # libusb uses as an event source.
     #
+    # To disable the notification callback, execute on_pollfd_removed without a block.
+    #
     # Note that the removal notifier may be called during {Context#exit}
     # (e.g. when it is closing file descriptors that were opened and added to the poll
     # set at {Context#initialize} time). If you don't want this, overwrite the notifier
@@ -471,9 +491,11 @@ module LIBUSB
     #
     # @yieldparam [Pollfd] pollfd  The removed file descriptor is yielded to the block
     def on_pollfd_removed &block
-      @on_pollfd_removed = proc do |fd, _|
-        pollfd = Pollfd.new fd
-        block.call pollfd
+      @on_pollfd_removed = if block
+        proc do |fd, _|
+          pollfd = Pollfd.new fd
+          block.call pollfd
+        end
       end
       Call.libusb_set_pollfd_notifiers @ctx, @on_pollfd_added, @on_pollfd_removed, nil
     end

@@ -63,12 +63,14 @@ module LIBUSB
     end
 
     private def wrap_log_cb(block, mode)
-      cb_proc = proc do |p_ctx, lev, str|
-        ctx = case p_ctx
-          when FFI::Pointer::NULL then nil
-          else p_ctx.to_i
+      if block
+        cb_proc = proc do |p_ctx, lev, str|
+          ctx = case p_ctx
+            when FFI::Pointer::NULL then nil
+            else p_ctx.to_i
+          end
+          block.call(ctx, lev, str)
         end
-        block.call(ctx, lev, str)
       end
 
       # Avoid garbage collection of the proc, since only the function pointer is given to libusb
@@ -78,6 +80,7 @@ module LIBUSB
       if Call::LogCbMode.to_native(mode, nil) & LOG_CB_CONTEXT != 0
         @log_cb_context_proc = cb_proc
       end
+      cb_proc
     end
 
     private def option_args_to_ffi(option, args, ctx)

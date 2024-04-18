@@ -354,12 +354,10 @@ module LIBUSB
 
       # Set the context log callback functon.
       #
-      # Set the log callback function either on a context or globally. This
-      # option must be provided an argument of type libusb_log_cb. Using this
-      # option with a NULL context is equivalent to calling libusb_set_log_cb
-      # with mode LIBUSB_LOG_CB_GLOBAL. Using it with a non-NULL context is
-      # equivalent to calling libusb_set_log_cb with mode
-      # LIBUSB_LOG_CB_CONTEXT.
+      # Set the log callback function either on a context or globally.
+      # This option must be provided a Proc argument or +nil+ to remove the callback.
+      # Using this option with a +nil+ context is equivalent to calling libusb_set_log_cb with mode :LOG_CB_GLOBAL.
+      # Using it with a non- +nil+ context is equivalent to calling libusb_set_log_cb with mode :LOG_CB_CONTEXT.
       :OPTION_LOG_CB, 3,
 
       :OPTION_MAX, 4,
@@ -373,7 +371,7 @@ module LIBUSB
 
     # /** \ingroup libusb_lib
     #  * Callback function for handling log messages.
-    #  * \param ctx the context which is related to the log message, or NULL if it
+    #  * \param ctx the context which is related to the log message, or +nil+ if it
     #  * is a global log message
     #  * \param level the log level, see \ref libusb_log_level for a description
     #  * \param str the log message
