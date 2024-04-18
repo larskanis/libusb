@@ -55,6 +55,7 @@ class TestLibusbContext < Minitest::Test
     skip "only supported on Linux" unless RUBY_PLATFORM=~/linux/
     skip "libusb version older than 1.0.27" if Gem::Version.new(LIBUSB.version) < Gem::Version.new("1.0.27")
 
+    LIBUSB.set_options OPTION_LOG_CB: [nil], OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_NONE
     begin
       called = Hash.new { |h, k| h[k] = [] }
       LIBUSB.set_options OPTION_LOG_CB: proc{|*a| called[:global] << a }, OPTION_LOG_LEVEL: LIBUSB::LOG_LEVEL_DEBUG
@@ -66,7 +67,7 @@ class TestLibusbContext < Minitest::Test
 
       #pp called
       assert_nil called[:global][0][0]
-      assert_equal :LOG_LEVEL_DEBUG, called[:global][0][1]
+      assert_equal :LOG_LEVEL_DEBUG, called[:global][0][1], called[:global][0][2]
       assert_match(/libusb_init_context/, called[:global].join)
       assert_match(/no device discovery/, called[:global].join)
 
