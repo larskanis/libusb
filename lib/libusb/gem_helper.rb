@@ -66,7 +66,7 @@ module LIBUSB
       yield if block_given?
     rescue
       Bundler.ui.error "Untagging #{version_tag} due to error."
-      sh_with_code "git tag -d #{version_tag}"
+      sh_with_status %W[git tag -d #{version_tag}]
       raise
     end
 
