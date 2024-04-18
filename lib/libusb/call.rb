@@ -354,12 +354,10 @@ module LIBUSB
 
       # Set the context log callback functon.
       #
-      # Set the log callback function either on a context or globally. This
-      # option must be provided an argument of type libusb_log_cb. Using this
-      # option with a NULL context is equivalent to calling libusb_set_log_cb
-      # with mode LIBUSB_LOG_CB_GLOBAL. Using it with a non-NULL context is
-      # equivalent to calling libusb_set_log_cb with mode
-      # LIBUSB_LOG_CB_CONTEXT.
+      # Set the log callback function either on a context or globally.
+      # This option must be provided a Proc argument or +nil+ to remove the callback.
+      # Using this option with a +nil+ context is equivalent to calling libusb_set_log_cb with mode :LOG_CB_GLOBAL.
+      # Using it with a non- +nil+ context is equivalent to calling libusb_set_log_cb with mode :LOG_CB_CONTEXT.
       :OPTION_LOG_CB, 3,
 
       :OPTION_MAX, 4,
@@ -373,7 +371,7 @@ module LIBUSB
 
     # /** \ingroup libusb_lib
     #  * Callback function for handling log messages.
-    #  * \param ctx the context which is related to the log message, or NULL if it
+    #  * \param ctx the context which is related to the log message, or +nil+ if it
     #  * is a global log message
     #  * \param level the log level, see \ref libusb_log_level for a description
     #  * \param str the log message
@@ -538,7 +536,7 @@ module LIBUSB
           :wLength, :uint16
     end
 
-    class Transfer < FFI::ManagedStruct
+    class Transfer < FFI::Struct
       layout :dev_handle, :libusb_device_handle,
         :flags, :uint8,
         :endpoint, :uchar,
@@ -552,8 +550,19 @@ module LIBUSB
         :buffer, :pointer,
         :num_iso_packets, :int
 
-      def self.release(ptr)
-        Call.libusb_free_transfer(ptr)
+      def initialize(*)
+        super
+
+        ptr = pointer
+        def ptr.free_struct(id)
+          Call.libusb_free_transfer(self)
+          return unless @ctx
+          @ctx.unref_context
+        end
+        # The ctx pointer is not yet assigned.
+        # It happens at LIBUSB::Transfer#dev_handle= later on.
+        ptr.instance_variable_set(:@ctx, nil)
+        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
       end
     end
 

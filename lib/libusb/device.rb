@@ -21,24 +21,25 @@ module LIBUSB
   # Devices of the system can be obtained with {Context#devices} .
   class Device
     include Comparable
+    include ContextReference
 
     # @return [Context] the context this device belongs to.
     attr_reader :context
 
     def initialize context, pDev
       @context = context
-      def pDev.unref_device(id)
-        Call.libusb_unref_device(self)
-        @ctx.unref_context
-      end
-      pDev.instance_variable_set(:@ctx, context.instance_variable_get(:@ctx).ref_context)
-      ObjectSpace.define_finalizer(self, pDev.method(:unref_device))
-      Call.libusb_ref_device(pDev)
       @pDev = pDev
+      register_context(context.instance_variable_get(:@ctx), :libusb_unref_device)
+      Call.libusb_ref_device(pDev)
 
       @pDevDesc = Call::DeviceDescriptor.new
       res = Call.libusb_get_device_descriptor(@pDev, @pDevDesc)
       LIBUSB.raise_error res, "in libusb_get_device_descriptor" if res!=0
+    end
+
+    # The pointer for ContextReference
+    private def pointer
+      @pDev
     end
 
     # Open the device and obtain a device handle.
@@ -351,7 +352,7 @@ module LIBUSB
     def manufacturer
       return @manufacturer if defined? @manufacturer
       @manufacturer = try_string_descriptor_ascii(self.iManufacturer)
-      @manufacturer.strip! if @manufacturer
+      @manufacturer = @manufacturer.strip if @manufacturer
       @manufacturer
     end
 
@@ -360,7 +361,7 @@ module LIBUSB
     def product
       return @product if defined? @product
       @product = try_string_descriptor_ascii(self.iProduct)
-      @product.strip! if @product
+      @product = @product.strip if @product
       @product
     end
 
@@ -369,7 +370,7 @@ module LIBUSB
     def serial_number
       return @serial_number if defined? @serial_number
       @serial_number = try_string_descriptor_ascii(self.iSerialNumber)
-      @serial_number.strip! if @serial_number
+      @serial_number = @serial_number.strip if @serial_number
       @serial_number
     end
 

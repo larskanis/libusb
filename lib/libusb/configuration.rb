@@ -18,6 +18,7 @@ require 'libusb/call'
 module LIBUSB
   class Configuration < FFI::Struct
     include Comparable
+    include ContextReference
 
     layout :bLength, :uint8,
         :bDescriptorType, :uint8,
@@ -109,13 +110,7 @@ module LIBUSB
       @device = device
       super(*args)
 
-      ptr = pointer
-      def ptr.free_config(id)
-        Call.libusb_free_config_descriptor(self)
-        @ctx.unref_context
-      end
-      ptr.instance_variable_set(:@ctx, device.context.instance_variable_get(:@ctx).ref_context)
-      ObjectSpace.define_finalizer(self, ptr.method(:free_config))
+      register_context(device.context.instance_variable_get(:@ctx), :libusb_free_config_descriptor)
     end
 
     # @return [Device] the device this configuration belongs to.

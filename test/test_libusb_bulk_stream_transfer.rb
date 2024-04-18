@@ -21,11 +21,18 @@ class TestLibusbBulkStreamTransfer < Minitest::Test
 
   def setup
     c = Context.new
-    begin
-      @dev = c.devices.first.open
-    rescue LIBUSB::ERROR_ACCESS
-      @dev = nil
-      skip "error opening device"
+    c.devices.each do |dev|
+      if [:SPEED_SUPER, :SPEED_SUPER_PLUS].include?(dev.device_speed)
+        dev.endpoints.each do |ep|
+          if ep.transfer_type == :bulk
+            ss = ep.ss_companion
+            if ss.bmAttributes & 0x1f > 0
+              @dev = dev.open
+              break
+            end
+          end
+        end
+      end
     end
   end
 
@@ -34,17 +41,21 @@ class TestLibusbBulkStreamTransfer < Minitest::Test
   end
 
   def test_alloc_streams
-    assert_raises(ERROR_NOT_SUPPORTED, "TODO: test with a OS that supports bulk streams and against a real device") do
-      nr_allocated = @dev.alloc_streams( 2, @dev.device.endpoints )
-    end
+    skip "no device found with bulk stream support" unless @dev
 
-    assert_raises(ERROR_NOT_SUPPORTED) do
-      @dev.free_streams( [0x01,0x82] )
-    end
+    nr_allocated = @dev.alloc_streams( 2, @dev.device.endpoints )
+    assert_equal 2, nr_allocated
+
+    # TODO: test with a OS that supports bulk streams and against a real device
+
+    @dev.free_streams( [0x01,0x82] )
   end
 
   def test_bulk_stream_transfer
-    tr = BulkStreamTransfer.new dev_handle: @dev, stream_id: 123, buffer: ' '*100
+    c = Context.new
+    dev = c.devices.first.open
+    tr = BulkStreamTransfer.new dev_handle: dev, stream_id: 123, buffer: ' '*100
     assert_equal 123, tr.stream_id, "stream_id should match"
+    dev.close
   end
 end

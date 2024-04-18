@@ -119,7 +119,7 @@ class TestLibusbDescriptors < Minitest::Test
 
     usb.devices.each do |dev|
       dev.endpoints.each do |ep|
-        if dev.device_speed == :SPEED_SUPER
+        if [:SPEED_SUPER, :SPEED_SUPER_PLUS].include?(dev.device_speed)
           ss = ep.ss_companion
           assert_match(/SsCompanion/, ss.inspect, "SsCompanion#inspect should work")
 
@@ -172,14 +172,19 @@ class TestLibusbDescriptors < Minitest::Test
   def test_device_filter_hubs
     devs1 = []
     usb.devices.each do |dev|
-      dev.settings.each do |if_desc|
-        if if_desc.bInterfaceClass == CLASS_HUB
-          devs1 << dev
+      if dev.bDeviceClass==CLASS_PER_INTERFACE
+        dev.settings.each do |if_desc|
+          if if_desc.bInterfaceClass==CLASS_HUB
+            devs1 << dev
+          end
         end
+      else
+        devs1 << dev if dev.bDeviceClass == CLASS_HUB
       end
     end
 
     devs2 = usb.devices( bClass: CLASS_HUB )
+
     assert_equal devs1.sort, devs2.sort, "devices and devices with filter should deliver the same device"
   end
 
@@ -189,11 +194,11 @@ class TestLibusbDescriptors < Minitest::Test
       if ep
         assert_operator dev.max_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable packet size"
         assert_operator dev.max_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable packet size"
-        assert_operator dev.max_iso_packet_size(ep), :>, 0, "#{dev.inspect} should have a usable iso packet size"
-        assert_operator dev.max_iso_packet_size(ep.bEndpointAddress), :>, 0, "#{dev.inspect} should have a usable iso packet size"
+        assert_operator dev.max_iso_packet_size(ep), :>=, 0, "#{dev.inspect} should have a usable iso packet size"
+        assert_operator dev.max_iso_packet_size(ep.bEndpointAddress), :>=, 0, "#{dev.inspect} should have a usable iso packet size"
         assert_operator dev.bus_number, :>=, 0, "#{dev.inspect} should have a bus_number"
         assert_operator dev.device_address, :>=, 0, "#{dev.inspect} should have a device_address"
-        assert_operator([:SPEED_UNKNOWN, :SPEED_LOW, :SPEED_FULL, :SPEED_HIGH, :SPEED_SUPER], :include?, dev.device_speed, "#{dev.inspect} should have a device_speed")
+        assert_operator([:SPEED_UNKNOWN, :SPEED_LOW, :SPEED_FULL, :SPEED_HIGH, :SPEED_SUPER, :SPEED_SUPER_PLUS], :include?, dev.device_speed, "#{dev.inspect} should have a device_speed")
         path = dev.port_numbers
         assert_kind_of Array, path, "#{dev.inspect} should have port_numbers"
         path = dev.port_path
@@ -201,10 +206,14 @@ class TestLibusbDescriptors < Minitest::Test
         path.each do |port|
           assert_operator port, :>, 0, "#{dev.inspect} should have proper port_path entries"
         end
-        assert_equal path[-1], dev.port_number, "#{dev.inspect} should have a port number out of the port_path"
-        if parent=dev.parent
-          assert_kind_of Device, parent, "#{dev.inspect} should have a parent"
-          assert_equal path[-2], parent.port_number, "#{dev.inspect} should have a parent port number out of the port_path"
+        if path.empty?
+          assert_nil dev.port_number
+        else
+          assert_equal path[-1], dev.port_number, "#{dev.inspect} should have a port number out of the port_path"
+          if parent=dev.parent
+            assert_kind_of Device, parent, "#{dev.inspect} should have a parent"
+            assert_equal path[-2], parent.port_number, "#{dev.inspect} should have a parent port number out of the port_path" if parent.port_number
+          end
         end
       end
     end

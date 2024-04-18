@@ -68,6 +68,7 @@ module LIBUSB
     # All multiple-byte fields are represented in host-endian format.
     class Usb20Extension < FFI::Struct
       include GenericMethods
+      include ContextReference
 
       layout :bLength, :uint8,
           :bDescriptorType, :uint8,
@@ -77,13 +78,7 @@ module LIBUSB
       def initialize(ctx, *args)
         super(*args)
 
-        ptr = pointer
-        def ptr.free_struct(id)
-          Call.libusb_free_usb_2_0_extension_descriptor(self)
-          @ctx.unref_context
-        end
-        ptr.instance_variable_set(:@ctx, ctx.ref_context)
-        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+        register_context(ctx, :libusb_free_usb_2_0_extension_descriptor)
       end
 
       # Bitmap encoding of supported device level features.
@@ -112,6 +107,7 @@ module LIBUSB
     # All multiple-byte fields are represented in host-endian format.
     class SsUsbDeviceCapability < FFI::Struct
       include GenericMethods
+      include ContextReference
 
       layout :bLength, :uint8,
           :bDescriptorType, :uint8,
@@ -125,13 +121,7 @@ module LIBUSB
       def initialize(ctx, *args)
         super(*args)
 
-        ptr = pointer
-        def ptr.free_struct(id)
-          Call.libusb_free_ss_usb_device_capability_descriptor(self)
-          @ctx.unref_context
-        end
-        ptr.instance_variable_set(:@ctx, ctx.ref_context)
-        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+        register_context(ctx, :libusb_free_ss_usb_device_capability_descriptor)
       end
 
       # Bitmap encoding of supported device level features.
@@ -204,6 +194,7 @@ module LIBUSB
     # All multiple-byte fields, except UUIDs, are represented in host-endian format.
     class ContainerId < FFI::Struct
       include GenericMethods
+      include ContextReference
 
       layout :bLength, :uint8,
           :bDescriptorType, :uint8,
@@ -214,13 +205,7 @@ module LIBUSB
       def initialize(ctx, *args)
         super(*args)
 
-        ptr = pointer
-        def ptr.free_struct(id)
-          Call.libusb_free_container_id_descriptor(self)
-          @ctx.unref_context
-        end
-        ptr.instance_variable_set(:@ctx, ctx.ref_context)
-        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+        register_context(ctx, :libusb_free_container_id_descriptor)
       end
 
       # Reserved field
@@ -243,6 +228,7 @@ module LIBUSB
     # This descriptor is documented in section 9.6.2.4 of the USB 3.2 specification.
     class PlatformDescriptor < FFI::Struct
       include GenericMethods
+      include ContextReference
 
       layout :bLength, :uint8,
           :bDescriptorType, :uint8,
@@ -260,13 +246,7 @@ module LIBUSB
       def initialize(ctx, *args)
         super(*args)
 
-        ptr = pointer
-        def ptr.free_struct(id)
-          Call.libusb_free_platform_descriptor(self)
-          @ctx.unref_context
-        end
-        ptr.instance_variable_set(:@ctx, ctx.ref_context)
-        ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+        register_context(ctx, :libusb_free_platform_descriptor)
       end
 
       # Reserved field
@@ -291,17 +271,13 @@ module LIBUSB
       end
     end
 
+    include ContextReference
+
     def initialize(ctx, *args)
       @ctx = ctx
       super(*args)
 
-      ptr = pointer
-      def ptr.free_struct(id)
-        Call.libusb_free_bos_descriptor(self)
-        @ctx.unref_context
-      end
-      ptr.instance_variable_set(:@ctx, ctx.ref_context)
-      ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
+      register_context(ctx, :libusb_free_bos_descriptor)
     end
 
     layout :bLength, :uint8,

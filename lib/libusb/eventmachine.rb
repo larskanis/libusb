@@ -62,6 +62,10 @@ class Context
     @eventmachine_attached_fds.each do |fd, watcher|
       watcher.detach
     end
+
+    # Deregister callbacks
+    on_pollfd_added
+    on_pollfd_removed
   end
 
   class EMPollfdHandler < EventMachine::Connection
@@ -118,7 +122,7 @@ class DevHandle
     include EM::Deferrable
 
     def initialize(opts, dev_handle, transfer_method)
-      dev_handle.send(transfer_method, opts) do |res|
+      dev_handle.send(transfer_method, **opts) do |res|
         EM.next_tick do
           if res.kind_of?(LIBUSB::Error)
             fail res
@@ -134,7 +138,7 @@ class DevHandle
   #
   # @see Context#eventmachine_register
   #   DevHandle#interrupt_transfer
-  def eventmachine_interrupt_transfer(opts={})
+  def eventmachine_interrupt_transfer(**opts)
     eventmachine_transfer(opts, :interrupt_transfer)
   end
 
@@ -151,7 +155,7 @@ class DevHandle
   #
   # @see Context#eventmachine_register
   #   DevHandle#bulk_transfer
-  def eventmachine_bulk_transfer(opts={})
+  def eventmachine_bulk_transfer(**opts)
     eventmachine_transfer(opts, :bulk_transfer)
   end
 
@@ -171,7 +175,7 @@ class DevHandle
   #
   # @see Context#eventmachine_register
   #   DevHandle#control_transfer
-  def eventmachine_control_transfer(opts={})
+  def eventmachine_control_transfer(**opts)
     eventmachine_transfer(opts, :control_transfer)
   end
 
