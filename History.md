@@ -1,3 +1,41 @@
+0.7.0 / 2024-04-18
+------------------
+
+Added:
+* Garbage collect LIBUSB::Context objects. #47
+  Context objects were intentionally not garbage collected previously, since it led to segfauls, when the context was freed before other libusb objects.
+  Now refcounting all objects bound to a particular Context ensures that the underlying libusb context is always freed at last, avoiding any segfaults.
+  Registered log callback and pollfd callbacks are disabled before garbage collecting LIBUSB::Context.
+* Cancel USB transfers on any exceptions not only LIBUSB::Error, but also Interrupt or IRB::Abort, etc.
+  Otherwise incomplete transfers lead to LIBUSB::ERROR_BUSY at the next command.
+* Update Windows binary support for ruby up to 3.3.x
+* Update bundled libusb version to 1.0.27.
+* Add support for new functions of libusb-1.0.27
+  They are:
+  - libusb_init_context
+  - libusb_set_log_cb
+  - libusb_wrap_sys_device
+* Add global Libusb.set_option and Libusb.set_options . #42
+* Add LIBUSB::Device.max_alt_packet_size. #42
+  Introduced in libusb-1.0.27 as libusb_get_max_alt_packet_size()
+* Add BOS platform descriptor introduced in libusb-1.0.27. #49
+* Add enums for all BOS descripors of the USB-3.2-V1.1 spec. #49
+
+Changed:
+* Set minimum Ruby version requirement to 2.5.0.
+* Fix a circular reference in ZeroCopyMemory.
+  This circular reference blocked all objects referenced by a LIBUSB::Transfer to be released by the garbage collector.
+* Make ZeroCopyMemory an opt-in rather then enforcing it
+  In therory libusb_dev_mem_alloc shouldn't provide a pointer unless zero-copy-memory is supported by the linux kernel.
+  But in practice this has been a repeating cause of issues, since some kernels don't handle these transfers.
+  So it's better to enable it on request only.
+  For instance older raspberry pi kernels didn't handle zero-copy-memory.
+* Fix struct member size in Bos::SsUsbDeviceCapability. #48
+  The bmAttributes member is defined as uint8_t not uint32_t.
+* Fix context reference in device of hotplug notification callback.
+* Deregister pollfd callbacks in eventmachine_unregister.
+
+
 0.6.4 / 2018-05-05
 ------------------
 
