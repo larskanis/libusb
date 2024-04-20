@@ -1,3 +1,11 @@
+0.7.1 / 2024-04-20
+------------------
+
+Changed:
+* Fix unreferencing LIBUSB::Context from Call::Transfer.
+  This prevented freeing of Context objects, as soon as a transfer was executed.
+
+
 0.7.0 / 2024-04-18
 ------------------
 
