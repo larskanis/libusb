@@ -52,8 +52,8 @@ CrossLibraries = [
   ['x86-mingw32', 'i686-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw32', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw-ucrt', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
-  ['x86-linux', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
-  ['x86_64-linux', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
+  # ['x86-linux', 'i686-linux-gnu', 'lib/libusb-1.0.so'],
+  # ['x86_64-linux', 'x86_64-linux-gnu', 'lib/libusb-1.0.so'],
 ].map do |ruby_platform, host_platform, libusb_dll|
   LIBUSB::CrossLibrary.new ruby_platform, host_platform, libusb_dll
 end
