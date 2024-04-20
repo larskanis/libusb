@@ -63,7 +63,7 @@ module LIBUSB
       # Now that the transfer is bound to a DevHandle, it must be registered in the Context.
       # This ensures that the Call::Transfer is freed before libusb_exit, avoiding warnings about still referenced devices.
       ctx = dev.device.context.instance_variable_get(:@ctx)
-      @transfer.instance_variable_set(:@ctx, ctx.ref_context)
+      @transfer.pointer.instance_variable_set(:@ctx, ctx.ref_context)
     end
 
     # The handle for the device to communicate with.
