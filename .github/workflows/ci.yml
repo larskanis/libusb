@@ -28,8 +28,8 @@ jobs:
           - x86-mingw32
           - x64-mingw-ucrt
           - x64-mingw32
-          - x86-linux
-          - x86_64-linux
+          # - x86-linux
+          # - x86_64-linux
 
     runs-on: ubuntu-latest
     env:
@@ -72,12 +72,12 @@ jobs:
           - os: windows
             ruby: "3.3"
             platform: x64-mingw-ucrt
-          - os: ubuntu
-            ruby: "2.5"
-            platform: x86_64-linux
-          - os: ubuntu
-            ruby: "3.3"
-            platform: x86_64-linux
+          # - os: ubuntu
+          #   ruby: "2.5"
+          #   platform: x86_64-linux
+          # - os: ubuntu
+          #   ruby: "3.3"
+          #   platform: x86_64-linux
 
     runs-on: ${{ matrix.os }}-latest
     steps:
