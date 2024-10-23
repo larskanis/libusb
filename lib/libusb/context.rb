@@ -140,7 +140,9 @@ module LIBUSB
           if id # Is Context is about to be garbage collected?
             # In GC mode there's no way to call the registered collbacks, since they are GC'ed as well.
             # So disable callbacks now.
-            Call.libusb_set_log_cb(self, nil, LOG_CB_CONTEXT)
+            if Call.respond_to?(:libusb_set_log_cb)
+              Call.libusb_set_log_cb(self, nil, LOG_CB_CONTEXT)
+            end
             Call.libusb_set_pollfd_notifiers(self, nil, nil, nil)
           end
           Call.libusb_exit(self)
