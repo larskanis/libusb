@@ -1,3 +1,11 @@
+0.7.2 / 2024-10-23
+------------------
+
+Changed:
+* Call libusb_set_log_cb only when available. #51
+  This was a regression leading to a crash on FreeBSD-14.1.
+
+
 0.7.1 / 2024-04-20
 ------------------
 
