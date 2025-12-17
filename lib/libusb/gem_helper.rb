@@ -14,6 +14,7 @@
 # along with Libusb for Ruby.  If not, see <http://www.gnu.org/licenses/>.
 
 require "bundler/gem_helper"
+require 'ostruct'
 
 module LIBUSB
   class GemHelper < Bundler::GemHelper
