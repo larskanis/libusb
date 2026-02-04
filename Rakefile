@@ -38,7 +38,7 @@ task :gemfile_libusb_gem do
 end
 
 task :test do
-  sh "ruby -w -W2 -I.:lib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
+  sh "ruby -w -W2 -I. -Ilib -e \"#{Dir["test/test_*.rb"].map{|f| "require '#{f}';"}.join}\" -- -v"
 end
 task :default => :test
 
