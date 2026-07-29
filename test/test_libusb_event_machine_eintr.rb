@@ -30,6 +30,7 @@ class TestLibusbEventMachineEintr < Minitest::Test
 
   def setup
     @context = Context.new
+    skip "libusb pollfd API not available on this platform" unless @context.pollfds&.any?
   end
 
   # The callback the pollfd handler invokes must swallow ERROR_INTERRUPTED and
@@ -41,27 +42,8 @@ class TestLibusbEventMachineEintr < Minitest::Test
       raise LIBUSB::ERROR_INTERRUPTED
     end
 
-    survived = false
-    EventMachine.run do
-      @context.eventmachine_register
-      conns = @context.instance_variable_get(:@eventmachine_attached_fds)
-
-      if conns.nil? || conns.empty?
-        @context.eventmachine_unregister
-        EventMachine.stop
-        skip "no libusb pollfds on this platform"
-      end
-
-      # This is exactly what EMPollfdHandler#notify_readable does.
-      conns.each_value(&:need_handle_events)
-
-      survived = EventMachine.reactor_running?
-      @context.eventmachine_unregister
-      EventMachine.stop
-    end
-
+    assert dispatch_pollfd_events, "reactor must stay up after ERROR_INTERRUPTED"
     assert_operator interrupts, :>=, 1, "handle_events should have been called"
-    assert survived, "reactor must stay up after ERROR_INTERRUPTED"
   end
 
   # Only ERROR_INTERRUPTED is transient. Every other libusb error must still
@@ -71,23 +53,29 @@ class TestLibusbEventMachineEintr < Minitest::Test
       raise LIBUSB::ERROR_NO_DEVICE
     end
 
-    assert_raises(LIBUSB::ERROR_NO_DEVICE) do
-      EventMachine.run do
-        @context.eventmachine_register
-        conns = @context.instance_variable_get(:@eventmachine_attached_fds)
+    assert_raises(LIBUSB::ERROR_NO_DEVICE) { dispatch_pollfd_events }
+  end
 
-        if conns.nil? || conns.empty?
-          @context.eventmachine_unregister
-          EventMachine.stop
-          skip "no libusb pollfds on this platform"
-        end
+  private
 
-        begin
-          conns.each_value(&:need_handle_events)
-        ensure
-          EventMachine.stop
-        end
+  # Run the reactor, register libusb's pollfds with it and invoke the resulting
+  # callbacks exactly as EMPollfdHandler#notify_readable does. Returns whether
+  # the reactor was still running once they had been dispatched.
+  def dispatch_pollfd_events
+    reactor_alive = false
+
+    EventMachine.run do
+      @context.eventmachine_register
+
+      begin
+        @context.instance_variable_get(:@eventmachine_attached_fds).each_value(&:need_handle_events)
+        reactor_alive = EventMachine.reactor_running?
+      ensure
+        @context.eventmachine_unregister
+        EventMachine.stop
       end
     end
+
+    reactor_alive
   end
 end
