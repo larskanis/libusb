@@ -52,7 +52,12 @@ class Context
       # Libusb pollfd API is not available on this platform.
       # Use simple polling timer, instead:
       EventMachine.add_periodic_timer(0.01) do
-        @eventmachine_timer = self.handle_events 0
+        begin
+          @eventmachine_timer = self.handle_events 0
+        rescue ERROR_INTERRUPTED
+          # Interrupted by a signal; nothing was handled. The next tick of this
+          # periodic timer retries. See the pollfd callback below.
+        end
       end
     end
   end
@@ -98,7 +103,18 @@ class Context
         @eventmachine_timer = nil
       end
 
-      self.handle_events 0
+      begin
+        self.handle_events 0
+      rescue ERROR_INTERRUPTED
+        # poll() was interrupted by a signal, so no events were handled. This
+        # is transient and retryable: the descriptor stays watched and the next
+        # readable/writable event re-enters this callback. Without this rescue
+        # the exception unwinds out of EventMachine.run and takes the whole
+        # reactor (and typically the process) down. Same handling as the
+        # synchronous transfer path in transfer.rb.
+        next
+      end
+
       timeout = self.next_timeout
 #         puts "libusb new timeout: #{timeout.inspect}"
       if timeout
