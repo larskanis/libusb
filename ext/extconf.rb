@@ -70,6 +70,7 @@ def build_bundled_libusb(have_udev)
 
   require_relative '../lib/libusb/libusb_recipe'
   recipe = LIBUSB::LibusbRecipe.new
+  recipe.configure_options << "--enable-windows-hotplug"
   recipe.configure_options << "--disable-udev" unless have_udev
   recipe.cook_and_activate
   recipe.path
