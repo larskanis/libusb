@@ -224,6 +224,39 @@ module LIBUSB
       :BM_LTM_SUPPORT, 2,
     ]
 
+
+    # enum used in SsplusSublinkAttribute
+    SuperspeedplusSublinkAttributeSublinkType = enum :libusb_superspeedplus_sublink_attribute_sublink_type, [
+      :SSPLUS_ATTR_TYPE_SYM, 0,
+      :SSPLUS_ATTR_TYPE_ASYM, 1,
+    ]
+
+    # enum used in SsplusSublinkAttribute
+    SuperspeedplusSublinkAttributeSublinkDirection = enum :libusb_superspeedplus_sublink_attribute_sublink_direction, [
+      :SSPLUS_ATTR_DIR_RX, 0,
+      :SSPLUS_ATTR_DIR_TX, 1,
+    ]
+
+    # enum used in SsplusSublinkAttribute
+    #
+    # This field defines the base 10 exponent times 3, that shall be applied to the mantissa.
+    # * Bit   = Bits per second
+    # * Kb = Kbps
+    # * Mb = Mbps
+    # * Gb = Gbps
+    SuperspeedplusSublinkAttributeExponent = enum :libusb_superspeedplus_sublink_attribute_exponent, [
+      :SSPLUS_ATTR_EXP_BPS, 0,
+      :SSPLUS_ATTR_EXP_KBS, 1,
+      :SSPLUS_ATTR_EXP_MBS, 2,
+      :SSPLUS_ATTR_EXP_GBS, 3,
+    ]
+
+    # enum used in SsplusSublinkAttribute
+    SuperspeedplusSublinkAttributeLinkProtocol = enum :libusb_superspeedplus_sublink_attribute_link_protocol, [
+      :SSPLUS_ATTR_PROT_SS, 0,
+      :SSPLUS_ATTR_PROT_SSPLUS, 1,
+    ]
+
     # USB capability types
     #
     # @see Bos::DeviceCapability
@@ -237,7 +270,7 @@ module LIBUSB
       :BT_BATTERY_INFO_CAPABILITY, 0x07, # Provides information on each battery supported by the device
       :BT_PD_CONSUMER_PORT_CAPABILITY, 0x08, # The consumer characteristics of a port on the device
       :BT_PD_PROVIDER_PORT_CAPABILITY, 0x09, # The provider characteristics of a port on the device
-      :BT_SUPERSPEED_PLUS, 0x0A, # Defines the set of SuperSpeed Plus USB specific device level capabilities
+      :BT_SUPERSPEED_PLUS_CAPABILITY, 0x0A, # Defines the set of SuperSpeed Plus USB specific device level capabilities
       :BT_PRECISION_TIME_MEASUREMENT, 0x0B, # Precision Time Measurement (PTM) Capability Descriptor
       :BT_Wireless_USB_Ext, 0x0C, # Defines the set of Wireless USB 1.1-specific device level capabilities
       :BT_BILLBOARD, 0x0D, # Billboard capability
@@ -459,6 +492,8 @@ module LIBUSB
     try_attach_function 'libusb_free_usb_2_0_extension_descriptor', [:pointer], :void
     try_attach_function 'libusb_get_ss_usb_device_capability_descriptor', [:libusb_context, :pointer, :pointer], :int
     try_attach_function 'libusb_free_ss_usb_device_capability_descriptor', [:pointer], :void
+    try_attach_function 'libusb_get_ssplus_usb_device_capability_descriptor', [:libusb_context, :pointer, :pointer], :int
+    try_attach_function 'libusb_free_ssplus_usb_device_capability_descriptor', [:pointer], :void
     try_attach_function 'libusb_get_container_id_descriptor', [:libusb_context, :pointer, :pointer], :int
     try_attach_function 'libusb_free_container_id_descriptor', [:pointer], :void
     try_attach_function 'libusb_get_platform_descriptor', [:libusb_context, :pointer, :pointer], :int

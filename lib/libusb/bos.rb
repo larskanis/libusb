@@ -189,6 +189,137 @@ module LIBUSB
       end
     end
 
+    # A structure representing a SuperSpeedPlus descriptor attribute
+    #
+    # @see SsplusUsbDeviceCapability
+    class SsplusSublinkAttribute < FFI::Struct
+
+      layout :ssid, :uint8,
+          :exponent, Call::SuperspeedplusSublinkAttributeExponent,
+          :type, Call::SuperspeedplusSublinkAttributeSublinkType,
+          :direction, Call::SuperspeedplusSublinkAttributeSublinkDirection,
+          :protocol, Call::SuperspeedplusSublinkAttributeLinkProtocol,
+          :mantissa, :uint16
+
+      # Sublink Speed Attribute ID (SSID).
+      #
+      # This field is an ID that uniquely identifies the speed of this sublink.
+      def ssid
+        self[:ssid]
+      end
+
+      # This field defines the base 10 exponent times 3, that shall be applied to the mantissa.
+      # @see Call::SuperspeedplusSublinkAttributeExponent
+      def exponent
+        self[:exponent]
+      end
+
+      # This field identifies whether the Sublink Speed Attribute defines a symmetric or asymmetric bit rate.
+      # @see Call::SuperspeedplusSublinkAttributeSublinkType
+      def type
+        self[:type]
+      end
+
+      # This field  indicates if this Sublink Speed Attribute defines the receive or transmit bit rate.
+      # @see Call::SuperspeedplusSublinkAttributeSublinkDirection
+      def direction
+        self[:direction]
+      end
+
+      # This field identifies the protocol supported by the link.
+      # @see Call::SuperspeedplusSublinkAttributeLinkProtocol
+      def protocol
+        self[:protocol]
+      end
+
+      # This field defines the mantissa that shall be applied to the exponent when calculating the maximum bit rate.
+      def mantissa
+        self[:mantissa]
+      end
+
+      def to_s_human_readable
+        exponents = {
+          SSPLUS_ATTR_EXP_BPS: " ",
+          SSPLUS_ATTR_EXP_KBS: "K",
+          SSPLUS_ATTR_EXP_MBS: "M",
+          SSPLUS_ATTR_EXP_GBS: "G",
+          }
+        format("id=%u speed=%u%sbs %s %s SuperSpeed%s",
+                      ssid,
+                      mantissa,
+                      exponents[exponent],
+                      type == :SSPLUS_ATTR_TYPE_ASYM ? "Asym" : "Sym",
+                      direction == :SSPLUS_ATTR_DIR_TX ? "TX" : "RX",
+                      protocol == :SSPLUS_ATTR_PROT_SSPLUS ? "+": "" )
+      end
+
+      def inspect
+        "\#<#{self.class} #{to_s_human_readable}>"
+      end
+    end
+
+    # A structure representing the SuperSpeedPlus descriptor
+    # This descriptor is documented in section 9.6.2.5 of the USB 3.1 specification.
+    class SsplusUsbDeviceCapability < FFI::Struct
+      include ContextReference
+
+      layout :numSublinkSpeedAttributes, :uint8,
+          :numSublinkSpeedIDs, :uint8,
+          :ssid, :uint8,
+          :minRxLaneCount, :uint8,
+          :minTxLaneCount, :uint8,
+          :sublinkSpeedAttributes, [SsplusSublinkAttribute, 0]
+
+      def initialize(ctx, *args)
+        super(*args)
+
+        register_context(ctx, :libusb_free_ssplus_usb_device_capability_descriptor)
+      end
+
+      def inspect
+        attrs = %i[ numSublinkSpeedAttributes numSublinkSpeedIDs ssid minRxLaneCount minTxLaneCount ].map do |key|
+          "#{key}: #{self.send(key).inspect}"
+        end
+        "\#<#{self.class} #{attrs.join(", ")}>"
+      end
+
+      # Sublink Speed Attribute Count
+      def numSublinkSpeedAttributes
+        self[:numSublinkSpeedAttributes]
+      end
+
+      # Sublink Speed ID Count
+      def numSublinkSpeedIDs
+        self[:numSublinkSpeedIDs]
+      end
+
+      # Unique ID to indicates the minimum lane speed
+      def ssid
+        self[:ssid]
+      end
+
+      # This field indicates the minimum receive lane count.
+      def minRxLaneCount
+        self[:minRxLaneCount]
+      end
+
+      # This field indicates the minimum transmit lane count
+      def minTxLaneCount
+        self[:minTxLaneCount]
+      end
+
+      # Returns an Array of SublinkSpeedAttributes
+      #
+      # The array size equals {numSublinkSpeedAttributes}.
+      #
+      # @return [Array<SsplusSublinkAttribute>]
+      def sublinkSpeedAttributes
+        self[:numSublinkSpeedAttributes].times.map do |idx|
+          self[:sublinkSpeedAttributes][idx]
+        end
+      end
+    end
+
     # A structure representing the Container ID descriptor.
     # This descriptor is documented in section 9.6.2.3 of the USB 3.0 specification.
     # All multiple-byte fields, except UUIDs, are represented in host-endian format.
@@ -308,33 +439,40 @@ module LIBUSB
       self[:bNumDeviceCaps]
     end
 
+    private def wrap_device_capability(cap, func, struct)
+      if Call.respond_to?(func)
+        pp_ext = FFI::MemoryPointer.new :pointer
+        res = Call.send(func, @ctx, cap.pointer, pp_ext)
+        struct.new(@ctx, pp_ext.read_pointer) if res==0
+      end || cap
+    end
+
     # bNumDeviceCap Device Capability Descriptors
     #
     # @return [Array<Bos::DeviceCapability, Bos::Usb20Extension, Bos::SsUsbDeviceCapability, Bos::ContainerId>]
     def device_capabilities
-      pp_ext = FFI::MemoryPointer.new :pointer
       caps = []
       # Capabilities are appended to the bos header
       ptr = pointer + offset_of(:dev_capability)
       bNumDeviceCaps.times do
         cap = DeviceCapability.new self, ptr.read_pointer
-        case cap.bDevCapabilityType
+        cap = case cap.bDevCapabilityType
           when LIBUSB::BT_WIRELESS_USB_DEVICE_CAPABILITY
             # no struct defined in libusb -> use generic DeviceCapability
+            cap
           when LIBUSB::BT_USB_2_0_EXTENSION
-            res = Call.libusb_get_usb_2_0_extension_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = Usb20Extension.new(@ctx, pp_ext.read_pointer) if res==0
+            wrap_device_capability(cap, :libusb_get_usb_2_0_extension_descriptor, Usb20Extension)
           when LIBUSB::BT_SS_USB_DEVICE_CAPABILITY
-            res = Call.libusb_get_ss_usb_device_capability_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = SsUsbDeviceCapability.new(@ctx, pp_ext.read_pointer) if res==0
+            wrap_device_capability(cap, :libusb_get_ss_usb_device_capability_descriptor, SsUsbDeviceCapability)
+          when LIBUSB::BT_SUPERSPEED_PLUS_CAPABILITY
+            wrap_device_capability(cap, :libusb_get_ssplus_usb_device_capability_descriptor, SsplusUsbDeviceCapability)
           when LIBUSB::BT_CONTAINER_ID
-            res = Call.libusb_get_container_id_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = ContainerId.new(@ctx, pp_ext.read_pointer) if res==0
+            wrap_device_capability(cap, :libusb_get_container_id_descriptor, ContainerId)
           when LIBUSB::BT_PLATFORM_DESCRIPTOR
-            res = Call.libusb_get_platform_descriptor(@ctx, cap.pointer, pp_ext)
-            cap = PlatformDescriptor.new(@ctx, pp_ext.read_pointer) if res==0
+            wrap_device_capability(cap, :libusb_get_platform_descriptor, PlatformDescriptor)
           else
             # unknown capability -> use generic DeviceCapability
+            cap
         end
         ptr += FFI.type_size(:pointer)
         caps << cap
