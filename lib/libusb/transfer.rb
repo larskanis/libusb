@@ -311,9 +311,9 @@ module LIBUSB
       # Set a transfers bulk stream id.
       #
       # @param [Fixnum] stream_id  the stream id to set
-      def stream_id=(v)
-        Call.libusb_transfer_set_stream_id(@transfer, v)
-        v
+      def stream_id=(stream_id)
+        Call.libusb_transfer_set_stream_id(@transfer, stream_id)
+        stream_id
       end
 
       # Get a transfers bulk stream id.

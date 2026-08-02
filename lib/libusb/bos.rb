@@ -169,10 +169,11 @@ module LIBUSB
       # device supports all its functionality when connected at
       # full speed and above then it sets this value to 1.
       #
-      # 0 - low speed
-      # 1 - full speed
-      # 2 - high speed
-      # 3 - super speed
+      # * 0 - low speed
+      # * 1 - full speed
+      # * 2 - high speed
+      # * 3 - super speed
+      #
       # @return [Integer]
       def bFunctionalitySupport
         self[:bFunctionalitySupport]

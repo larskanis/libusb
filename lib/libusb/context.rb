@@ -523,14 +523,13 @@ module LIBUSB
     #
     # Since libusb version 1.0.16.
     #
-    # @param [Hash] args
-    # @option args [Fixnum,Symbol] :events  bitwise or of events that will trigger this callback.
+    # @param [Fixnum,Symbol] events  bitwise or of events that will trigger this callback.
     #   Default is +LIBUSB::HOTPLUG_EVENT_DEVICE_ARRIVED|LIBUSB::HOTPLUG_EVENT_DEVICE_LEFT+ .
     #   See {Call::HotplugEvents HotplugEvents}
-    # @option args [Fixnum,Symbol] :flags hotplug callback flags. Default is 0. See {Call::HotplugFlags HotplugFlags}
-    # @option args [Fixnum] :vendor_id the vendor id to match. Default is {HOTPLUG_MATCH_ANY}.
-    # @option args [Fixnum] :product_id the product id to match. Default is {HOTPLUG_MATCH_ANY}.
-    # @option args [Fixnum] :dev_class the device class to match. Default is {HOTPLUG_MATCH_ANY}.
+    # @param [Fixnum,Symbol] flags hotplug callback flags. Default is 0. See {Call::HotplugFlags HotplugFlags}
+    # @param [Fixnum] vendor_id the vendor id to match. Default is {HOTPLUG_MATCH_ANY}.
+    # @param [Fixnum] product_id the product id to match. Default is {HOTPLUG_MATCH_ANY}.
+    # @param [Fixnum] dev_class the device class to match. Default is {HOTPLUG_MATCH_ANY}.
     # @return [HotplugCallback]  The handle to the registered callback.
     #
     # @yieldparam [Device] device  the attached or removed {Device} is yielded to the block

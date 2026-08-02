@@ -17,16 +17,21 @@ module LIBUSB
   module ContextReference
     def register_context(ctx, free_sym)
       ptr = pointer
+
+      # @private
+      # called by GC or #free
       def ptr.free_struct(id)
         return unless @ctx
         Call.send(@free_sym, self)
         @ctx.unref_context
       end
+
       ptr.instance_variable_set(:@free_sym, free_sym)
       ptr.instance_variable_set(:@ctx, ctx.ref_context)
       ObjectSpace.define_finalizer(self, ptr.method(:free_struct))
     end
 
+    # Free the struct manually
     def free
       ptr = pointer
       ptr.free_struct nil

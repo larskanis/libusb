@@ -554,6 +554,8 @@ module LIBUSB
         super
 
         ptr = pointer
+        # @private
+        # called by GC
         def ptr.free_struct(id)
           Call.libusb_free_transfer(self)
           return unless @ctx
