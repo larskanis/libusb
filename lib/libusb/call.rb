@@ -602,6 +602,8 @@ module LIBUSB
     # for device selection before opening the selected device.
     try_attach_function 'libusb_get_device_string', [:libusb_device, DeviceStringType, :pointer, :int], :int
 
+    try_attach_function 'libusb_get_session_data', [:libusb_device], :ulong
+
     class IsoPacketDescriptor < FFI::Struct
       layout :length, :uint,
           :actual_length, :uint,

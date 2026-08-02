@@ -346,6 +346,25 @@ module LIBUSB
       end
     end
 
+    if Call.respond_to?(:libusb_get_session_data)
+      # Returns the backend-specific identifier of the underlying system device tree
+      # node. Can be used to find the corresponding system device and directly query
+      # it (or access it otherwise) when and if necessary.
+      #
+      # Relevant backends:
+      # - Darwin: IOKit `sessionID`
+      # - Windows WinUSB: `DEVINST`
+      # - Linux, BSD: `busnum << 8 | devnum`
+      #
+      # Since version 1.0.30, \ref LIBUSB_API_VERSION >= 0x0100010C
+      #
+      # \param dev a device (must not be null)
+      # \returns the backend-specific device identifier
+      def get_session_data
+        Call.libusb_get_session_data(@pDev)
+      end
+    end
+
     def inspect
       attrs = []
       attrs << "#{self.bus_number}/#{self.device_address}"

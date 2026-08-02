@@ -246,4 +246,13 @@ class TestLibusbDescriptors < Minitest::Test
       end
     end
   end
+
+  def test_get_session_data
+    skip "libusb version older than 1.0.30" if Gem::Version.new(LIBUSB.version) < Gem::Version.new("1.0.30")
+
+    usb.devices.each do |dev|
+      assert_kind_of Integer, dev.get_session_data
+      refute_equal 0, dev.get_session_data
+    end
+  end
 end
