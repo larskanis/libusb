@@ -1,3 +1,19 @@
+0.8.0 / 2026-08-02
+------------------
+
+Added:
+* Add LIBUSB::SsplusUsbDeviceCapability introduced in libusb-1.0.28. #53
+* Add LIBUSB::Device#device_string and prefer it in Device#inspect. #54
+  This retrievs product string, manufacturer and serial number from the OS without opening the device.
+* Enable hotplug support on Windows introduced in libusb-1.0.30.
+* Add LIBUSB::Device#get_session_data introduced in libusb-1.0.30. #54
+
+Changed:
+* Don't kill the EventMachine reactor on LIBUSB_ERROR_INTERRUPTED. #52
+* Improve yard docs.
+* Update builtin libusb to 1.0.30
+
+
 0.7.2 / 2024-10-23
 ------------------
 
