@@ -45,6 +45,10 @@ class TestLibusbDescriptors < Minitest::Test
       assert_kind_of Integer, dev.iSerialNumber
       assert_kind_of Integer, dev.bNumConfigurations
 
+      assert_kind_of String,  dev.manufacturer
+      assert_kind_of String,  dev.product
+      assert_kind_of String,  dev.serial_number
+
       dev.configurations.each do |config_desc|
         assert_match(/Configuration/, config_desc.inspect, "ConfigDescriptor#inspect should work")
         assert dev.configurations.include?(config_desc), "Device#configurations should include this one"

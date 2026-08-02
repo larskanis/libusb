@@ -319,6 +319,32 @@ module LIBUSB
       @pDevDesc[:bNumConfigurations]
     end
 
+    if Call.respond_to?(:libusb_get_device_string)
+      # Retrieve the device description strings without opening the device.
+      # So permissions for open aren't necessary.
+      #
+      # This function works when the device is still closed since it relies
+      # on the operating system to provide the string.  The operating system
+      # normally reads and caches the common string descriptors during
+      # USB enumeration.
+      #
+      # Since the USB string descriptor could be processed by the OS,
+      # this function returns a UTF-8 encoded string.
+      #
+      # The string will be returned untranslated or in the default OS language
+      # when supported by the OS and USB device.
+      #
+      # @param [Symbol, Integer] string_type   One of {Call::DeviceStringType}
+      #
+      # Available since libusb-1.0.30
+      #
+      def device_string(string_type)
+        buffer = FFI::MemoryPointer.new(DEVICE_STRING_BYTES_MAX)
+        res = Call.libusb_get_device_string(@pDev, string_type, buffer, buffer.size)
+        LIBUSB.raise_error res, "in libusb_get_device_string" if res<0
+        buffer.read_bytes(res)
+      end
+    end
 
     def inspect
       attrs = []
@@ -339,9 +365,13 @@ module LIBUSB
       "\#<#{self.class} #{attrs.join(' ')}>"
     end
 
-    def try_string_descriptor_ascii(i)
+    def try_string_descriptor_ascii(i, enum=nil)
       begin
-        open{|h| h.string_descriptor_ascii(i) }
+        if enum && respond_to?(:device_string)
+          device_string(enum)
+        else
+          open{|h| h.string_descriptor_ascii(i) }
+        end
       rescue
         "?"
       end
@@ -351,7 +381,7 @@ module LIBUSB
     # @return String
     def manufacturer
       return @manufacturer if defined? @manufacturer
-      @manufacturer = try_string_descriptor_ascii(self.iManufacturer)
+      @manufacturer = try_string_descriptor_ascii(self.iManufacturer, DEVICE_STRING_MANUFACTURER)
       @manufacturer = @manufacturer.strip if @manufacturer
       @manufacturer
     end
@@ -360,7 +390,7 @@ module LIBUSB
     # @return String
     def product
       return @product if defined? @product
-      @product = try_string_descriptor_ascii(self.iProduct)
+      @product = try_string_descriptor_ascii(self.iProduct, DEVICE_STRING_PRODUCT)
       @product = @product.strip if @product
       @product
     end
@@ -369,7 +399,7 @@ module LIBUSB
     # @return String
     def serial_number
       return @serial_number if defined? @serial_number
-      @serial_number = try_string_descriptor_ascii(self.iSerialNumber)
+      @serial_number = try_string_descriptor_ascii(self.iSerialNumber, DEVICE_STRING_SERIAL_NUMBER)
       @serial_number = @serial_number.strip if @serial_number
       @serial_number
     end

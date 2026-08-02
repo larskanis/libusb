@@ -36,6 +36,7 @@ module LIBUSB
     Call::LogLevels,
     Call::LogCbMode,
     Call::Options,
+    Call::DeviceStringType,
   ].each do |enum|
     enum.to_h.each{|k,v| const_set(k,v) }
   end
@@ -92,6 +93,16 @@ module LIBUSB
   # Wildcard matching for hotplug events.
   HOTPLUG_MATCH_ANY = -1
 
+  # The maximum length for a device string descriptor in UTF-8.
+  #
+  # 255 max descriptor length with 2 byte header
+  #  => 253 bytes UTF-16LE, no null termination (USB 2.0 9.6.7)
+  #  => 126.5 codepoints
+  #  => 126 * 3 + 1
+  #  => 382 bytes
+  #
+  # Stay with 256 * 2/3 = 384 to be safe.
+  DEVICE_STRING_BYTES_MAX = 384
 
   # http://www.usb.org/developers/defined_class
   # @private
