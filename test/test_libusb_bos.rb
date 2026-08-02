@@ -62,7 +62,7 @@ class TestLibusbBos < Minitest::Test
                 :BT_BATTERY_INFO_CAPABILITY,
                 :BT_PD_CONSUMER_PORT_CAPABILITY,
                 :BT_PD_PROVIDER_PORT_CAPABILITY,
-                :BT_SUPERSPEED_PLUS,
+                :BT_SUPERSPEED_PLUS_CAPABILITY,
                 :BT_PRECISION_TIME_MEASUREMENT,
                 :BT_Wireless_USB_Ext,
                 :BT_BILLBOARD,
@@ -77,11 +77,14 @@ class TestLibusbBos < Minitest::Test
           caps.each do |cap|
             did_cap = true
 
-            assert_operator 4, :<=, cap.bLength
-            assert_equal LIBUSB::DT_DEVICE_CAPABILITY, cap.bDescriptorType
-            assert_kind_of String, cap.dev_capability_data, "should provide binary capability data"
+            unless cap.is_a?(Bos::SsplusUsbDeviceCapability)
+              assert_operator 4, :<=, cap.bLength
+              assert_equal LIBUSB::DT_DEVICE_CAPABILITY, cap.bDescriptorType
+              assert_kind_of String, cap.dev_capability_data, "should provide binary capability data"
+              assert_operator 1, :<=, cap.dev_capability_data.length, "dev_capability_data should be at least one byte"
+            end
             assert_kind_of String, cap.inspect, "should respond to inspect"
-            assert_operator 1, :<=, cap.dev_capability_data.length, "dev_capability_data should be at least one byte"
+            assert_match(/\#<#{cap.class}/, cap.inspect, "inspect contains the class name")
 
             case cap
               when Bos::DeviceCapability
@@ -101,6 +104,25 @@ class TestLibusbBos < Minitest::Test
                 assert_operator 0, :<=, cap.bFunctionalitySupport
                 assert_operator 0, :<=, cap.bU1DevExitLat
                 assert_operator 0, :<=, cap.bU2DevExitLat
+
+              when Bos::SsplusUsbDeviceCapability
+                assert_kind_of Array, cap.sublinkSpeedAttributes
+                assert_equal cap.numSublinkSpeedAttributes, cap.sublinkSpeedAttributes.size
+                assert_operator 1, :<=, cap.numSublinkSpeedIDs
+                assert_operator 1, :<=, cap.numSublinkSpeedAttributes
+                assert_kind_of Integer, cap.ssid
+                assert_operator 0, :<=, cap.minRxLaneCount
+                assert_operator 0, :<=, cap.minTxLaneCount
+
+                sl = cap.sublinkSpeedAttributes[0]
+                assert_match(/id=.* SuperSpeed/, sl.to_s_human_readable)
+                assert_kind_of String, sl.inspect, "should respond to inspect"
+                assert_kind_of Integer, sl.ssid
+                assert_kind_of Symbol, sl.exponent
+                assert_kind_of Symbol, sl.type
+                assert_kind_of Symbol, sl.direction
+                assert_kind_of Symbol, sl.protocol
+                assert_operator 1, :<=, sl.mantissa
 
               when Bos::ContainerId
                 assert_equal 4, cap.bDevCapabilityType
