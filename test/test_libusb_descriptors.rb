@@ -45,6 +45,10 @@ class TestLibusbDescriptors < Minitest::Test
       assert_kind_of Integer, dev.iSerialNumber
       assert_kind_of Integer, dev.bNumConfigurations
 
+      assert_kind_of String,  dev.manufacturer
+      assert_kind_of String,  dev.product
+      assert_kind_of String,  dev.serial_number
+
       dev.configurations.each do |config_desc|
         assert_match(/Configuration/, config_desc.inspect, "ConfigDescriptor#inspect should work")
         assert dev.configurations.include?(config_desc), "Device#configurations should include this one"
@@ -240,6 +244,15 @@ class TestLibusbDescriptors < Minitest::Test
       File.open(format("/dev/bus/usb/%03d/%03d", d.bus_number, d.device_address), "r") do |io|
         usb.wrap_sys_device(io).kernel_driver_active?(0)
       end
+    end
+  end
+
+  def test_get_session_data
+    skip "libusb version older than 1.0.30" if Gem::Version.new(LIBUSB.version) < Gem::Version.new("1.0.30")
+
+    usb.devices.each do |dev|
+      assert_kind_of Integer, dev.get_session_data
+      refute_equal 0, dev.get_session_data
     end
   end
 end

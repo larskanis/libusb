@@ -301,6 +301,14 @@ module LIBUSB
       :HOTPLUG_ENUMERATE, 1,
     ]
 
+    # The device string type.
+    DeviceStringType = enum :libusb_device_string_type, [
+      :DEVICE_STRING_MANUFACTURER,
+      :DEVICE_STRING_PRODUCT,
+      :DEVICE_STRING_SERIAL_NUMBER,
+      :DEVICE_STRING_COUNT  # The total number of string types.
+    ]
+
     # Log message levels.
     #
     # - :LOG_LEVEL_NONE (0)    : no messages ever printed by the library (default)
@@ -555,6 +563,46 @@ module LIBUSB
         :int, :int, :int, :libusb_hotplug_callback_fn,
         :pointer, :pointer], :int
     try_attach_function 'libusb_hotplug_deregister_callback', [:libusb_context, :libusb_hotplug_callback_handle], :void
+
+    # Retrieve a device string without needing to open the device.
+    #
+    # Since version v1.0.30 \ref LIBUSB_API_VERSION >= 0x0100010C
+    #
+    # \param dev the target device
+    # \param string_type the string type to retrieve
+    # \param data the data buffer for the UTF-8 encoded string.
+    # \param length the size of the data buffer in bytes.
+    #      USB string descriptors cannot be longer than
+    #      LIBUSB_DEVICE_STRING_BYTES_MAX.
+    # \returns a negative error code or
+    #      the actual string length in bytes including the null terminator.
+    # \see libusb_get_string_descriptor()
+    # \see libusb_get_string_descriptor_ascii()
+    #
+    # This function works when the device is still closed since it relies
+    # on the operating system to provide the string.  The operating system
+    # normally reads and caches the common string descriptors during
+    # USB enumeration.
+    #
+    # Since the USB string descriptor could be processed by the OS,
+    # this function returns a UTF-8 encoded string.
+    #
+    # The string will be returned untranslated or in the default OS language
+    # when supported by the OS and USB device.
+    #
+    # One way to call this function is using a buffer on the stack:
+    #
+    #     char buffer[LIBUSB_DEVICE_STRING_BYTES_MAX];
+    #     int ret = libusb_get_device_string(dev, LIBUSB_DEVICE_STRING_SERIAL_NUMBER, buffer, sizeof(buffer));
+    #     if (ret < 0) {
+    #         // handle error
+    #     }
+    #
+    # This function is commonly used to get the serial number to allow
+    # for device selection before opening the selected device.
+    try_attach_function 'libusb_get_device_string', [:libusb_device, DeviceStringType, :pointer, :int], :int
+
+    try_attach_function 'libusb_get_session_data', [:libusb_device], :ulong
 
     class IsoPacketDescriptor < FFI::Struct
       layout :length, :uint,
