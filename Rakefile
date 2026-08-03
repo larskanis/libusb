@@ -64,9 +64,12 @@ CrossLibraries.map(&:ruby_platform).each do |platform|
   desc "Build windows and linux fat binary gems"
   multitask 'gem:native' => "gem:native:#{platform}"
 
-  task "gem:native:#{platform}" do
+  task "gem:native:prepare" do
     require 'rake_compiler_dock'
     sh "bundle package"
+  end
+
+  task "gem:native:#{platform}" => "gem:native:prepare" do
     RakeCompilerDock.sh <<-EOT, platform: platform
       bundle --local &&
       #{ "sudo yum install -y libudev-devel &&" if platform=~/linux/ }
