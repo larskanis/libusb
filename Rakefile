@@ -48,6 +48,7 @@ task :ci do
 end
 
 CrossLibraries = [
+  ['aarch64-mingw-ucrt', 'aarch64-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x86-mingw32', 'i686-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw32', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
   ['x64-mingw-ucrt', 'x86_64-w64-mingw32', 'bin/libusb-1.0.dll'],
