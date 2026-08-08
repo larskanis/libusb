@@ -22,6 +22,9 @@ Gem::Specification.new do |s|
   s.extensions    = ['ext/extconf.rb']
   s.metadata["yard.run"] = "yri"
 
+  s.rdoc_options  =  ["--main", "README.md"]
+  s.extra_rdoc_files = `git ls-files -z *.md lib/*.rb lib/*/*.rb`.split("\x0")
+
   s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
   s.add_runtime_dependency 'ffi', '~> 1.0'
   s.add_runtime_dependency 'mini_portile2', LIBUSB::MINI_PORTILE_VERSION
