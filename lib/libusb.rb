@@ -116,7 +116,7 @@ module LIBUSB
       #
       # Available since libusb-1.0.22, LIBUSB_API_VERSION >= 0x01000106
       #
-      # @param [Symbol, Fixnum] option
+      # @param [Symbol, Integer] option
       # @param args  Zero or more arguments depending on +option+
       #
       # Available since libusb-1.0.22

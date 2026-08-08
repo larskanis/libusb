@@ -209,7 +209,7 @@ module LIBUSB
 
     # Set a context related libusb option from the {Call::Options option list}.
     #
-    # @param [Symbol, Fixnum] option
+    # @param [Symbol, Integer] option
     # @param args  Zero or more arguments depending on +option+
     # @see set_options
     def set_option(option, *args)
@@ -523,13 +523,13 @@ module LIBUSB
     #
     # Since libusb version 1.0.16.
     #
-    # @param [Fixnum,Symbol] events  bitwise or of events that will trigger this callback.
+    # @param [Integer,Symbol] events  bitwise or of events that will trigger this callback.
     #   Default is +LIBUSB::HOTPLUG_EVENT_DEVICE_ARRIVED|LIBUSB::HOTPLUG_EVENT_DEVICE_LEFT+ .
     #   See {Call::HotplugEvents HotplugEvents}
-    # @param [Fixnum,Symbol] flags hotplug callback flags. Default is 0. See {Call::HotplugFlags HotplugFlags}
-    # @param [Fixnum] vendor_id the vendor id to match. Default is {HOTPLUG_MATCH_ANY}.
-    # @param [Fixnum] product_id the product id to match. Default is {HOTPLUG_MATCH_ANY}.
-    # @param [Fixnum] dev_class the device class to match. Default is {HOTPLUG_MATCH_ANY}.
+    # @param [Integer,Symbol] flags hotplug callback flags. Default is 0. See {Call::HotplugFlags HotplugFlags}
+    # @param [Integer] vendor_id the vendor id to match. Default is {HOTPLUG_MATCH_ANY}.
+    # @param [Integer] product_id the product id to match. Default is {HOTPLUG_MATCH_ANY}.
+    # @param [Integer] dev_class the device class to match. Default is {HOTPLUG_MATCH_ANY}.
     # @return [HotplugCallback]  The handle to the registered callback.
     #
     # @yieldparam [Device] device  the attached or removed {Device} is yielded to the block

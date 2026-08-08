@@ -74,7 +74,7 @@ module LIBUSB
     # Must be called with a block. When the block has finished, the interface
     # will be released and the device will be closed.
     #
-    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
+    # @param [Interface, Integer] interface  the interface or it's bInterfaceNumber you wish to claim
     def open_interface(interface)
       open do |dev|
         dev.claim_interface(interface) do
@@ -97,7 +97,7 @@ module LIBUSB
       # Get the number of the port that a device is connected to.
       # Available since libusb-1.0.12.
       #
-      # @return [Fixnum, nil]  the port number (+nil+ if not available)
+      # @return [Integer, nil]  the port number (+nil+ if not available)
       # @see #port_numbers
       def port_number
         r = Call.libusb_get_port_number(@pDev)
@@ -122,7 +122,7 @@ module LIBUSB
       # Get the list of all port numbers from root for the specified device.
       # Available since libusb-1.0.12.
       #
-      # @return [Array<Fixnum>]
+      # @return [Array<Integer>]
       # @see #parent
       # @see #port_number
       def port_numbers
@@ -154,8 +154,8 @@ module LIBUSB
     # Convenience function to retrieve the wMaxPacketSize value for a
     # particular endpoint in the active device configuration.
     #
-    # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
-    # @return [Fixnum]  the wMaxPacketSize value
+    # @param [Endpoint, Integer] endpoint  (address of) the endpoint in question
+    # @return [Integer]  the wMaxPacketSize value
     def max_packet_size(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_get_max_packet_size(@pDev, endpoint)
@@ -186,10 +186,10 @@ module LIBUSB
       #
       # Available since libusb-1.0.27.
       #
-      # @param [Interface, Fixnum] interface  the interface or its bInterfaceNumber of the interface the endpoint belongs to
-      # @param [Setting, Fixnum] alternate_setting  the alternate setting or its bAlternateSetting
-      # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
-      # @return [Fixnum]  the maximum packet size which can be sent/received on this endpoint
+      # @param [Interface, Integer] interface  the interface or its bInterfaceNumber of the interface the endpoint belongs to
+      # @param [Setting, Integer] alternate_setting  the alternate setting or its bAlternateSetting
+      # @param [Endpoint, Integer] endpoint  (address of) the endpoint in question
+      # @return [Integer]  the maximum packet size which can be sent/received on this endpoint
       # @see max_iso_packet_size
       def max_alt_packet_size(interface, alternate_setting, endpoint)
         interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
@@ -218,8 +218,8 @@ module LIBUSB
     # IsoPacket#alloc_buffer in order to set the length field
     # of an isochronous packet in a transfer.
     #
-    # @param [Endpoint, Fixnum] endpoint  (address of) the endpoint in question
-    # @return [Fixnum] the maximum packet size which can be sent/received on this endpoint
+    # @param [Endpoint, Integer] endpoint  (address of) the endpoint in question
+    # @return [Integer] the maximum packet size which can be sent/received on this endpoint
     # @see max_alt_packet_size
     def max_iso_packet_size(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
@@ -230,7 +230,7 @@ module LIBUSB
 
     # Obtain a config descriptor of the device.
     #
-    # @param [Fixnum] index  number of the config descriptor
+    # @param [Integer] index  number of the config descriptor
     # @return Configuration
     def config_descriptor(index)
       ppConfig = FFI::MemoryPointer.new :pointer

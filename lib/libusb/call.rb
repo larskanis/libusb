@@ -675,13 +675,13 @@ module LIBUSB
         :tv_usec, :long
 
       # set timeval to the number of milliseconds
-      # @param [Fixnum] value
+      # @param [Integer] value
       def in_ms=(value)
         self[:tv_sec], self[:tv_usec] = (value*1000).divmod(1000000)
       end
 
       # get the number of milliseconds in timeval
-      # @return [Fixnum]
+      # @return [Integer]
       def in_ms
         self[:tv_sec]*1000 + self[:tv_usec]/1000
       end

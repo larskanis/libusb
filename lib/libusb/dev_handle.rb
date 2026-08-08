@@ -72,7 +72,7 @@ module LIBUSB
     # If called with a block, the device handle is passed through to the block
     # and the interface is released when the block has finished.
     #
-    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you wish to claim
+    # @param [Interface, Integer] interface  the interface or it's bInterfaceNumber you wish to claim
     def claim_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_claim_interface(@pHandle, interface)
@@ -92,7 +92,7 @@ module LIBUSB
     # This is a blocking function. A SET_INTERFACE control request will be sent to the
     # device, resetting interface state to the first alternate setting.
     #
-    # @param [Interface, Fixnum] interface  the interface or it's bInterfaceNumber you
+    # @param [Interface, Integer] interface  the interface or it's bInterfaceNumber you
     #   claimed previously
     def release_interface(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
@@ -127,7 +127,7 @@ module LIBUSB
     #
     # This is a blocking function.
     #
-    # @param [Configuration, Fixnum] configuration   the configuration or it's
+    # @param [Configuration, Integer] configuration   the configuration or it's
     #   bConfigurationValue you wish to activate, or +nil+ if you wish to put
     #   the device in unconfigured state
     def set_configuration(configuration)
@@ -147,10 +147,10 @@ module LIBUSB
     #
     # This is a blocking function.
     #
-    # @param [Setting, Fixnum] setting_or_interface_number  the alternate setting
+    # @param [Setting, Integer] setting_or_interface_number  the alternate setting
     #   to activate or the bInterfaceNumber of the previously-claimed interface
-    # @param [Fixnum, nil] alternate_setting  the bAlternateSetting of the alternate setting to activate
-    #   (only if first param is a Fixnum)
+    # @param [Integer, nil] alternate_setting  the bAlternateSetting of the alternate setting to activate
+    #   (only if first param is a Integer)
     def set_interface_alt_setting(setting_or_interface_number, alternate_setting=nil)
       alternate_setting ||= setting_or_interface_number.bAlternateSetting if setting_or_interface_number.respond_to? :bAlternateSetting
       setting_or_interface_number = setting_or_interface_number.bInterfaceNumber if setting_or_interface_number.respond_to? :bInterfaceNumber
@@ -168,7 +168,7 @@ module LIBUSB
     #
     # This is a blocking function.
     #
-    # @param [Endpoint, Fixnum] endpoint  the endpoint in question or it's bEndpointAddress
+    # @param [Endpoint, Integer] endpoint  the endpoint in question or it's bEndpointAddress
     def clear_halt(endpoint)
       endpoint = endpoint.bEndpointAddress if endpoint.respond_to? :bEndpointAddress
       res = Call.libusb_clear_halt(@pHandle, endpoint)
@@ -210,9 +210,9 @@ module LIBUSB
       #
       # Available since libusb-1.0.19.
       #
-      # @param [Fixnum] num_streams  number of streams to try to allocate
-      # @param [Array<Fixnum>, Array<Endpoint>] endpoints  array of endpoints to allocate streams on
-      # @return [Fixnum] number of streams allocated
+      # @param [Integer] num_streams  number of streams to try to allocate
+      # @param [Array<Integer>, Array<Endpoint>] endpoints  array of endpoints to allocate streams on
+      # @return [Integer] number of streams allocated
       # @see #free_streams
       # @see BulkStreamTransfer
       def alloc_streams(num_streams, endpoints)
@@ -230,7 +230,7 @@ module LIBUSB
       #
       # Available since libusb-1.0.19.
       #
-      # @param [Array<Fixnum>, Array<Endpoint>] endpoints  array of endpoints to free streams on
+      # @param [Array<Integer>, Array<Endpoint>] endpoints  array of endpoints to free streams on
       # @see #alloc_streams
       def free_streams(endpoints)
         pEndpoints = endpoints_as_ffi_bytes(endpoints)
@@ -252,7 +252,7 @@ module LIBUSB
     # If a kernel driver is active, you cannot claim the interface,
     # and libusb will be unable to perform I/O.
     #
-    # @param [Interface, Fixnum] interface   the interface to check or it's bInterfaceNumber
+    # @param [Interface, Integer] interface   the interface to check or it's bInterfaceNumber
     # @return [Boolean]
     def kernel_driver_active?(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
@@ -265,7 +265,7 @@ module LIBUSB
     #
     # If successful, you will then be able to claim the interface and perform I/O.
     #
-    # @param [Interface, Fixnum] interface    the interface to detach the driver
+    # @param [Interface, Integer] interface    the interface to detach the driver
     #   from or it's bInterfaceNumber
     def detach_kernel_driver(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
@@ -276,7 +276,7 @@ module LIBUSB
     # Re-attach an interface's kernel driver, which was previously detached
     # using {DevHandle#detach_kernel_driver}.
     #
-    # @param [Interface, Fixnum] interface    the interface to attach the driver to
+    # @param [Interface, Integer] interface    the interface to attach the driver to
     def attach_kernel_driver(interface)
       interface = interface.bInterfaceNumber if interface.respond_to? :bInterfaceNumber
       res = Call.libusb_attach_kernel_driver(@pHandle, interface)
@@ -358,13 +358,13 @@ module LIBUSB
     # transferred; do not assume that timeout conditions indicate a complete lack of
     # I/O.
     #
-    # @param [Endpoint, Fixnum] endpoint  the (address of a) valid endpoint to communicate with
+    # @param [Endpoint, Integer] endpoint  the (address of a) valid endpoint to communicate with
     # @param [String] dataOut  the data to send with an outgoing transfer
-    # @param [Fixnum] dataIn   the number of bytes expected to receive with an ingoing transfer
-    # @param [Fixnum] timeout   timeout (in millseconds) that this function should wait before giving
+    # @param [Integer] dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @param [Integer] timeout   timeout (in millseconds) that this function should wait before giving
     #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
-    # @return [Fixnum] Number of bytes sent for an outgoing transfer
+    # @return [Integer] Number of bytes sent for an outgoing transfer
     # @return [String] Received data for an ingoing transfer
     # @return [self]  When called with a block
     #
@@ -428,13 +428,13 @@ module LIBUSB
     #
     # The default endpoint bInterval value is used as the polling interval.
     #
-    # @param [Endpoint, Fixnum] endpoint  the (address of a) valid endpoint to communicate with
+    # @param [Endpoint, Integer] endpoint  the (address of a) valid endpoint to communicate with
     # @param [String] dataOut  the data to send with an outgoing transfer
-    # @param [Fixnum] dataIn   the number of bytes expected to receive with an ingoing transfer
-    # @param [Fixnum] timeout   timeout (in millseconds) that this function should wait before giving
+    # @param [Integer] dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @param [Integer] timeout   timeout (in millseconds) that this function should wait before giving
     #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
-    # @return [Fixnum] Number of bytes sent for an outgoing transfer
+    # @return [Integer] Number of bytes sent for an outgoing transfer
     # @return [String] Received data for an ingoing transfer
     # @return [self]  When called with a block
     #
@@ -481,18 +481,18 @@ module LIBUSB
     # The direction of the transfer is inferred from the +:bmRequestType+ field of the
     # setup packet.
     #
-    # @param [Fixnum] bmRequestType   the request type field for the setup packet
-    # @param [Fixnum] bRequest  the request field for the setup packet
-    # @param [Fixnum] wValue  the value field for the setup packet
-    # @param [Fixnum] wIndex  the index field for the setup packet
+    # @param [Integer] bmRequestType   the request type field for the setup packet
+    # @param [Integer] bRequest  the request field for the setup packet
+    # @param [Integer] wValue  the value field for the setup packet
+    # @param [Integer] wIndex  the index field for the setup packet
     # @param [String] dataOut  the data to send with an outgoing transfer, it
     #   is appended to the setup packet
-    # @param [Fixnum] dataIn   the number of bytes expected to receive with an ingoing transfer
+    # @param [Integer] dataIn   the number of bytes expected to receive with an ingoing transfer
     #   (excluding setup packet)
-    # @param [Fixnum] timeout   timeout (in millseconds) that this function should wait before giving
+    # @param [Integer] timeout   timeout (in millseconds) that this function should wait before giving
     #   up due to no response being received. For an unlimited timeout, use value 0. Defaults to 1000 ms.
     #
-    # @return [Fixnum] Number of bytes sent (excluding setup packet) for outgoing transfer
+    # @return [Integer] Number of bytes sent (excluding setup packet) for outgoing transfer
     # @return [String] Received data (without setup packet) for ingoing transfer
     # @return [self]  When called with a block
     #

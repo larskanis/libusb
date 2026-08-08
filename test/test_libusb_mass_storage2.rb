@@ -71,7 +71,7 @@ class TestLibusbMassStorage2 < Minitest::Test
   end
 
   def test_attach_kernel_driver
-    # Should work with both Fixnum and Interface parameter
+    # Should work with both Integer and Interface parameter
     [0, interface].each do |i|
       device.open do |dev|
         dev.attach_kernel_driver(i)

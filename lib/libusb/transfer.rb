@@ -115,7 +115,7 @@ module LIBUSB
 
     # Allocate +len+ bytes of data buffer for input transfer.
     #
-    # @param [Fixnum]  len  Number of bytes to allocate
+    # @param [Integer]  len  Number of bytes to allocate
     # @param [String, nil] data  some data to initialize the buffer with
     # @see #allow_device_memory
     def alloc_buffer(len, data=nil)
@@ -178,7 +178,7 @@ module LIBUSB
 
     # Retrieve the data actually transferred.
     #
-    # @param [Fixnum] offset  optional offset of the retrieved data in the buffer.
+    # @param [Integer] offset  optional offset of the retrieved data in the buffer.
     def actual_buffer(offset=0)
       @transfer[:buffer].get_bytes(offset, @transfer[:actual_length])
     end
@@ -310,7 +310,7 @@ module LIBUSB
 
       # Set a transfers bulk stream id.
       #
-      # @param [Fixnum] stream_id  the stream id to set
+      # @param [Integer] stream_id  the stream id to set
       def stream_id=(stream_id)
         Call.libusb_transfer_set_stream_id(@transfer, stream_id)
         stream_id
@@ -320,7 +320,7 @@ module LIBUSB
       #
       # Available since libusb-1.0.19.
       #
-      # @return [Fixnum] the stream id for the transfer
+      # @return [Integer] the stream id for the transfer
       def stream_id
         Call.libusb_transfer_get_stream_id(@transfer)
       end
