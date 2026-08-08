@@ -356,10 +356,9 @@ module LIBUSB
       # - Windows WinUSB: `DEVINST`
       # - Linux, BSD: `busnum << 8 | devnum`
       #
-      # Since version 1.0.30, \ref LIBUSB_API_VERSION >= 0x0100010C
+      # Since libusb-1.0.30
       #
-      # \param dev a device (must not be null)
-      # \returns the backend-specific device identifier
+      # @return [Integer]
       def get_session_data
         Call.libusb_get_session_data(@pDev)
       end
