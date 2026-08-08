@@ -107,7 +107,7 @@ Device hotplug support
 ----------------------
 
 Support for device hotplugging can be used, if ```LIBUSB.has_capability?(:CAP_HAS_HOTPLUG)``` returns ```true```.
-This requires libusb-1.0.16 or newer on Linux or MacOS. Windows support is [still on the way](https://github.com/libusbx/libusbx/issues/9).
+This requires libusb-1.0.16 or newer on Linux or MacOS and libusb-1.0.30 on Windows.
 
 A hotplug event handler can be registered with {LIBUSB::Context#on_hotplug_event}.
 You then need to call {LIBUSB::Context#handle_events} in order to receive any events.
