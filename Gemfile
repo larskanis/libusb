@@ -4,7 +4,13 @@ source "http://rubygems.org"
 # gemspec
 
 group :test do
-  gem 'eventmachine'
+  if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('4.0')
+    # Ruby 4.0 removed Data_Wrap_Struct, breaking eventmachine 1.2.7's
+    # fastfilereader ext; use git master until a fix is released.
+    gem 'eventmachine', github: 'eventmachine/eventmachine'
+  else
+    gem 'eventmachine'
+  end
   gem 'minitest'
 end
 
