@@ -44,7 +44,7 @@ task :default => :test
 
 ci_tests = %w[test_libusb.rb test_libusb_structs.rb]
 task :ci do
-  sh "ruby -w -W2 -I. -e \"#{ci_tests.map{|f| "require 'test/#{f}';"}.join}\" -- -v"
+  sh "ruby -w -W2 -I. -Ilib -e \"#{ci_tests.map{|f| "require 'test/#{f}';"}.join}\" -- -v"
 end
 
 CrossLibraries = [
